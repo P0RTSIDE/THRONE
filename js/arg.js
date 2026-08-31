@@ -2,7 +2,7 @@
  * arg.js — the page keeps a ledger the UI does not read aloud.
  *
  * Hold the mouth to enter. Drag Fear Not into the mouth to feed it. Hold Fear Not to unmake it.
- * Drag the orbit to retune the drone. Seals rewrite the voice.
+ * Drag the void to turn around it.
  */
 
 import { throne, showCaption } from "./throne.js";
@@ -18,17 +18,14 @@ const ASPECT_CAPTIONS = {
   hush: "the wheels still turn. they do not comment.",
 };
 
-const SECRET_ORDER = ["voice", "rim", "fire", "gate"];
-
 export function createArg({ audio, wheel }) {
   const state = {
     daysClicks: 0,
     lastDay: 0,
-    seals: [],
-    fleeHits: 0,
     typed: "",
     holdingHum: false,
     choirBeforeHum: false,
+    merkavahOnce: false,
   };
 
   function rapture(on) {
@@ -37,10 +34,10 @@ export function createArg({ audio, wheel }) {
     audio.setRapture(on);
     if (on) {
       showCaption("you are inside the count", 2400);
-      document.body.classList.add("aspect-wake");
-      setTimeout(() => document.body.classList.remove("aspect-wake"), 900);
+      audio.utter();
     } else {
       showCaption("", 1);
+      audio.ping("mouth");
     }
   }
 
@@ -51,10 +48,9 @@ export function createArg({ audio, wheel }) {
     }
     wheel.setAspect(id);
     audio.setAspect(id);
+    audio.utter();
     showCaption(caption || ASPECT_CAPTIONS[id] || "", 3200);
     window.dispatchEvent(new CustomEvent("throne:aspect", { detail: { id } }));
-    document.body.classList.add("aspect-wake");
-    setTimeout(() => document.body.classList.remove("aspect-wake"), 900);
   }
 
   function applyHash() {
@@ -63,7 +59,6 @@ export function createArg({ audio, wheel }) {
     if (known.includes(raw) && throne.entered) become(raw);
   }
 
-  // Quiet console breadcrumb. Not a walkthrough.
   console.info("%cthe wheels keep a ledger.", "color:#c9a227");
   Object.defineProperty(window, "ledger", {
     configurable: true,
@@ -83,14 +78,15 @@ export function createArg({ audio, wheel }) {
     if (state.daysClicks >= 7) {
       state.daysClicks = 0;
       become("unblinking");
-    } else if (state.daysClicks === 3) {
-      showCaption("the count is not finished");
     }
   });
 
-  window.addEventListener("throne:rim", (e) => {
-    const v = Math.round(Number(e.detail?.value));
-    if (v === 72) become("merkavah");
+  window.addEventListener("throne:orbit", (e) => {
+    const yaw = Math.abs(Number(e.detail?.yaw) || 0);
+    if (!state.merkavahOnce && yaw > Math.PI * 2) {
+      state.merkavahOnce = true;
+      become("merkavah");
+    }
   });
 
   window.addEventListener("throne:fearnot", (e) => {
@@ -102,58 +98,6 @@ export function createArg({ audio, wheel }) {
     if (e.detail?.fed >= 7) rapture(true);
   });
 
-  window.addEventListener("throne:flee", () => {
-    state.fleeHits += 1;
-    if (state.fleeHits >= 3) {
-      audio.strike();
-      become("hush");
-    }
-  });
-
-  document.querySelectorAll("[data-seal]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-seal");
-      btn.classList.add("lit");
-      btn.setAttribute("aria-pressed", "true");
-      audio.ping("click");
-      if (id === "voice") {
-        audio.setChoir(true);
-        document.getElementById("choir-toggle")?.setAttribute("aria-pressed", "true");
-      }
-      if (id === "fire") audio.strike();
-      if (id === "rim") audio.setDepth(0.72);
-      if (id === "gate") audio.setDepth(0.15);
-      state.seals.push(id);
-      const lastFour = state.seals.slice(-4);
-      const allLit = [...document.querySelectorAll("[data-seal]")].every((b) => b.classList.contains("lit"));
-      if (lastFour.length === 4 && lastFour.every((s, i) => s === SECRET_ORDER[i])) {
-        become("name");
-        return;
-      }
-      if (allLit && throne.aspect !== "name") {
-        become("merkavah");
-      }
-    });
-  });
-
-  document.getElementById("choir-toggle")?.addEventListener("click", () => {
-    const next = !throne.choir;
-    audio.setChoir(next);
-    const btn = document.getElementById("choir-toggle");
-    btn?.setAttribute("aria-pressed", next ? "true" : "false");
-  });
-
-  document.getElementById("depth-slider")?.addEventListener("input", (e) => {
-    audio.setDepth(Number(e.target.value) / 100);
-  });
-
-  document.getElementById("strike")?.addEventListener("click", () => {
-    audio.strike();
-    window.dispatchEvent(new CustomEvent("throne:pulse"));
-  });
-
-  // Return the first shape by typing WITNESS. No labeled reset.
-
   window.addEventListener("keydown", (e) => {
     if (e.target && ["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
     if (e.code === "Space" && throne.entered) {
@@ -162,6 +106,7 @@ export function createArg({ audio, wheel }) {
         state.holdingHum = true;
         state.choirBeforeHum = throne.choir;
         audio.setChoir(true);
+        audio.utter();
       }
       return;
     }
@@ -182,11 +127,6 @@ export function createArg({ audio, wheel }) {
     if (state.typed.includes("WITNESS")) {
       state.typed = "";
       rapture(false);
-      document.querySelectorAll("[data-seal]").forEach((b) => {
-        b.classList.remove("lit");
-        b.setAttribute("aria-pressed", "false");
-      });
-      state.seals = [];
       become("witness", ASPECT_CAPTIONS.witness);
     }
   });
@@ -196,15 +136,6 @@ export function createArg({ audio, wheel }) {
       audio.setChoir(state.choirBeforeHum);
     }
   });
-
-  window.addEventListener("pointermove", (e) => {
-    if (!throne.entered || e.buttons !== 1) return;
-    if (e.target.closest(".hud-safe, .relic, .orbit, .mouth, .fear-not, button, input, textarea, a")) return;
-    const nx = (e.clientX / window.innerWidth) * 2 - 1;
-    const ny = -((e.clientY / window.innerHeight) * 2 - 1);
-    wheel.tilt(nx, ny);
-  });
-  window.addEventListener("pointerup", () => wheel.tilt(0, 0));
 
   window.addEventListener("hashchange", applyHash);
 

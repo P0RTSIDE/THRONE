@@ -6,4 +6,4 @@ Open `index.html` through any local static server. Modules will not load from a 
 
 Calm Mode and mute stay in the corner. If your system asks for less motion, Calm Mode is already on.
 
-Hold the center. The rest is not labeled.
+Drag to turn. Hold the center. The rest is not labeled.
