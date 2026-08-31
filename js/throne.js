@@ -16,6 +16,17 @@ export const throne = {
   aspect: "witness",
   depth: 0.45,
   choir: false,
+  raptured: false,
+  lore: {
+    feared: 0,
+    fed: 0,
+    raptured: 0,
+    named: false,
+    confessed: false,
+    canOffer: false,
+    offered: false,
+    lock: false,
+  },
 };
 
 /** Deterministic 0..1 PRNG (Mulberry32). */

@@ -23,6 +23,81 @@ import { throne, randRange, randInt, showCaption } from "./throne.js";
 /** Invented sigils. Not Hebrew, not any real liturgical script. */
 const SIGILS = "◊◈◉◎◌◍◐◑◒◓◔◕◘◙☿♄♃♁☥⚜⚝✦✧✩✪✫✬✭✮✯✰❋❊❈❇✺✹✸✷✶✵✴✳";
 
+const BLURBS = {
+  angel: [
+    "full of eyes within",
+    "the wheels moved as they went",
+    "a voice of many",
+    "face within face",
+    "it is not one",
+    "you are already seen",
+    "the mouth is not a mouth",
+    "eyes behind eyes",
+    "the center is a door",
+    "the living thing had four",
+    "the air is full of lids",
+    "what you hear is the looking",
+  ],
+  father: [
+    "you came about a boy",
+    "bring him back",
+    "he was small enough to carry",
+    "the hill is still in your hands",
+    "you told him not to look down",
+  ],
+  fear: [
+    "you said it to him",
+    "he believed you",
+    "a courtesy, then a cord",
+    "fear is a courtesy",
+    "the words arrived late",
+  ],
+  fed: [
+    "a substitute is not a son",
+    "rams keep failing",
+    "the mouth wants the hand",
+    "offerings of language are cheap",
+  ],
+  inside: [
+    "the boy is not in the wheels",
+    "you brought the morning with you",
+    "this is as close as a father gets",
+    "trade requires a body",
+  ],
+  named: [
+    "he still turns toward that sound",
+    "do not say it like a prayer",
+    "the hill heard it first",
+    "naming him does not return him",
+  ],
+  confessed: [
+    "no voice arrived in time",
+    "you finished the instruction",
+    "it will take the other body now",
+    "the ram did not come",
+    "hold the center until you are the offering",
+  ],
+  offered: [
+    "he blinks because he can",
+    "the count has a new rim",
+    "do not ask him about the hill",
+    "he is looking at you",
+    "you are the rest of the eyes",
+  ],
+};
+
+function blurbPool() {
+  const lore = throne.lore;
+  if (lore.offered) return BLURBS.offered;
+  if (lore.confessed) return BLURBS.confessed;
+  if (lore.named) return BLURBS.named;
+  if (lore.raptured >= 1 && throne.raptured) return BLURBS.inside;
+  if (lore.fed >= 1) return BLURBS.fed;
+  if (lore.feared >= 1) return BLURBS.fear;
+  if (throne.entered) return [...BLURBS.angel, ...BLURBS.father];
+  return BLURBS.angel;
+}
+
 function wrapGlyphs(el) {
   if (el.dataset.wrapped) return;
   const raw = el.textContent;
@@ -56,6 +131,7 @@ export function createChaosUI({ audio, wheel }) {
   const pulseEl = document.getElementById("pulse");
   const trail = document.getElementById("cursor-trail");
   const geo = document.getElementById("sacred-geo");
+  const chroma = document.getElementById("chromatic");
   const daysEl = document.getElementById("days-value");
   const bar = document.getElementById("comprehension-bar");
   const barVal = document.getElementById("comprehension-value");
@@ -67,9 +143,8 @@ export function createChaosUI({ audio, wheel }) {
       window.dispatchEvent(new CustomEvent("throne:flee"));
     });
   });
-  const planes = [...document.querySelectorAll("[data-swap]")];
+  const driftEls = [...document.querySelectorAll("[data-drift]")];
   const glitchEls = [...document.querySelectorAll("[data-glitch]")].filter((el) => !el.closest("#veil"));
-  const sections = [...document.querySelectorAll("[data-section]")];
 
   glitchEls.forEach(wrapGlyphs);
 
@@ -81,7 +156,24 @@ export function createChaosUI({ audio, wheel }) {
   let lastSwap = 0;
   let invertUntil = 0;
   let fearCount = 0;
+  let fed = 0;
   const MAX_FEAR = 21;
+  let lastBlurb = "";
+  let nextBlurbAt = 0;
+
+  function speakBlurb(ms = 2800) {
+    if (throne.calm || !throne.entered || throne.lore.lock) return;
+    if (document.getElementById("caption")?.classList.contains("show")) return;
+    const pool = blurbPool();
+    if (!pool.length) return;
+    let line = pool[randInt(0, pool.length - 1)];
+    if (pool.length > 1) {
+      while (line === lastBlurb) line = pool[randInt(0, pool.length - 1)];
+    }
+    lastBlurb = line;
+    showCaption(line, ms);
+    audio.utter();
+  }
 
   const particles = [];
   const coarse = window.matchMedia("(pointer: coarse)").matches;
@@ -99,6 +191,10 @@ export function createChaosUI({ audio, wheel }) {
   window.addEventListener("resize", sizeTrail);
 
   buildSacredGeometry(geo);
+  wireOrbit(audio);
+  wireMouth(audio, wheel);
+  wireGaze(audio, wheel);
+  wireWindows(audio, wheel);
 
   // ----- Cursor + particles -----
   window.addEventListener("pointermove", (e) => {
@@ -107,7 +203,7 @@ export function createChaosUI({ audio, wheel }) {
     throne.mouse.ndcX = (e.clientX / window.innerWidth) * 2 - 1;
     throne.mouse.ndcY = -(e.clientY / window.innerHeight) * 2 + 1;
     if (throne.calm || coarse || !throne.entered) return;
-    if (particles.length < (throne.quality === "low" ? 40 : 90)) {
+    if (particles.length < (throne.quality === "low" ? 12 : 22)) {
       particles.push({
         x: e.clientX,
         y: e.clientY,
@@ -120,39 +216,113 @@ export function createChaosUI({ audio, wheel }) {
     }
   });
 
-  // ----- Nav: the way is not the way you expect -----
-  document.getElementById("liturgy-nav")?.addEventListener("click", (e) => {
-    const a = e.target.closest("[data-nav]");
-    if (!a) return;
-    e.preventDefault();
-    if (!sections.length) return;
-    const pick = sections[Math.floor(throne.rng() * sections.length)];
-    pick.scrollIntoView({ behavior: throne.calm ? "smooth" : "auto", block: "center" });
-    showCaption("the way is not the way you expect");
-    audio.ping("click");
-  });
+  // ----- Fear Not: click multiplies, hold unmakes, drag into the mouth to feed it -----
+  function nearMouth(x, y) {
+    const mouth = document.getElementById("mouth");
+    if (!mouth) return false;
+    const r = mouth.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const hit = Math.max(r.width, r.height) * 0.9;
+    return Math.hypot(x - cx, y - cy) < hit;
+  }
 
-  // ----- Fear Not -----
+  function unmakeFear(btn) {
+    if (btn.classList.contains("unmaking")) return;
+    btn.classList.add("unmaking");
+    audio.unmake();
+    window.dispatchEvent(new CustomEvent("throne:unmake"));
+    if (btn.classList.contains("spawned")) fearCount = Math.max(0, fearCount - 1);
+    setTimeout(() => btn.remove(), 560);
+    if (!document.getElementById("fear-not")) {
+      setTimeout(() => {
+        if (document.getElementById("fear-not")) return;
+        const n = document.createElement("button");
+        n.id = "fear-not";
+        n.className = "fear-not relic";
+        n.type = "button";
+        n.textContent = "Fear Not";
+        n.style.left = "50%";
+        n.style.top = "auto";
+        n.style.bottom = "16px";
+        document.getElementById("firmament")?.appendChild(n);
+        bindFear(n);
+      }, 8000);
+    }
+  }
+
+  function consumeFear(btn) {
+    unmakeFear(btn);
+    wheel.openDistantEye();
+    audio.consume();
+    audio.utter();
+    fed += 1;
+    window.dispatchEvent(new CustomEvent("throne:fed", { detail: { fed } }));
+    triggerPulse();
+  }
+
   function bindFear(btn) {
-    btn.addEventListener("click", (e) => {
+    let downAt = 0;
+    let startX = 0;
+    let startY = 0;
+    let dragging = false;
+    let holdTimer = 0;
+
+    btn.addEventListener("pointerdown", (e) => {
       e.stopPropagation();
+      downAt = performance.now();
+      startX = e.clientX;
+      startY = e.clientY;
+      dragging = false;
+      btn.setPointerCapture(e.pointerId);
+      holdTimer = window.setTimeout(() => {
+        if (!dragging) unmakeFear(btn);
+      }, 650);
+    });
+    btn.addEventListener("pointermove", (e) => {
+      if (!downAt) return;
+      const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
+      if (dist > 14) {
+        dragging = true;
+        clearTimeout(holdTimer);
+        btn.classList.add("dragging");
+        btn.style.left = `${e.clientX}px`;
+        btn.style.top = `${e.clientY}px`;
+        btn.style.position = "fixed";
+        btn.style.transform = "translate(-50%, -50%)";
+      }
+    });
+    btn.addEventListener("pointerup", (e) => {
+      clearTimeout(holdTimer);
+      btn.classList.remove("dragging");
+      const held = performance.now() - downAt;
+      downAt = 0;
+      if (btn.classList.contains("unmaking")) return;
+      if (dragging && nearMouth(e.clientX, e.clientY)) {
+        consumeFear(btn);
+        dragging = false;
+        return;
+      }
+      dragging = false;
+      if (held >= 640) return;
       audio.ping("click");
+      audio.utter();
       if (!throne.calm) {
         document.body.classList.add("shudder");
         wheel.shudder();
         setTimeout(() => document.body.classList.remove("shudder"), 900);
       }
-      showCaption("be not afraid is an instruction, not a comfort");
       window.dispatchEvent(new CustomEvent("throne:fearnot", { detail: { muted: throne.muted } }));
       if (throne.calm) return;
-      const spawn = Math.min(3, MAX_FEAR - 1 - fearCount);
+      const spawn = Math.min(1, MAX_FEAR - 1 - fearCount);
       for (let i = 0; i < spawn; i++) {
         const n = btn.cloneNode(true);
+        n.removeAttribute("id");
         n.classList.add("spawned");
-        n.style.left = `${randRange(8, 86)}vw`;
-        n.style.top = `${randRange(18, 82)}vh`;
-        n.style.transform = `rotate(${randRange(-18, 18)}deg) scale(${randRange(0.62, 0.92)})`;
-        document.body.appendChild(n);
+        n.style.left = `${randRange(18, 82)}%`;
+        n.style.top = `${randRange(22, 78)}%`;
+        n.style.transform = `rotate(${randRange(-12, 12)}deg) scale(${randRange(0.7, 0.9)})`;
+        document.getElementById("firmament")?.appendChild(n);
         fearCount++;
         bindFear(n);
       }
@@ -161,87 +331,337 @@ export function createChaosUI({ audio, wheel }) {
   const fearRoot = document.getElementById("fear-not");
   if (fearRoot) bindFear(fearRoot);
 
-  // ----- Petition: witnessed, then gone -----
-  document.getElementById("petition-form")?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    audio.ping("click");
-    const data = new FormData(e.target);
-    window.dispatchEvent(
-      new CustomEvent("throne:petition", {
-        detail: {
-          forgotten: data.get("forgotten") || "",
-          petition: data.get("petition") || "",
-          direction: data.get("direction") || "",
-        },
-      })
-    );
-    if (!witness) return;
-    witness.hidden = false;
-    showCaption("Your petition has been witnessed", 800);
-    setTimeout(() => {
-      witness.hidden = true;
-      e.target.reset();
-    }, 720);
-  });
-
-  // ----- Slider: inert until release -----
-  const slider = document.getElementById("rim-slider");
-  slider?.addEventListener("input", () => {
-    /* deliberately does nothing while dragging */
-  });
-  slider?.addEventListener("pointerup", () => {
-    audio.ping("click");
-    wheel.openDistantEye();
-    wheel.setPalette(randInt(0, 2));
-    document.body.classList.remove("palette-gold", "palette-white", "palette-violet");
-    document.body.classList.add(["palette-gold", "palette-white", "palette-violet"][throne.palette]);
-    showCaption("something distant has opened");
-    triggerPulse();
-    window.dispatchEvent(new CustomEvent("throne:rim", { detail: { value: Number(slider.value) } }));
-  });
-
-  // ----- Averted button: only counts when you are not on it -----
-  let avertedArmed = false;
-  averted?.addEventListener("pointerenter", () => {
-    avertedArmed = true;
-    audio.ping("hover");
-  });
-  averted?.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    showCaption("it will not be touched directly");
-  });
-  document.addEventListener("click", (e) => {
-    if (!avertedArmed || !throne.entered) return;
-    if (e.target.closest(".hud-safe")) return;
-    if (averted && (averted === e.target || averted.contains(e.target))) return;
-    avertedArmed = false;
-    showCaption("looking away was the approach");
-    audio.ping("click");
-    triggerPulse();
-    document.body.classList.toggle("palette-violet");
-  });
-
-  // ----- Hover bells (sparse: only planes, not every pixel) -----
-  document.querySelectorAll(".plane a, .plane button, .plane label").forEach((el) => {
+  document.querySelectorAll(".relic").forEach((el) => {
     let last = 0;
     el.addEventListener("pointerenter", () => {
       const now = performance.now();
-      if (now - last < 400) return;
+      if (now - last < 350) return;
       last = now;
-      if (throne.rng() > 0.45) audio.ping("hover");
+      audio.ping("hover");
     });
   });
 
   window.addEventListener("throne:cycle", () => {
     audio.swell();
-    triggerPulse();
-    maybeStrobe(true);
-    if (!throne.calm && throne.rng() > 0.6) {
-      showCaption("it has already looked at you");
-    }
+    wheel.pulse();
+    if (throne.time > 14 || throne.lore.feared || throne.lore.fed) speakBlurb(1600);
   });
   window.addEventListener("throne:pulse", () => triggerPulse());
+
+  function wireOrbit(audio) {
+    const orbit = document.getElementById("orbit");
+    if (!orbit) return;
+    let dragging = false;
+    function apply(clientX, clientY) {
+      const r = orbit.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      const ang = Math.atan2(clientY - cy, clientX - cx);
+      const deg = ((ang * 180) / Math.PI + 360 + 90) % 360;
+      orbit.style.transform = `translate(-50%, -50%) rotate(${deg}deg)`;
+      const value = (deg / 360) * 100;
+      audio.setDepth(value / 100);
+      return value;
+    }
+    orbit.addEventListener("pointerdown", (e) => {
+      dragging = true;
+      document.body.classList.add("rim-live");
+      orbit.setPointerCapture(e.pointerId);
+      apply(e.clientX, e.clientY);
+      audio.ping("hover");
+    });
+    orbit.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      apply(e.clientX, e.clientY);
+    });
+    orbit.addEventListener("pointerup", (e) => {
+      document.body.classList.remove("rim-live");
+      if (!dragging) return;
+      dragging = false;
+      const value = apply(e.clientX, e.clientY);
+      window.dispatchEvent(new CustomEvent("throne:rim", { detail: { value } }));
+    });
+  }
+
+  function wireMouth(audio, wheel) {
+    const mouth = document.getElementById("mouth");
+    if (!mouth) return;
+    let hold = 0;
+    mouth.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (throne.lore.offered) return;
+      if (throne.raptured) {
+        if (throne.lore.canOffer) {
+          document.documentElement.classList.add("offering");
+          audio.charge(true);
+          audio.ping("mouth");
+          hold = window.setTimeout(() => {
+            document.documentElement.classList.remove("offering", "charging");
+            audio.charge(false);
+            window.dispatchEvent(new CustomEvent("throne:offer"));
+          }, 2600);
+        } else {
+          window.dispatchEvent(new CustomEvent("throne:rapture", { detail: { on: false } }));
+          audio.ping("mouth");
+        }
+        return;
+      }
+      document.documentElement.classList.add("charging");
+      audio.charge(true);
+      audio.ping("mouth");
+      hold = window.setTimeout(() => {
+        document.documentElement.classList.remove("charging");
+        audio.charge(false);
+        window.dispatchEvent(new CustomEvent("throne:rapture", { detail: { on: true } }));
+      }, 1350);
+    });
+    const cancel = () => {
+      clearTimeout(hold);
+      document.documentElement.classList.remove("charging", "offering");
+      audio.charge(false);
+    };
+    mouth.addEventListener("pointerup", cancel);
+    mouth.addEventListener("pointerleave", cancel);
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && throne.raptured && !throne.lore.offered) {
+        clearTimeout(hold);
+        document.documentElement.classList.remove("offering", "charging");
+        window.dispatchEvent(new CustomEvent("throne:rapture", { detail: { on: false } }));
+      }
+    });
+  }
+
+  function wireGaze(audio, wheel) {
+    let down = false;
+    let lastX = 0;
+    let lastY = 0;
+    let traveled = 0;
+    let lastZoom = 0;
+    let panX = 0;
+    let panY = 0;
+    const world = document.getElementById("world");
+
+    function paintWorld() {
+      if (!world) return;
+      const o = wheel.getOrbit ? wheel.getOrbit() : { yaw: 0 };
+      world.style.transform = `translate3d(${panX.toFixed(1)}px, ${panY.toFixed(1)}px, 0) rotate(${(o.yaw * 7).toFixed(2)}deg)`;
+    }
+
+    function endGaze() {
+      if (!down) return;
+      down = false;
+      document.body.classList.remove("gazing");
+      audio.scrape(0);
+      const orbit = wheel.getOrbit ? wheel.getOrbit() : { yaw: 0, pitch: 0 };
+      window.dispatchEvent(new CustomEvent("throne:orbit", { detail: { ...orbit, traveled } }));
+      if (traveled > 180 && (throne.lore.feared || throne.lore.fed || throne.time > 24)) speakBlurb(2200);
+      traveled = 0;
+    }
+
+    window.addEventListener("throne:offer", () => {
+      panX = 0;
+      panY = 0;
+      paintWorld();
+    });
+
+    window.addEventListener("pointerdown", (e) => {
+      if (!throne.entered || e.button !== 0) return;
+      const el = e.target instanceof Element ? e.target : null;
+      if (el?.closest(".hud-safe, .veil, .mouth, .fear-not, .plane, .witness, button, input, textarea, label, a")) return;
+      down = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      traveled = 0;
+      e.preventDefault();
+      document.body.classList.add("gazing");
+      audio.ping("drag");
+    });
+    window.addEventListener("pointermove", (e) => {
+      if (!down) return;
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      const speed = Math.hypot(dx, dy);
+      traveled += speed;
+      panX += dx;
+      panY += dy;
+      wheel.orbit(dx, dy);
+      paintWorld();
+      audio.scrape(speed);
+      const pitch = Math.abs((wheel.getOrbit ? wheel.getOrbit() : { pitch: 0 }).pitch);
+      audio.setDepth(Math.max(0.05, Math.min(1, 0.2 + pitch * 0.7)));
+    });
+    window.addEventListener("pointerup", endGaze);
+    window.addEventListener("pointercancel", endGaze);
+
+    window.addEventListener("wheel", (e) => {
+      if (!throne.entered || throne.calm) return;
+      if (e.target.closest(".hud-safe")) return;
+      e.preventDefault();
+      wheel.nudgeZ(e.deltaY * 0.004);
+      audio.setDepth(Math.max(0, Math.min(1, throne.depth + (e.deltaY > 0 ? 0.03 : -0.03))));
+      const now = performance.now();
+      if (now - lastZoom > 180) {
+        lastZoom = now;
+        audio.ping("zoom");
+      }
+    }, { passive: false });
+  }
+
+  function wakePlane(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add("wake");
+    el.style.zIndex = "16";
+    window.setTimeout(() => {
+      el.classList.remove("wake");
+      el.style.zIndex = "";
+    }, 1400);
+  }
+
+  function wireWindows(audio, wheel) {
+    document.getElementById("liturgy-nav")?.addEventListener("click", (e) => {
+      const a = e.target.closest("[data-nav]");
+      if (!a) return;
+      e.preventDefault();
+      const id = a.getAttribute("data-nav");
+      audio.ping("click");
+      if (id === "wheel") {
+        wheel.shudder();
+        wheel.pulse();
+        triggerPulse();
+        showCaption("it answers the count", 2400);
+        return;
+      }
+      wakePlane(id);
+      if (id === "measure") {
+        showCaption("the rim is farther than the hand", 2400);
+      } else if (id === "petition") {
+        document.querySelector("#petition-form input")?.focus();
+        showCaption("say it. it will not keep the name.", 2600);
+      } else if (id === "attendants") {
+        showCaption("they will not introduce themselves", 2400);
+      } else if (id === "approach") {
+        showCaption("looking away was always the door", 2400);
+      }
+    });
+
+    const rim = document.getElementById("rim-slider");
+    rim?.addEventListener("pointerup", () => {
+      if (!throne.entered) return;
+      audio.ping("click");
+      wheel.openDistantEye();
+      wheel.pulse();
+      triggerPulse();
+      showCaption("something distant has opened", 2800);
+      window.dispatchEvent(new CustomEvent("throne:rim", { detail: { value: Number(rim.value) } }));
+    });
+
+    const depth = document.getElementById("depth-slider");
+    depth?.addEventListener("input", () => {
+      const v = Number(depth.value) / 100;
+      audio.setDepth(v);
+      wheel.nudgeZ((v - 0.45) * 0.8);
+    });
+
+    const choirBtn = document.getElementById("choir-toggle");
+    choirBtn?.addEventListener("click", () => {
+      const on = !throne.choir;
+      audio.setChoir(on);
+      choirBtn.setAttribute("aria-pressed", on ? "true" : "false");
+      choirBtn.textContent = on ? "Close the choir" : "Open the choir";
+      audio.ping("click");
+      showCaption(on ? "the waters rise in the throat" : "the waters fall back", 2400);
+    });
+
+    document.getElementById("strike")?.addEventListener("click", () => {
+      audio.strike();
+      wheel.pulse();
+      wheel.shudder();
+      triggerPulse();
+      maybeStrobe(true);
+      showCaption("the rim remembers the blow", 2400);
+      window.dispatchEvent(new CustomEvent("throne:strike"));
+    });
+
+    document.getElementById("reset-aspect")?.addEventListener("click", () => {
+      audio.ping("click");
+      window.dispatchEvent(new CustomEvent("throne:return"));
+    });
+
+    document.querySelectorAll("[data-seal]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-seal");
+        document.querySelectorAll("[data-seal]").forEach((b) => b.setAttribute("aria-pressed", "false"));
+        btn.setAttribute("aria-pressed", "true");
+        audio.ping("click");
+        window.dispatchEvent(new CustomEvent("throne:seal", { detail: { id } }));
+      });
+    });
+
+    document.getElementById("petition-form")?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (!throne.entered) return;
+      audio.ping("click");
+      const data = new FormData(e.target);
+      window.dispatchEvent(
+        new CustomEvent("throne:petition", {
+          detail: {
+            forgotten: String(data.get("forgotten") || ""),
+            petition: String(data.get("petition") || ""),
+          },
+        })
+      );
+      if (witness) {
+        witness.hidden = false;
+        window.setTimeout(() => {
+          witness.hidden = true;
+          e.target.reset();
+        }, 780);
+      }
+      triggerPulse();
+    });
+
+    let avertedArmed = false;
+    averted?.addEventListener("pointerenter", () => {
+      avertedArmed = true;
+      audio.ping("hover");
+    });
+    averted?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      showCaption("it will not be touched directly", 2200);
+    });
+    document.addEventListener("click", (e) => {
+      if (!avertedArmed || !throne.entered) return;
+      if (e.target.closest(".hud-safe, .averted")) return;
+      avertedArmed = false;
+      audio.ping("click");
+      triggerPulse();
+      wheel.openDistantEye();
+      showCaption("looking away was the approach", 2800);
+    });
+
+    fleeEls.forEach((el) => {
+      el.addEventListener("click", () => {
+        audio.ping("click");
+        wheel.shudder();
+        showCaption("it runs because you reached", 2400);
+      });
+    });
+
+    document.querySelectorAll(".plane button, .plane a, .plane label, .plane input").forEach((el) => {
+      let last = 0;
+      el.addEventListener("pointerenter", () => {
+        const now = performance.now();
+        if (now - last < 400) return;
+        last = now;
+        if (throne.rng() > 0.4) audio.ping("hover");
+      });
+    });
+  }
 
   function triggerPulse() {
     if (throne.calm) return;
@@ -340,9 +760,16 @@ export function createChaosUI({ audio, wheel }) {
 
   // ----- Per-frame chaos (called from main RAF) -----
   function tick(t) {
-    const dt = 0.016;
+    try {
+      paintComprehension();
+      tickChaos(t);
+    } catch {
+      /* keep the loop alive */
+    }
+  }
 
-    // Comprehension bar: inconsistent velocity, hard reset before 100.
+  function paintComprehension() {
+    const dt = 0.016;
     if (!throne.calm) {
       if (throne.rng() < 0.01) compVel = randRange(-6, 14);
       comprehension += compVel * dt;
@@ -356,8 +783,9 @@ export function createChaosUI({ audio, wheel }) {
     const shown = Math.max(0, Math.min(99, comprehension));
     if (bar) bar.style.width = `${shown}%`;
     if (barVal) barVal.textContent = String(Math.floor(shown));
+  }
 
-    // Geometry opacity flicker (slow, not a strobe).
+  function tickChaos(t) {
     if (geo && !throne.calm) {
       geo.style.opacity = String(0.12 + 0.22 * (0.5 + 0.5 * Math.sin(t * 0.0011)));
     }
@@ -394,22 +822,14 @@ export function createChaosUI({ audio, wheel }) {
     }
     if (throne.calm) glitchEls.forEach(restoreGlyphs);
 
-    // Layout swap when unobserved: exchange margins and tilt, not DOM order.
-    if (!throne.calm && t - lastSwap > 9000 + throne.rng() * 7000) {
+    if (!throne.calm && t - lastSwap > 7000 + throne.rng() * 6000) {
       lastSwap = t;
-      const live = planes.filter((p) => !p.matches(":hover"));
-      if (live.length >= 2) {
+      const live = driftEls.filter((p) => !p.matches(":hover"));
+      if (live.length >= 1) {
         const a = live[randInt(0, live.length - 1)];
-        let b = live[randInt(0, live.length - 1)];
-        if (a === b) b = live[(live.indexOf(a) + 1) % live.length];
-        a.style.transition = "transform 0.9s ease, margin 0.9s ease";
-        b.style.transition = "transform 0.9s ease, margin 0.9s ease";
-        const am = a.style.marginLeft;
-        const at = a.style.transform;
-        a.style.marginLeft = b.style.marginLeft || `${randRange(4, 36)}vw`;
-        b.style.marginLeft = am || `${randRange(4, 36)}vw`;
-        a.style.transform = at && at.includes("rotate") ? b.style.transform : `rotate(${randRange(-8, 8)}deg)`;
-        b.style.transform = `rotate(${randRange(-8, 8)}deg)`;
+        a.style.transition = "left 1.4s ease, top 1.4s ease";
+        a.style.left = `${randRange(4, 88)}%`;
+        a.style.top = `${randRange(8, 86)}%`;
       }
     }
 
@@ -431,8 +851,35 @@ export function createChaosUI({ audio, wheel }) {
       });
     }
 
+    // Parallax: debris leans away from the gaze.
+    if (!throne.calm && throne.entered) {
+      const nx = throne.mouse.ndcX;
+      const ny = throne.mouse.ndcY;
+      document.querySelectorAll(".floater:not(.burst)").forEach((el, i) => {
+        const k = ((i % 5) + 1) * 4;
+        el.style.translate = `${(-nx * k).toFixed(1)}px ${(-ny * k).toFixed(1)}px`;
+      });
+      if (geo) {
+        geo.style.translate = `${(-nx * 8).toFixed(1)}px ${(-ny * 6).toFixed(1)}px`;
+      }
+      if (chroma) {
+        const speed = Math.hypot(nx, ny);
+        chroma.style.opacity = String(0.45 + speed * 0.4);
+      }
+    } else if (chroma) {
+      chroma.style.opacity = "";
+    }
+
     // Occasional ambient strobe (still 420ms gated).
     if (!throne.calm && throne.rng() < 0.003) maybeStrobe(false);
+
+    if (!throne.calm && throne.entered) {
+      if (!nextBlurbAt) nextBlurbAt = t + 22000;
+      if (t > nextBlurbAt) {
+        nextBlurbAt = t + 8000 + throne.rng() * 12000;
+        speakBlurb(3400);
+      }
+    }
 
     // Cursor trail.
     if (ctx2d && trail && !throne.calm && !coarse) {
@@ -449,7 +896,7 @@ export function createChaosUI({ audio, wheel }) {
         ctx2d.save();
         ctx2d.translate(p.x, p.y);
         ctx2d.globalAlpha = p.life * 0.7;
-        ctx2d.strokeStyle = p.gold ? "#f0d078" : "#c77dff";
+        ctx2d.strokeStyle = p.gold ? "#f0d078" : "#8a5a22";
         ctx2d.fillStyle = "rgba(244,241,232,0.8)";
         ctx2d.beginPath();
         ctx2d.ellipse(0, 0, p.r, p.r * 0.55, 0, 0, Math.PI * 2);
@@ -466,6 +913,8 @@ export function createChaosUI({ audio, wheel }) {
         const y = throne.mouse.y;
         ctx2d.save();
         ctx2d.translate(x, y);
+        const spinMul = document.body.classList.contains("gazing") ? 2.2 : 1;
+        ctx2d.rotate((t * 0.0018) * spinMul);
         ctx2d.strokeStyle = "#f0d078";
         ctx2d.lineWidth = 1.2;
         ctx2d.beginPath();
@@ -476,7 +925,7 @@ export function createChaosUI({ audio, wheel }) {
         ctx2d.stroke();
         ctx2d.beginPath();
         ctx2d.arc(0, 0, 2.2, 0, Math.PI * 2);
-        ctx2d.fillStyle = "#6b2d9a";
+        ctx2d.fillStyle = "#3d1c08";
         ctx2d.fill();
         ctx2d.restore();
       }
@@ -491,11 +940,13 @@ export function createChaosUI({ audio, wheel }) {
       if (on) {
         strobeEl?.classList.remove("on");
         glitchEls.forEach(restoreGlyphs);
-        planes.forEach((p) => {
-          p.style.transform = "";
-        });
         particles.length = 0;
         if (ctx2d && trail) ctx2d.clearRect(0, 0, trail.width, trail.height);
+        document.body.classList.remove("cycle-kick", "shock", "reversed", "seal-wake", "frenzy", "jitter", "rim-live", "aspect-wake");
+        document.querySelectorAll(".floater").forEach((el) => {
+          el.style.translate = "";
+          el.style.transform = "";
+        });
       }
     },
   };

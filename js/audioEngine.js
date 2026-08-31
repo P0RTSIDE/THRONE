@@ -44,6 +44,14 @@ export function createAudioEngine() {
   let formantMul = 1;
   let reverseAlways = false;
   let droneMul = 1;
+  let raptureMul = 1;
+  let delayG = null;
+  let scrapeGain = null;
+  let scrapeFilter = null;
+  let chargeOsc = null;
+  let chargeGain = null;
+  let noiseSrc = null;
+  let raf = 0;
 
   function ensureContext() {
     if (ctx) return ctx;
@@ -139,12 +147,30 @@ export function createAudioEngine() {
     noiseSrc.start();
     filters.push(noiseLp);
 
+    scrapeFilter = c.createBiquadFilter();
+    scrapeFilter.type = "bandpass";
+    scrapeFilter.frequency.value = 380;
+    scrapeFilter.Q.value = 1.8;
+    scrapeGain = c.createGain();
+    scrapeGain.gain.value = 0;
+    noiseSrc.connect(scrapeFilter);
+    scrapeFilter.connect(scrapeGain);
+    scrapeGain.connect(comp);
+
     extraOsc = makeOsc(c, "sine", base * 3.01);
     extraGain = c.createGain();
     extraGain.gain.value = 0.0001;
     extraOsc.connect(extraGain);
     extraGain.connect(droneGain);
     extraOsc.start();
+
+    const delay = c.createDelay(0.45);
+    delay.delayTime.value = 0.16;
+    delayG = c.createGain();
+    delayG.gain.value = 0;
+    formantGain.connect(delay);
+    delay.connect(delayG);
+    delayG.connect(comp);
 
     // --- Formant "voices": a pulse-adjacent saw into three moving bandpasses ---
     formantOsc = makeOsc(c, "sawtooth", 110);
@@ -193,7 +219,10 @@ export function createAudioEngine() {
       }
       // Sparse presence: voices swell in and out so they are not a constant choir.
       const presence =
-        (0.02 + 0.04 * Math.max(0, Math.sin(now * 0.19) * Math.sin(now * 0.05))) * choirMul * formantMul;
+        (0.02 + 0.04 * Math.max(0, Math.sin(now * 0.19) * Math.sin(now * 0.05))) *
+        choirMul *
+        formantMul *
+        raptureMul;
       formantGain.gain.setTargetAtTime(presence, ctx.currentTime, 0.4);
     }
     if (droneGain) droneGain.gain.setTargetAtTime(0.22 * droneMul, ctx.currentTime, 0.35);
@@ -235,29 +264,100 @@ export function createAudioEngine() {
     setCalm(on) {
       throne.calm = on;
       this.applyFlags();
+      this.scrape(0);
+      this.charge(false);
     },
     /** Interaction glass/bell. Volume-capped FM ping. */
     ping(kind = "click") {
       if (!started || !ctx || throne.muted || throne.calm) return;
       const c = ctx;
       const t0 = c.currentTime;
-      const carrierF = kind === "hover" ? randRange(1400, 2400) : randRange(680, 1600);
-      const car = makeOsc(c, "sine", carrierF);
+      const table = {
+        hover: { f: [1400, 2400], g: 0.08, d: 0.7 },
+        click: { f: [680, 1600], g: 0.18, d: 1.1 },
+        drag: { f: [90, 220], g: 0.14, d: 0.45 },
+        zoom: { f: [240, 520], g: 0.12, d: 0.55 },
+        mouth: { f: [160, 280], g: 0.2, d: 1.4 },
+      };
+      const spec = table[kind] || table.click;
+      const carrierF = randRange(spec.f[0], spec.f[1]);
+      const car = makeOsc(c, kind === "drag" || kind === "mouth" ? "triangle" : "sine", carrierF);
       const mod = makeOsc(c, "sine", carrierF * randRange(1.4, 2.6));
       const modGain = c.createGain();
-      modGain.gain.value = randRange(80, 220);
+      modGain.gain.value = kind === "drag" ? randRange(20, 60) : randRange(80, 220);
       const g = c.createGain();
       g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(kind === "hover" ? 0.08 : 0.16, t0 + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + randRange(0.5, 1.3));
+      g.gain.exponentialRampToValueAtTime(spec.g, t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + spec.d);
       mod.connect(modGain);
       modGain.connect(car.frequency);
       car.connect(g);
       g.connect(bellGain);
       car.start(t0);
       mod.start(t0);
-      car.stop(t0 + 1.4);
-      mod.stop(t0 + 1.4);
+      car.stop(t0 + spec.d + 0.2);
+      mod.stop(t0 + spec.d + 0.2);
+    },
+    /** Grit that follows drag speed. Zero to rest. */
+    scrape(speed) {
+      if (!scrapeGain || !ctx) return;
+      const t = ctx.currentTime;
+      const g = !started || throne.muted || throne.calm ? 0 : Math.min(0.22, Math.max(0, speed) * 0.014);
+      scrapeGain.gain.setTargetAtTime(g, t, 0.05);
+      if (scrapeFilter) {
+        scrapeFilter.frequency.setTargetAtTime(260 + Math.min(speed, 48) * 16, t, 0.08);
+      }
+    },
+    /** Hold-the-mouth rising tone. */
+    charge(on) {
+      if (!started || !ctx) return;
+      const t = ctx.currentTime;
+      if (on) {
+        if (throne.muted || throne.calm) return;
+        if (chargeOsc) {
+          try { chargeOsc.stop(); } catch { /* already stopped */ }
+          chargeOsc = null;
+        }
+        chargeOsc = makeOsc(ctx, "sine", 64);
+        chargeGain = ctx.createGain();
+        chargeGain.gain.setValueAtTime(0.0001, t);
+        chargeGain.gain.exponentialRampToValueAtTime(0.16, t + 0.06);
+        chargeOsc.frequency.exponentialRampToValueAtTime(310, t + 1.32);
+        chargeOsc.connect(chargeGain);
+        chargeGain.connect(bellGain);
+        chargeOsc.start(t);
+      } else if (chargeGain) {
+        chargeGain.gain.cancelScheduledValues(t);
+        chargeGain.gain.setTargetAtTime(0.0001, t, 0.04);
+        const osc = chargeOsc;
+        chargeOsc = null;
+        window.setTimeout(() => {
+          try { osc?.stop(); } catch { /* already stopped */ }
+        }, 180);
+      }
+    },
+    /** Short invented voice for blurbs and answers. */
+    utter() {
+      if (!started || !ctx || throne.muted || throne.calm) return;
+      const c = ctx;
+      const t0 = c.currentTime;
+      const freqs = [randRange(96, 170), randRange(220, 410), randRange(680, 1280)];
+      freqs.forEach((f, i) => {
+        const osc = makeOsc(c, i === 2 ? "sawtooth" : "sine", f);
+        const bp = c.createBiquadFilter();
+        bp.type = "bandpass";
+        bp.frequency.value = f * randRange(1.6, 3.4);
+        bp.Q.value = 7;
+        const g = c.createGain();
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.11 - i * 0.025, t0 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + randRange(0.4, 1.05));
+        osc.connect(bp);
+        bp.connect(g);
+        g.connect(bellGain);
+        osc.start(t0);
+        osc.stop(t0 + 1.1);
+      });
     },
     /** Wheel-cycle swell: a few dB above the bed, then back. Compressor + cap keep it from spiking. */
     swell() {
@@ -277,6 +377,38 @@ export function createAudioEngine() {
       throne.choir = !!on;
       choirMul = on ? 3.4 : 1;
     },
+    unmake() {
+      if (!started || !ctx || throne.muted) return;
+      const t0 = ctx.currentTime;
+      const car = makeOsc(ctx, "sine", 920);
+      const g = ctx.createGain();
+      car.frequency.exponentialRampToValueAtTime(140, t0 + 0.4);
+      g.gain.setValueAtTime(0.12, t0);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.45);
+      car.connect(g);
+      g.connect(bellGain);
+      car.start(t0);
+      car.stop(t0 + 0.5);
+    },
+    consume() {
+      if (!started || !ctx || throne.muted) return;
+      const t0 = ctx.currentTime;
+      const car = makeOsc(ctx, "triangle", 70);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.18, t0);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.7);
+      car.connect(g);
+      g.connect(droneGain);
+      car.start(t0);
+      car.stop(t0 + 0.75);
+    },
+    setRapture(on) {
+      raptureMul = on ? 2.8 : 1;
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      if (delayG) delayG.gain.setTargetAtTime(on ? 0.38 : 0, t, 0.18);
+      if (droneGain) droneGain.gain.setTargetAtTime(0.22 * droneMul * (on ? 1.35 : 1), t, 0.25);
+    },
     /** Stacked glass chord, still gain-capped. */
     strike() {
       if (!started || !ctx || throne.muted) return;
@@ -293,6 +425,36 @@ export function createAudioEngine() {
         car.stop(t0 + 1.8);
       });
     },
+    /** Father taken. One remaining voice. */
+    offer() {
+      if (!started || !ctx) return;
+      this.setAspect("offered");
+      const c = ctx;
+      const t0 = c.currentTime;
+      if (droneGain) droneGain.gain.setTargetAtTime(0.06, t0, 0.4);
+      if (formantGain) formantGain.gain.setTargetAtTime(0.012, t0, 0.35);
+      if (delayG) delayG.gain.setTargetAtTime(0.22, t0, 0.2);
+      [196, 247, 392].forEach((f, i) => {
+        const osc = makeOsc(c, "sine", f);
+        const g = c.createGain();
+        g.gain.setValueAtTime(0.0001, t0 + i * 0.12);
+        g.gain.exponentialRampToValueAtTime(0.14, t0 + i * 0.12 + 0.04);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.8);
+        osc.connect(g);
+        g.connect(bellGain);
+        osc.start(t0);
+        osc.stop(t0 + 3);
+      });
+      const child = makeOsc(c, "sine", 784);
+      const cg = c.createGain();
+      cg.gain.setValueAtTime(0.0001, t0 + 1.1);
+      cg.gain.exponentialRampToValueAtTime(0.1, t0 + 1.4);
+      cg.gain.exponentialRampToValueAtTime(0.0001, t0 + 5.5);
+      child.connect(cg);
+      cg.connect(bellGain);
+      child.start(t0 + 1.1);
+      child.stop(t0 + 5.6);
+    },
     setAspect(id) {
       aspectId = id;
       const table = {
@@ -304,6 +466,7 @@ export function createAudioEngine() {
         inverted: { formant: 1.4, drone: 0.95, extra: 0.09, noise: 0.28, reverse: true, extraHz: 41 },
         name: { formant: 0.3, drone: 0.55, extra: 0.18, noise: 0.04, reverse: false, extraHz: 73 },
         hush: { formant: 0.15, drone: 0.35, extra: 0.02, noise: 0.03, reverse: false, extraHz: 92 },
+        offered: { formant: 0.4, drone: 0.18, extra: 0.14, noise: 0.02, reverse: false, extraHz: 523 },
       };
       const next = table[id] || table.witness;
       formantMul = next.formant;
