@@ -26,6 +26,10 @@ export const throne = {
     canOffer: false,
     offered: false,
     lock: false,
+    knife: false,
+    face: false,
+    bladeAngel: false,
+    bladeSelf: false,
   },
 };
 

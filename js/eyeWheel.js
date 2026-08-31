@@ -463,6 +463,10 @@ export function createEyeWheel(root) {
   let pitch = 0.1;
   let offerAge = 0;
   let offering = false;
+  let wounding = false;
+  let woundAge = 0;
+  let bleeding = false;
+  let bleedAge = 0;
 
   function resize() {
     const w = root.clientWidth || window.innerWidth;
@@ -545,6 +549,22 @@ export function createEyeWheel(root) {
     const ps = pulseScale;
     outerGroup.scale.setScalar(ps);
     innerGroup.scale.setScalar(2 - ps);
+    if (wounding) {
+      woundAge += dt;
+      scene.fog.color.lerp(new THREE.Color("#4a1020"), 0.1);
+      spinBoost = -2.6;
+      if (woundAge > 2.5) {
+        wounding = false;
+        spinBoost = 1;
+      }
+    }
+    if (bleeding) {
+      bleedAge += dt;
+      scene.fog.density += (0.1 - scene.fog.density) * 0.08;
+      hubEye.visible = true;
+      hubEye.lookAt(camera.position);
+      hubEye.scale.setScalar(Math.min(2.2, 0.4 + bleedAge * 0.5));
+    }
     if (offering) {
       offerAge += dt;
       const shrink = Math.max(0.16, 1 - offerAge * 0.14);
@@ -698,6 +718,25 @@ export function createEyeWheel(root) {
       scene.fog.density = 0.07;
       this.setAspect("offered");
     },
+    wound() {
+      wounding = true;
+      woundAge = 0;
+      pulseScale = 1.52;
+      spinBoost = -2.8;
+      scene.fog.density = 0.06;
+      this.setAspect("inverted");
+    },
+    bleed() {
+      bleeding = true;
+      bleedAge = 0;
+      pulseScale = 0.72;
+      hubEye.visible = true;
+    },
+    showFace() {
+      hubEye.visible = true;
+      this.setAspect("name");
+      pulseScale = 1.3;
+    },
     /**
      * Rewrite the angel. Aspects change blink, gaze, extra rims, wings, hub eye, and spin.
      */
@@ -756,5 +795,5 @@ export function createFallbackWheel(root) {
       <div style="width:min(70vw,520px);aspect-ratio:1;border:16px solid #8a5a22;border-radius:50%;
         box-shadow:0 0 28px #c9a22744, inset 0 0 40px #3d220855;"></div>
     </div>`;
-  return { shudder() {}, openDistantEye() {}, setPalette() {}, setAspect() {}, tilt() {}, orbit() {}, getOrbit() { return { yaw: 0, pitch: 0 }; }, setRapture() {}, pulse() {}, nudgeZ() {}, setSpinBoost() {}, offer() {}, dispose() {} };
+  return { shudder() {}, openDistantEye() {}, setPalette() {}, setAspect() {}, tilt() {}, orbit() {}, getOrbit() { return { yaw: 0, pitch: 0 }; }, setRapture() {}, pulse() {}, nudgeZ() {}, setSpinBoost() {}, offer() {}, wound() {}, bleed() {}, showFace() {}, dispose() {} };
 }
