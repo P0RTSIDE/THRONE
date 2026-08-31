@@ -1,8 +1,7 @@
 /**
  * arg.js — the page keeps a ledger the UI does not read aloud.
  *
- * Hold the mouth to enter. Drag Fear Not into the mouth to feed it. Hold Fear Not to unmake it.
- * Drag the void to turn around it.
+ * The visitor is a father. The rest is found, not labeled.
  */
 
 import { throne, showCaption } from "./throne.js";
@@ -26,15 +25,41 @@ export function createArg({ audio, wheel }) {
     holdingHum: false,
     choirBeforeHum: false,
     merkavahOnce: false,
+    offerHinted: false,
+    once: new Set(),
   };
 
+  function once(id, text, ms = 3400) {
+    if (state.once.has(id) || throne.lore.offered) return;
+    state.once.add(id);
+    showCaption(text, ms);
+    audio.utter();
+  }
+
+  function refreshOffer() {
+    const lore = throne.lore;
+    lore.canOffer = !!(lore.confessed && lore.fed >= 1 && lore.raptured >= 1 && !lore.offered);
+    if (lore.canOffer && !state.offerHinted) {
+      state.offerHinted = true;
+      showCaption("hold the center until you are the offering", 4800);
+      audio.utter();
+    }
+  }
+
   function rapture(on) {
+    if (throne.lore.offered) return;
     if (!!on === throne.raptured) return;
     wheel.setRapture(on);
     audio.setRapture(on);
     if (on) {
-      showCaption("you are inside the count", 2400);
-      audio.utter();
+      throne.lore.raptured += 1;
+      if (throne.lore.raptured === 1) {
+        once("rapture1", "you came to trade", 3200);
+      } else {
+        showCaption("the boy is not in the wheels", 2400);
+        audio.utter();
+      }
+      refreshOffer();
     } else {
       showCaption("", 1);
       audio.ping("mouth");
@@ -42,6 +67,7 @@ export function createArg({ audio, wheel }) {
   }
 
   function become(id, caption) {
+    if (throne.lore.offered) return;
     if (!id || id === throne.aspect) {
       if (id === throne.aspect && caption) showCaption(caption, 2800);
       return;
@@ -53,30 +79,102 @@ export function createArg({ audio, wheel }) {
     window.dispatchEvent(new CustomEvent("throne:aspect", { detail: { id } }));
   }
 
+  function nameTheBoy() {
+    if (throne.lore.named) return;
+    throne.lore.named = true;
+    once("named", "the name lands. he flinches in you.", 3800);
+    refreshOffer();
+  }
+
+  function confess(text) {
+    if (throne.lore.confessed) {
+      refreshOffer();
+      return;
+    }
+    throne.lore.confessed = true;
+    once("confessed", text || "no voice arrived in time. you finished it.", 4200);
+    window.setTimeout(refreshOffer, 3400);
+  }
+
+  function offer() {
+    if (throne.lore.offered) return;
+    throne.lore.offered = true;
+    throne.lore.canOffer = false;
+    throne.lore.lock = true;
+    document.documentElement.classList.add("offered");
+    document.documentElement.classList.remove("offering", "charging", "raptured");
+    wheel.setRapture(false);
+    audio.setRapture(false);
+    wheel.offer();
+    audio.offer();
+    document.querySelectorAll(".fear-not").forEach((el) => {
+      el.style.pointerEvents = "none";
+      el.style.opacity = "0";
+    });
+    const mouth = document.getElementById("mouth");
+    if (mouth) {
+      mouth.style.pointerEvents = "none";
+      mouth.setAttribute("aria-hidden", "true");
+    }
+    showCaption("it takes the hand that raised it", 2200);
+    window.setTimeout(() => showCaption("he opens.", 2400), 2300);
+    window.setTimeout(() => {
+      showCaption("you are in the count now", 4200);
+      throne.lore.lock = false;
+    }, 5000);
+  }
+
   function applyHash() {
     const raw = (location.hash || "").replace("#", "").toLowerCase();
     const known = ["witness", "unblinking", "merkavah", "waters", "seraph", "inverted", "name", "hush"];
     if (known.includes(raw) && throne.entered) become(raw);
+    if (raw === "isaac" && throne.entered) nameTheBoy();
+    if (raw === "offered" && throne.entered) {
+      throne.lore.confessed = true;
+      throne.lore.fed = Math.max(throne.lore.fed, 1);
+      throne.lore.raptured = Math.max(throne.lore.raptured, 1);
+      offer();
+    }
   }
 
   console.info("%cthe wheels keep a ledger.", "color:#c9a227");
   Object.defineProperty(window, "ledger", {
     configurable: true,
     get() {
+      if (throne.lore.offered) {
+        console.info("%che is the one eye. you are the rest.", "color:#f0d078");
+        return "taken";
+      }
+      if (throne.lore.confessed) {
+        console.info("%cno ram. you did not wait.", "color:#f0d078");
+        return "finished";
+      }
+      if (throne.lore.named) {
+        console.info("%csay it again, lower.", "color:#f0d078");
+        return "named";
+      }
+      if (throne.lore.fed >= 1) {
+        console.info("%csubstitutes keep failing.", "color:#c9a227");
+        return 72;
+      }
       console.info("%c72", "color:#f0d078;font-size:18px");
       return 72;
     },
   });
 
   document.getElementById("days-counter")?.addEventListener("click", () => {
-    if (!throne.entered) return;
+    if (!throne.entered || throne.lore.offered) return;
     const now = performance.now();
     if (now - state.lastDay > 2500) state.daysClicks = 0;
     state.lastDay = now;
     state.daysClicks += 1;
     audio.ping("click");
+    if (state.daysClicks === 3) {
+      once("days3", "three days to the hill", 3000);
+    }
     if (state.daysClicks >= 7) {
       state.daysClicks = 0;
+      once("days7", "he did not shut them", 3200);
       become("unblinking");
     }
   });
@@ -86,20 +184,36 @@ export function createArg({ audio, wheel }) {
     if (!state.merkavahOnce && yaw > Math.PI * 2) {
       state.merkavahOnce = true;
       become("merkavah");
+      once("orbit", "you walked around it as if walking would undo a morning", 3600);
     }
   });
 
   window.addEventListener("throne:fearnot", (e) => {
+    if (throne.lore.offered) return;
+    throne.lore.feared += 1;
     if (e.detail?.muted) become("inverted");
+    if (throne.lore.feared === 1) once("fear1", "you said it to him", 3000);
+    else if (throne.lore.feared === 3) once("fear3", "the words came. the knife did not stay.", 3600);
+  });
+
+  window.addEventListener("throne:unmake", () => {
+    once("unmake", "you cannot take the morning back", 3000);
   });
 
   window.addEventListener("throne:rapture", (e) => rapture(!!e.detail?.on));
   window.addEventListener("throne:fed", (e) => {
+    if (throne.lore.offered) return;
+    throne.lore.fed = e.detail?.fed ?? throne.lore.fed + 1;
+    if (throne.lore.fed === 1) once("fed1", "a substitute is not a son", 3200);
+    else if (throne.lore.fed === 3) once("fed3", "the mouth wants the hand, not the word", 3400);
     if (e.detail?.fed >= 7) rapture(true);
+    refreshOffer();
   });
+  window.addEventListener("throne:offer", () => offer());
 
   window.addEventListener("keydown", (e) => {
     if (e.target && ["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
+    if (throne.lore.offered && e.code !== "Space") return;
     if (e.code === "Space" && throne.entered) {
       e.preventDefault();
       if (!state.holdingHum) {
@@ -111,23 +225,57 @@ export function createArg({ audio, wheel }) {
       return;
     }
     if (e.key.length !== 1) return;
-    state.typed = (state.typed + e.key.toUpperCase()).slice(-24);
-    if (state.typed.includes("BENOTAFRAID")) {
+    state.typed = (state.typed + e.key.toUpperCase()).slice(-28);
+    const t = state.typed;
+    if (t.includes("ISAAC")) {
+      state.typed = "";
+      nameTheBoy();
+    }
+    if (t.includes("ABRAHAM")) {
+      state.typed = "";
+      confess("you were not that man. that man was stopped.");
+    }
+    if (t.includes("NORAM") || t.includes("THERAM")) {
+      state.typed = "";
+      confess("nothing caught in the thicket.");
+    }
+    if (t.includes("THEKNIFE") || t.includes("IBOUNDHIM") || t.includes("IDIDIT") || t.includes("IFINISHED")) {
+      state.typed = "";
+      confess();
+    }
+    if (t.includes("FORGIVE")) {
+      state.typed = "";
+      once("forgive", "it does not forgive. it trades.", 3400);
+    }
+    if (t.includes("TAKEME") || t.includes("INSTEAD") || t.includes("MYPLACE") || t.includes("MYLIFE")) {
+      state.typed = "";
+      if (throne.raptured && (throne.lore.confessed || (throne.lore.named && throne.lore.fed >= 1))) {
+        throne.lore.confessed = true;
+        refreshOffer();
+        offer();
+      } else {
+        once("takewait", "it knows the knife. say the knife. then hold the center.", 4000);
+      }
+    }
+    if (t.includes("BENOTAFRAID")) {
       state.typed = "";
       become("seraph");
+      once("seraph", "the instruction is taken literally", 3000);
     }
-    if (state.typed.includes("MANYWATERS")) {
+    if (t.includes("MANYWATERS")) {
       state.typed = "";
       become("waters");
     }
-    if (state.typed.includes("INWARD")) {
+    if (t.includes("INWARD")) {
       state.typed = "";
       rapture(true);
     }
-    if (state.typed.includes("WITNESS")) {
+    if (t.includes("WITNESS")) {
       state.typed = "";
-      rapture(false);
-      become("witness", ASPECT_CAPTIONS.witness);
+      if (!throne.lore.offered) {
+        rapture(false);
+        become("witness", ASPECT_CAPTIONS.witness);
+      }
     }
   });
   window.addEventListener("keyup", (e) => {
@@ -143,6 +291,7 @@ export function createArg({ audio, wheel }) {
     become,
     onEntered() {
       applyHash();
+      window.setTimeout(() => once("enter", "you came about a boy", 3600), 7200);
     },
   };
 }

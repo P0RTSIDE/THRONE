@@ -425,6 +425,36 @@ export function createAudioEngine() {
         car.stop(t0 + 1.8);
       });
     },
+    /** Father taken. One remaining voice. */
+    offer() {
+      if (!started || !ctx) return;
+      this.setAspect("offered");
+      const c = ctx;
+      const t0 = c.currentTime;
+      if (droneGain) droneGain.gain.setTargetAtTime(0.06, t0, 0.4);
+      if (formantGain) formantGain.gain.setTargetAtTime(0.012, t0, 0.35);
+      if (delayG) delayG.gain.setTargetAtTime(0.22, t0, 0.2);
+      [196, 247, 392].forEach((f, i) => {
+        const osc = makeOsc(c, "sine", f);
+        const g = c.createGain();
+        g.gain.setValueAtTime(0.0001, t0 + i * 0.12);
+        g.gain.exponentialRampToValueAtTime(0.14, t0 + i * 0.12 + 0.04);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.8);
+        osc.connect(g);
+        g.connect(bellGain);
+        osc.start(t0);
+        osc.stop(t0 + 3);
+      });
+      const child = makeOsc(c, "sine", 784);
+      const cg = c.createGain();
+      cg.gain.setValueAtTime(0.0001, t0 + 1.1);
+      cg.gain.exponentialRampToValueAtTime(0.1, t0 + 1.4);
+      cg.gain.exponentialRampToValueAtTime(0.0001, t0 + 5.5);
+      child.connect(cg);
+      cg.connect(bellGain);
+      child.start(t0 + 1.1);
+      child.stop(t0 + 5.6);
+    },
     setAspect(id) {
       aspectId = id;
       const table = {
@@ -436,6 +466,7 @@ export function createAudioEngine() {
         inverted: { formant: 1.4, drone: 0.95, extra: 0.09, noise: 0.28, reverse: true, extraHz: 41 },
         name: { formant: 0.3, drone: 0.55, extra: 0.18, noise: 0.04, reverse: false, extraHz: 73 },
         hush: { formant: 0.15, drone: 0.35, extra: 0.02, noise: 0.03, reverse: false, extraHz: 92 },
+        offered: { formant: 0.4, drone: 0.18, extra: 0.14, noise: 0.02, reverse: false, extraHz: 523 },
       };
       const next = table[id] || table.witness;
       formantMul = next.formant;

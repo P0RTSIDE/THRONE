@@ -23,38 +23,80 @@ import { throne, randRange, randInt, showCaption } from "./throne.js";
 /** Invented sigils. Not Hebrew, not any real liturgical script. */
 const SIGILS = "◊◈◉◎◌◍◐◑◒◓◔◕◘◙☿♄♃♁☥⚜⚝✦✧✩✪✫✬✭✮✯✰❋❊❈❇✺✹✸✷✶✵✴✳";
 
-const BLURBS = [
-  "full of eyes within",
-  "the wheels moved as they went",
-  "it declines to close",
-  "a voice of many",
-  "face within face",
-  "it is not one",
-  "you are already seen",
-  "the mouth is not a mouth",
-  "the rim remembers you",
-  "eyes behind eyes",
-  "it turns because you do",
-  "the center is a door",
-  "do not name it",
-  "the sound is the body",
-  "another rim",
-  "it was going, it was coming",
-  "the living thing had four",
-  "hold still. it is counting.",
-  "the fire goes forth",
-  "fear is a courtesy",
-  "the count continues",
-  "drag the dark around it",
-  "the likeness of a throne",
-  "turn, and look again",
-  "the instruction is not for you",
-  "every rim is watching the others",
-  "it has no front",
-  "the air is full of lids",
-  "what you hear is the looking",
-  "do not reach",
-];
+const BLURBS = {
+  angel: [
+    "full of eyes within",
+    "the wheels moved as they went",
+    "a voice of many",
+    "face within face",
+    "it is not one",
+    "you are already seen",
+    "the mouth is not a mouth",
+    "eyes behind eyes",
+    "the center is a door",
+    "the living thing had four",
+    "the air is full of lids",
+    "what you hear is the looking",
+  ],
+  father: [
+    "you came about a boy",
+    "bring him back",
+    "he was small enough to carry",
+    "the hill is still in your hands",
+    "you told him not to look down",
+  ],
+  fear: [
+    "you said it to him",
+    "he believed you",
+    "a courtesy, then a cord",
+    "fear is a courtesy",
+    "the words arrived late",
+  ],
+  fed: [
+    "a substitute is not a son",
+    "rams keep failing",
+    "the mouth wants the hand",
+    "offerings of language are cheap",
+  ],
+  inside: [
+    "the boy is not in the wheels",
+    "you brought the morning with you",
+    "this is as close as a father gets",
+    "trade requires a body",
+  ],
+  named: [
+    "he still turns toward that sound",
+    "do not say it like a prayer",
+    "the hill heard it first",
+    "naming him does not return him",
+  ],
+  confessed: [
+    "no voice arrived in time",
+    "you finished the instruction",
+    "it will take the other body now",
+    "the ram did not come",
+    "hold the center until you are the offering",
+  ],
+  offered: [
+    "he blinks because he can",
+    "the count has a new rim",
+    "do not ask him about the hill",
+    "he is looking at you",
+    "you are the rest of the eyes",
+  ],
+};
+
+function blurbPool() {
+  const lore = throne.lore;
+  if (lore.offered) return BLURBS.offered;
+  if (lore.confessed) return BLURBS.confessed;
+  if (lore.named) return BLURBS.named;
+  if (lore.raptured >= 1 && throne.raptured) return BLURBS.inside;
+  if (lore.fed >= 1) return BLURBS.fed;
+  if (lore.feared >= 1) return BLURBS.fear;
+  if (throne.entered) return [...BLURBS.angel, ...BLURBS.father];
+  return BLURBS.angel;
+}
 
 function wrapGlyphs(el) {
   if (el.dataset.wrapped) return;
@@ -115,10 +157,12 @@ export function createChaosUI({ audio, wheel }) {
   let nextBlurbAt = 0;
 
   function speakBlurb(ms = 2800) {
-    if (throne.calm || !throne.entered) return;
-    let line = BLURBS[randInt(0, BLURBS.length - 1)];
-    if (BLURBS.length > 1) {
-      while (line === lastBlurb) line = BLURBS[randInt(0, BLURBS.length - 1)];
+    if (throne.calm || !throne.entered || throne.lore.lock) return;
+    const pool = blurbPool();
+    if (!pool.length) return;
+    let line = pool[randInt(0, pool.length - 1)];
+    if (pool.length > 1) {
+      while (line === lastBlurb) line = pool[randInt(0, pool.length - 1)];
     }
     lastBlurb = line;
     showCaption(line, ms);
@@ -191,6 +235,7 @@ export function createChaosUI({ audio, wheel }) {
     if (btn.classList.contains("unmaking")) return;
     btn.classList.add("unmaking");
     audio.unmake();
+    window.dispatchEvent(new CustomEvent("throne:unmake"));
     if (btn.classList.contains("spawned")) fearCount = Math.max(0, fearCount - 1);
     setTimeout(() => btn.remove(), 560);
     if (!document.getElementById("fear-not")) {
@@ -302,8 +347,8 @@ export function createChaosUI({ audio, wheel }) {
 
   window.addEventListener("throne:cycle", () => {
     audio.swell();
-    speakBlurb(1600);
     wheel.pulse();
+    if (throne.time > 14 || throne.lore.feared || throne.lore.fed) speakBlurb(1600);
   });
   window.addEventListener("throne:pulse", () => triggerPulse());
 
@@ -349,9 +394,21 @@ export function createChaosUI({ audio, wheel }) {
     mouth.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       e.stopPropagation();
+      if (throne.lore.offered) return;
       if (throne.raptured) {
-        window.dispatchEvent(new CustomEvent("throne:rapture", { detail: { on: false } }));
-        audio.ping("mouth");
+        if (throne.lore.canOffer) {
+          document.documentElement.classList.add("offering");
+          audio.charge(true);
+          audio.ping("mouth");
+          hold = window.setTimeout(() => {
+            document.documentElement.classList.remove("offering", "charging");
+            audio.charge(false);
+            window.dispatchEvent(new CustomEvent("throne:offer"));
+          }, 2600);
+        } else {
+          window.dispatchEvent(new CustomEvent("throne:rapture", { detail: { on: false } }));
+          audio.ping("mouth");
+        }
         return;
       }
       document.documentElement.classList.add("charging");
@@ -365,13 +422,15 @@ export function createChaosUI({ audio, wheel }) {
     });
     const cancel = () => {
       clearTimeout(hold);
-      document.documentElement.classList.remove("charging");
+      document.documentElement.classList.remove("charging", "offering");
       audio.charge(false);
     };
     mouth.addEventListener("pointerup", cancel);
     mouth.addEventListener("pointerleave", cancel);
     window.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && throne.raptured) {
+      if (e.key === "Escape" && throne.raptured && !throne.lore.offered) {
+        clearTimeout(hold);
+        document.documentElement.classList.remove("offering", "charging");
         window.dispatchEvent(new CustomEvent("throne:rapture", { detail: { on: false } }));
       }
     });

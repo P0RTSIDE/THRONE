@@ -405,6 +405,8 @@ export function createEyeWheel(root) {
   let pulseScale = 1;
   let yaw = 0.22;
   let pitch = 0.16;
+  let offerAge = 0;
+  let offering = false;
 
   function resize() {
     const w = root.clientWidth || window.innerWidth;
@@ -474,6 +476,17 @@ export function createEyeWheel(root) {
     const ps = pulseScale;
     outerGroup.scale.setScalar(ps);
     innerGroup.scale.setScalar(2 - ps);
+    if (offering) {
+      offerAge += dt;
+      const shrink = Math.max(0.16, 1 - offerAge * 0.14);
+      outerGroup.scale.setScalar(ps * shrink);
+      innerGroup.scale.setScalar(Math.max(0.12, (2 - ps) * shrink));
+      fourthGroup.scale.setScalar(Math.min(1.15, 0.45 + offerAge * 0.14));
+      yaw += (0 - yaw) * Math.min(1, dt * 1.25);
+      pitch += (0.06 - pitch) * Math.min(1, dt * 1.25);
+      scene.fog.density += (0.04 - scene.fog.density) * 0.05;
+      scene.fog.color.lerp(new THREE.Color("#f3e6c4"), 0.03);
+    }
     spinBoost += (1 - spinBoost) * Math.min(1, dt * 1.8);
     zNudge *= 0.92;
     wingGroup.rotation.y += dt * 0.55 * Math.abs(spin);
@@ -485,10 +498,15 @@ export function createEyeWheel(root) {
     thirdGroup.scale.setScalar(Math.max(0.001, next));
 
     wingGroup.visible = aspect.wings > 0.5 && !throne.calm;
-    hubEye.visible = aspect.hub > 0.5;
+    hubEye.visible = aspect.hub > 0.5 || throne.lore.offered;
     if (hubEye.visible) {
       hubEye.lookAt(camera.position);
-      hubEye.scale.setScalar(1 + (pulseScale - 1) * 2.4);
+      if (throne.lore.offered) {
+        const grow = Math.min(2.7, 0.35 + offerAge * 0.55);
+        hubEye.scale.setScalar(grow);
+      } else {
+        hubEye.scale.setScalar(1 + (pulseScale - 1) * 2.4);
+      }
     }
 
     outerAngle += dt * 0.35 * Math.abs(spin);
@@ -596,6 +614,14 @@ export function createEyeWheel(root) {
     setSpinBoost(n) {
       spinBoost = n;
     },
+    offer() {
+      offering = true;
+      offerAge = 0;
+      pulseScale = 1.35;
+      zNudge = 0;
+      scene.fog.density = 0.07;
+      this.setAspect("offered");
+    },
     /**
      * Rewrite the angel. Aspects change blink, gaze, extra rims, wings, hub eye, and spin.
      */
@@ -609,6 +635,7 @@ export function createEyeWheel(root) {
         inverted: { blink: 1, look: 2.1, pupil: 1.7, spin: -1.15, camZ: 6.0, third: 0.55, wings: 0, hub: 0, presence: 1, palLock: 2, sclera: "#2a1014" },
         name: { blink: 0, look: 3.2, pupil: 1.7, spin: 0.22, camZ: 5.6, third: 0.2, wings: 0, hub: 1, presence: 0.12, palLock: 0, sclera: "#f4f1e8" },
         hush: { blink: 1, look: 0.2, pupil: 0.55, spin: 0.1, camZ: 10.5, third: 0.25, wings: 0, hub: 0, presence: 0.08, palLock: 0, sclera: "#6a6048" },
+        offered: { blink: 1, look: 0.45, pupil: 0.82, spin: 0.05, camZ: 5.2, third: 0.06, wings: 0, hub: 1, presence: 0.1, palLock: 1, sclera: "#fff8ea" },
       };
       const next = table[id] || table.witness;
       aspect = {
@@ -653,5 +680,5 @@ export function createFallbackWheel(root) {
       <div style="width:min(70vw,520px);aspect-ratio:1;border:18px solid #c9a227;border-radius:50%;
         box-shadow:0 0 40px #c9a22755, inset 0 0 40px #b44cff33;animation:geo-spin 28s linear infinite;"></div>
     </div>`;
-  return { shudder() {}, openDistantEye() {}, setPalette() {}, setAspect() {}, tilt() {}, orbit() {}, getOrbit() { return { yaw: 0, pitch: 0 }; }, setRapture() {}, pulse() {}, nudgeZ() {}, setSpinBoost() {}, dispose() {} };
+  return { shudder() {}, openDistantEye() {}, setPalette() {}, setAspect() {}, tilt() {}, orbit() {}, getOrbit() { return { yaw: 0, pitch: 0 }; }, setRapture() {}, pulse() {}, nudgeZ() {}, setSpinBoost() {}, offer() {}, dispose() {} };
 }
