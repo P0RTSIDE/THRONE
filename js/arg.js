@@ -38,11 +38,17 @@ export function createArg({ audio, wheel }) {
 
   function refreshOffer() {
     const lore = throne.lore;
+    if (lore.feared >= 1 && lore.fed >= 1 && lore.raptured >= 1 && !lore.confessed) {
+      lore.confessed = true;
+      once("confessed", "you finished what no voice stopped", 4200);
+    }
     lore.canOffer = !!(lore.confessed && lore.fed >= 1 && lore.raptured >= 1 && !lore.offered);
     if (lore.canOffer && !state.offerHinted) {
       state.offerHinted = true;
-      showCaption("hold the center until you are the offering", 4800);
-      audio.utter();
+      window.setTimeout(() => {
+        showCaption("hold the light in the center. it will take you in his place.", 5600);
+        audio.utter();
+      }, 1800);
     }
   }
 
@@ -54,10 +60,13 @@ export function createArg({ audio, wheel }) {
     if (on) {
       throne.lore.raptured += 1;
       if (throne.lore.raptured === 1) {
-        once("rapture1", "you came to trade", 3200);
-      } else {
+        once("rapture1", "you came to trade a life for a life", 3800);
+      } else if (!throne.lore.canOffer) {
         showCaption("the boy is not in the wheels", 2400);
         audio.utter();
+      }
+      if (throne.lore.fed < 1) {
+        window.setTimeout(() => once("needfeed", "Fear Not still waits below. carry it into the light.", 4200), 2200);
       }
       refreshOffer();
     } else {
@@ -181,10 +190,13 @@ export function createArg({ audio, wheel }) {
 
   window.addEventListener("throne:orbit", (e) => {
     const yaw = Math.abs(Number(e.detail?.yaw) || 0);
-    if (!state.merkavahOnce && yaw > Math.PI * 2) {
+    if (!state.merkavahOnce && yaw > Math.PI * 1.2) {
       state.merkavahOnce = true;
       become("merkavah");
-      once("orbit", "you walked around it as if walking would undo a morning", 3600);
+      once("orbit", "the whole hill turns with your hand", 3600);
+    }
+    if ((e.detail?.traveled || 0) > 28) {
+      once("drag1", "the hill turns with you. Fear Not still waits below.", 4000);
     }
   });
 
@@ -192,8 +204,9 @@ export function createArg({ audio, wheel }) {
     if (throne.lore.offered) return;
     throne.lore.feared += 1;
     if (e.detail?.muted) become("inverted");
-    if (throne.lore.feared === 1) once("fear1", "you said it to him", 3000);
+    if (throne.lore.feared === 1) once("fear1", "you told the boy not to fear. carry those words to the light.", 4200);
     else if (throne.lore.feared === 3) once("fear3", "the words came. the knife did not stay.", 3600);
+    refreshOffer();
   });
 
   window.addEventListener("throne:unmake", () => {
@@ -204,7 +217,7 @@ export function createArg({ audio, wheel }) {
   window.addEventListener("throne:fed", (e) => {
     if (throne.lore.offered) return;
     throne.lore.fed = e.detail?.fed ?? throne.lore.fed + 1;
-    if (throne.lore.fed === 1) once("fed1", "a substitute is not a son", 3200);
+    if (throne.lore.fed === 1) once("fed1", "you are trying to buy him back. hold the center.", 4000);
     else if (throne.lore.fed === 3) once("fed3", "the mouth wants the hand, not the word", 3400);
     if (e.detail?.fed >= 7) rapture(true);
     refreshOffer();
@@ -254,7 +267,7 @@ export function createArg({ audio, wheel }) {
         refreshOffer();
         offer();
       } else {
-        once("takewait", "it knows the knife. say the knife. then hold the center.", 4000);
+        once("takewait", "look around. feed Fear Not to the center. then hold the center from inside.", 4200);
       }
     }
     if (t.includes("BENOTAFRAID")) {
@@ -291,7 +304,6 @@ export function createArg({ audio, wheel }) {
     become,
     onEntered() {
       applyHash();
-      window.setTimeout(() => once("enter", "you came about a boy", 3600), 7200);
     },
   };
 }

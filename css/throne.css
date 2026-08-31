@@ -17,7 +17,7 @@
   --panel: rgba(12, 8, 18, 0.55);
   --font-title: "Cinzel Decorative", "Cinzel", serif;
   --font-body: "Cormorant Garamond", serif;
-  --font-hud: "Share Tech Mono", ui-monospace, monospace;
+  --font-hud: "Cinzel", "Cormorant Garamond", serif;
   --vignette: 0.55;
 }
 
@@ -45,23 +45,20 @@ html.calm * {
 body {
   font-family: var(--font-body);
   background:
-    radial-gradient(ellipse 80% 60% at 50% 42%, rgba(80, 40, 10, 0.28), transparent 55%),
-    radial-gradient(ellipse 50% 40% at 50% 50%, rgba(90, 20, 140, 0.18), transparent 60%),
-    var(--void);
+    radial-gradient(ellipse 90% 70% at 50% 78%, rgba(42, 24, 10, 0.95), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 50% 30%, rgba(90, 50, 16, 0.35), transparent 60%),
+    #140c06;
 }
 
 body.palette-white {
-  --iris: #f4f1e8;
+  --iris: #ead9a8;
   background:
-    radial-gradient(ellipse 80% 60% at 50% 42%, rgba(255, 255, 255, 0.16), transparent 55%),
-    var(--void);
+    radial-gradient(ellipse 80% 60% at 50% 42%, rgba(255, 236, 190, 0.18), transparent 55%),
+    #140c06;
 }
 
 body.palette-violet {
-  --iris: #b44cff;
-  background:
-    radial-gradient(ellipse 80% 60% at 50% 42%, rgba(90, 20, 140, 0.42), transparent 55%),
-    var(--void);
+  --iris: #c9a227;
 }
 
 body.palette-gold {
@@ -176,8 +173,8 @@ body.palette-gold {
   display: grid;
   place-items: center;
   background:
-    radial-gradient(circle at 50% 40%, rgba(201, 162, 39, 0.16), transparent 42%),
-    #030206;
+    radial-gradient(circle at 50% 40%, rgba(201, 162, 39, 0.18), transparent 42%),
+    #140c06;
   text-align: center;
   cursor: pointer;
 }
@@ -202,10 +199,7 @@ html.entered .veil {
   font-size: clamp(48px, 12vw, 120px);
   margin: 0;
   color: var(--gold-hot);
-  text-shadow:
-    3px 0 0 rgba(180, 76, 255, 0.35),
-    -3px 0 0 rgba(255, 80, 60, 0.28),
-    0 0 40px rgba(201, 162, 39, 0.4);
+  text-shadow: 0 0 28px rgba(201, 162, 39, 0.45);
 }
 
 .veil-line {
@@ -249,9 +243,53 @@ html.entered .veil {
   padding: 0 16px;
 }
 
-/* ----- Stage + planes (non-Euclidean layout) ----- */
-.wheel-root {
+/* ----- The hill and the wheels travel together ----- */
+.world {
   position: fixed;
+  width: 170vw;
+  height: 170vh;
+  left: -35vw;
+  top: -35vh;
+  z-index: 0;
+  transform: translate3d(0, 0, 0);
+  transform-origin: 50% 48%;
+  will-change: transform;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 8%, rgba(176, 92, 28, 0.38), transparent 58%),
+    linear-gradient(180deg, #2c180c 0%, #140c06 42%, #0a0704 100%);
+}
+
+.sky {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 50% 28% at 50% 12%, rgba(240, 168, 72, 0.22), transparent 70%),
+    radial-gradient(ellipse 90% 40% at 50% 0%, rgba(90, 40, 16, 0.4), transparent 62%);
+}
+
+.hill {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 46%;
+  bottom: -8%;
+  background:
+    radial-gradient(ellipse 80% 90% at 50% 100%, #2a1608 0%, #1a0e06 55%, transparent 78%),
+    radial-gradient(ellipse 46% 34% at 50% 62%, rgba(120, 72, 24, 0.55), transparent 72%);
+  pointer-events: none;
+}
+
+.stage {
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  left: 35vw;
+  top: 35vh;
+}
+
+.wheel-root {
+  position: absolute;
   inset: 0;
   z-index: 0;
 }
@@ -263,11 +301,11 @@ html.entered .veil {
 }
 
 .firmament {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 3;
   pointer-events: none;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .firmament .relic,
@@ -310,13 +348,12 @@ html.entered .veil {
   position: absolute;
   left: 50%;
   top: 48%;
-  width: 18vmin;
-  height: 18vmin;
+  width: 14vmin;
+  height: 14vmin;
   transform: translate(-50%, -50%);
   border: 0;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 50%, rgba(244, 241, 232, 0.1), transparent 62%);
+  background: radial-gradient(circle at 50% 50%, rgba(240, 208, 120, 0.16), transparent 68%);
   cursor: none;
   z-index: 4;
   animation: mouth-breathe 5.5s ease-in-out infinite;
@@ -325,11 +362,11 @@ html.entered .veil {
 .mouth::before {
   content: "";
   position: absolute;
-  inset: -16%;
-  border: 1px dashed rgba(240, 208, 120, 0.7);
+  inset: 18%;
+  border: 0;
   border-radius: 50%;
   pointer-events: none;
-  animation: hint-spin 22s linear infinite;
+  box-shadow: 0 0 22px rgba(201, 162, 39, 0.28);
 }
 
 .mouth:hover,
@@ -475,18 +512,20 @@ body.aspect-offered {
   font-family: var(--font-hud);
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  background: rgba(8, 6, 12, 0.45);
+  background: rgba(28, 16, 8, 0.72);
   color: var(--gold-hot);
   border: 1px solid var(--gold);
-  padding: 10px 14px;
+  border-radius: 2px;
+  padding: 10px 16px;
   font-size: 11px;
+  box-shadow: 0 0 0 3px rgba(20, 10, 4, 0.55), 0 0 18px rgba(201, 162, 39, 0.18);
   z-index: 6;
 }
 
 .fear-not.spawned {
-  position: fixed;
+  position: absolute;
   z-index: 7;
-  transform: none;
+  bottom: auto;
 }
 
 .fear-not.unmaking {
@@ -515,19 +554,9 @@ body.aspect-offered {
   animation: drift 18s ease-in-out infinite;
 }
 
-.floater.eye {
-  width: 22px;
-  height: 12px;
-  border: 1px solid var(--gold);
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 50%, #f4f1e8 30%, #c9a227 32%, #050308 38%, transparent 40%);
-}
-
+.floater.eye,
 .floater.ring {
-  width: 38px;
-  height: 38px;
-  border: 1px solid rgba(201, 162, 39, 0.35);
-  border-radius: 50%;
+  display: none;
 }
 
 @keyframes drift {
@@ -535,15 +564,19 @@ body.aspect-offered {
   50% { transform: translate(12px, -18px) scale(calc(var(--s, 1) * 1.08)); }
 }
 
+.vignette,
+.pulse,
+.strobe,
 .inside {
-  position: fixed;
+  position: absolute;
   inset: 0;
+}
+
+.inside {
   z-index: 2;
   pointer-events: none;
   opacity: 0;
-  background:
-    repeating-conic-gradient(from 0deg at 50% 48%, rgba(201, 162, 39, 0.07) 0 8deg, transparent 8deg 16deg),
-    radial-gradient(circle at 50% 48%, rgba(244, 241, 232, 0.18), transparent 42%);
+  background: radial-gradient(circle at 50% 48%, rgba(244, 226, 180, 0.16), transparent 48%);
   transition: opacity 1.2s ease;
 }
 
@@ -565,8 +598,7 @@ html.raptured .vignette {
 }
 
 html.raptured .inside {
-  animation: kaleido 18s linear infinite;
-  mix-blend-mode: screen;
+  opacity: 1;
 }
 
 html.raptured .chromatic {
@@ -773,10 +805,7 @@ body.aspect-hush .chromatic {
 .overlay-canvas,
 .sacred-geo,
 .scanlines,
-.vignette,
 .chromatic,
-.pulse,
-.strobe,
 .grain {
   position: fixed;
   inset: 0;
@@ -855,19 +884,19 @@ body.pulse-on .pulse {
 .caption {
   position: fixed;
   left: 50%;
-  bottom: 64px;
+  bottom: 72px;
   transform: translateX(-50%);
   z-index: 20;
-  font-family: var(--font-hud);
-  font-size: 13px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  font-family: var(--font-body);
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  font-style: italic;
   color: var(--gold-hot);
   text-align: center;
   opacity: 0;
   pointer-events: none;
   text-shadow: 0 0 12px #000, 0 0 2px #000;
-  max-width: 90vw;
+  max-width: 36em;
 }
 
 .caption.show {
