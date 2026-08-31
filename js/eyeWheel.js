@@ -202,15 +202,15 @@ function makeEyeField(R, r, uSeg, vSeg, eyeSize) {
 export function createEyeWheel(root) {
   const cfg = qualityConfig(throne.quality);
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x140e18, 0.022);
-  scene.background = new THREE.Color(0x0c0912);
+  scene.fog = new THREE.FogExp2(0x0c0912, 0.01);
+  scene.background = null;
 
   const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 90);
   camera.position.set(0, 0.35, 7.6);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: cfg.dpr > 1, alpha: false, powerPreference: "high-performance" });
+  const renderer = new THREE.WebGLRenderer({ antialias: cfg.dpr > 1, alpha: true, powerPreference: "high-performance" });
   renderer.setPixelRatio(cfg.dpr);
-  renderer.setClearColor(0x0c0912, 1);
+  renderer.setClearColor(0x0c0912, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NoToneMapping;
   renderer.toneMappingExposure = 1;
@@ -227,14 +227,9 @@ export function createEyeWheel(root) {
   scene.add(ambient, hemi, key, fill, glory);
   scene.environment = null;
 
-  const dome = new THREE.Mesh(
-    new THREE.SphereGeometry(32, 24, 16),
-    new THREE.MeshBasicMaterial({ color: 0x2a1c10, transparent: true, opacity: 0.35, side: THREE.BackSide })
-  );
-  scene.add(dome);
   const vault = new THREE.Mesh(
     new THREE.SphereGeometry(18, 20, 12, 0, Math.PI * 2, 0, Math.PI * 0.48),
-    new THREE.MeshBasicMaterial({ color: 0xf0d078, transparent: true, opacity: 0.06, side: THREE.BackSide, depthWrite: false })
+    new THREE.MeshBasicMaterial({ color: 0xf0d078, transparent: true, opacity: 0.04, side: THREE.BackSide, depthWrite: false })
   );
   vault.position.y = 4;
   scene.add(vault);
