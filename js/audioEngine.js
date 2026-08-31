@@ -4,10 +4,10 @@
  * All sound is synthesized. No samples, no copyrighted music.
  *
  * Layers:
- *   drone   — detuned sines + a filtered noise bed (thunder / distant engine). Slow LFOs so it never loops.
- *   formant — bandpassed pulse-ish tone that morphs through invented "vowels" (glossolalia, not speech).
- *   bells   — sparse FM glass pings on user input, gain-capped.
- *   swell   — when the outer wheel completes a turn, the drone rises a few dB then falls. Never a jump-scare.
+ *   drone   — detuned saws and a sub under a lowpass (engine in the floor, not a choir).
+ *   formant — low bandpasses that wander like a throat, not glass.
+ *   hits    — alien bass thumps and wobbles on user input. No bells.
+ *   swell   — when the outer wheel completes a turn, the drone rises a few dB then falls.
  *
  * Routing: sources -> layer gains -> compressor -> calmGain -> muteGain -> master -> destination
  */
@@ -100,9 +100,9 @@ export function createAudioEngine() {
     swellGain = c.createGain();
     swellGain.gain.value = 1;
     formantGain = c.createGain();
-    formantGain.gain.value = 0.045;
+    formantGain.gain.value = 0.06;
     bellGain = c.createGain();
-    bellGain.gain.value = 0.12;
+    bellGain.gain.value = 0.22;
 
     droneGain.connect(swellGain);
     swellGain.connect(comp);
@@ -113,18 +113,18 @@ export function createAudioEngine() {
     muteGain.connect(master);
     master.connect(c.destination);
 
-    // --- Drone: four slightly beating oscillators around a low fundamental ---
-    const base = 46.25;
+    // --- Drone: a sub plus beating saws, kept under a lowpass so it stays in the floor ---
+    const base = 36.7;
     const specs = [
       { f: base, type: "sine", det: 0 },
-      { f: base, type: "sine", det: 0.37 },
-      { f: base * 2.01, type: "triangle", det: -0.21 },
-      { f: base * 1.498, type: "sine", det: 0.11 },
+      { f: base * 1.01, type: "sawtooth", det: 0.6 },
+      { f: base * 0.5, type: "sine", det: -0.15 },
+      { f: base * 2.02, type: "square", det: 0.28 },
     ];
     const lp = c.createBiquadFilter();
     lp.type = "lowpass";
-    lp.frequency.value = 280;
-    lp.Q.value = 0.7;
+    lp.frequency.value = 140;
+    lp.Q.value = 1.1;
     filters.push(lp);
     lp.connect(droneGain);
 
@@ -148,16 +148,16 @@ export function createAudioEngine() {
     filters.push(noiseLp);
 
     scrapeFilter = c.createBiquadFilter();
-    scrapeFilter.type = "bandpass";
-    scrapeFilter.frequency.value = 380;
-    scrapeFilter.Q.value = 1.8;
+    scrapeFilter.type = "lowpass";
+    scrapeFilter.frequency.value = 90;
+    scrapeFilter.Q.value = 2.4;
     scrapeGain = c.createGain();
     scrapeGain.gain.value = 0;
     noiseSrc.connect(scrapeFilter);
     scrapeFilter.connect(scrapeGain);
     scrapeGain.connect(comp);
 
-    extraOsc = makeOsc(c, "sine", base * 3.01);
+    extraOsc = makeOsc(c, "sawtooth", base * 1.49);
     extraGain = c.createGain();
     extraGain.gain.value = 0.0001;
     extraOsc.connect(extraGain);
@@ -173,11 +173,11 @@ export function createAudioEngine() {
     delayG.connect(comp);
 
     // --- Formant "voices": a pulse-adjacent saw into three moving bandpasses ---
-    formantOsc = makeOsc(c, "sawtooth", 110);
+    formantOsc = makeOsc(c, "sawtooth", 48);
     const fg = c.createGain();
-    fg.gain.value = 0.15;
+    fg.gain.value = 0.22;
     formantOsc.connect(fg);
-    const bands = [520, 980, 2450];
+    const bands = [72, 140, 260];
     formantFilters = bands.map((f) => {
       const bp = c.createBiquadFilter();
       bp.type = "bandpass";
@@ -195,8 +195,8 @@ export function createAudioEngine() {
     // Never-quite-looping filter wander.
     const lp = filters[0];
     if (lp) {
-      const baseHz = 120 + depth * 340;
-      const hz = baseHz + 90 * Math.sin(now * 0.07) + 40 * Math.sin(now * 0.023 + 1.7);
+      const baseHz = 70 + depth * 90;
+      const hz = baseHz + 28 * Math.sin(now * 0.07) + 14 * Math.sin(now * 0.023 + 1.7);
       lp.frequency.setTargetAtTime(hz, ctx.currentTime, 0.4);
     }
     droneOscs.forEach((osc, i) => {
@@ -209,13 +209,13 @@ export function createAudioEngine() {
       const reverse = reverseAlways || Math.sin(now * 0.04) > 0.75;
       const a = 0.5 + 0.5 * Math.sin(now * 0.13);
       const targets = reverse
-        ? [780 - a * 200, 1600 - a * 400, 2800 - a * 500]
-        : [450 + a * 220, 900 + a * 500, 2200 + a * 600];
+        ? [110 - a * 40, 190 - a * 50, 310 - a * 70]
+        : [64 + a * 36, 120 + a * 70, 210 + a * 80];
       formantFilters.forEach((bp, i) => {
         bp.frequency.setTargetAtTime(targets[i], ctx.currentTime, reverse ? 0.08 : 0.6);
       });
       if (formantOsc) {
-        formantOsc.frequency.setTargetAtTime(90 + 40 * Math.sin(now * 0.09), ctx.currentTime, 0.3);
+        formantOsc.frequency.setTargetAtTime(38 + 10 * Math.sin(now * 0.09), ctx.currentTime, 0.3);
       }
       // Sparse presence: voices swell in and out so they are not a constant choir.
       const presence =
@@ -267,45 +267,56 @@ export function createAudioEngine() {
       this.scrape(0);
       this.charge(false);
     },
-    /** Interaction glass/bell. Volume-capped FM ping. */
+    /** Alien bass thump. Low carrier, bent by a slower modulator, then crushed under a lowpass. */
     ping(kind = "click") {
       if (!started || !ctx || throne.muted || throne.calm) return;
       const c = ctx;
       const t0 = c.currentTime;
       const table = {
-        hover: { f: [1400, 2400], g: 0.08, d: 0.7 },
-        click: { f: [680, 1600], g: 0.18, d: 1.1 },
-        drag: { f: [90, 220], g: 0.14, d: 0.45 },
-        zoom: { f: [240, 520], g: 0.12, d: 0.55 },
-        mouth: { f: [160, 280], g: 0.2, d: 1.4 },
+        hover: { f: [28, 42], g: 0.14, d: 0.55, drop: 0.72 },
+        click: { f: [24, 38], g: 0.28, d: 0.85, drop: 0.55 },
+        drag: { f: [18, 30], g: 0.2, d: 0.5, drop: 0.8 },
+        zoom: { f: [22, 34], g: 0.18, d: 0.6, drop: 0.62 },
+        mouth: { f: [16, 26], g: 0.32, d: 1.5, drop: 0.45 },
       };
       const spec = table[kind] || table.click;
       const carrierF = randRange(spec.f[0], spec.f[1]);
-      const car = makeOsc(c, kind === "drag" || kind === "mouth" ? "triangle" : "sine", carrierF);
-      const mod = makeOsc(c, "sine", carrierF * randRange(1.4, 2.6));
+      const car = makeOsc(c, "sawtooth", carrierF);
+      const sub = makeOsc(c, "sine", carrierF * 0.5);
+      const mod = makeOsc(c, "sine", randRange(1.6, 6.4));
       const modGain = c.createGain();
-      modGain.gain.value = kind === "drag" ? randRange(20, 60) : randRange(80, 220);
+      modGain.gain.value = randRange(12, 36);
+      const lp = c.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = 220;
+      lp.Q.value = 3.2;
       const g = c.createGain();
       g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(spec.g, t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(spec.g, t0 + 0.02);
       g.gain.exponentialRampToValueAtTime(0.0001, t0 + spec.d);
+      car.frequency.exponentialRampToValueAtTime(Math.max(12, carrierF * spec.drop), t0 + spec.d);
+      sub.frequency.exponentialRampToValueAtTime(Math.max(10, carrierF * spec.drop * 0.5), t0 + spec.d);
       mod.connect(modGain);
       modGain.connect(car.frequency);
-      car.connect(g);
+      car.connect(lp);
+      sub.connect(lp);
+      lp.connect(g);
       g.connect(bellGain);
       car.start(t0);
+      sub.start(t0);
       mod.start(t0);
-      car.stop(t0 + spec.d + 0.2);
-      mod.stop(t0 + spec.d + 0.2);
+      car.stop(t0 + spec.d + 0.15);
+      sub.stop(t0 + spec.d + 0.15);
+      mod.stop(t0 + spec.d + 0.15);
     },
     /** Grit that follows drag speed. Zero to rest. */
     scrape(speed) {
       if (!scrapeGain || !ctx) return;
       const t = ctx.currentTime;
-      const g = !started || throne.muted || throne.calm ? 0 : Math.min(0.22, Math.max(0, speed) * 0.014);
+      const g = !started || throne.muted || throne.calm ? 0 : Math.min(0.28, Math.max(0, speed) * 0.018);
       scrapeGain.gain.setTargetAtTime(g, t, 0.05);
       if (scrapeFilter) {
-        scrapeFilter.frequency.setTargetAtTime(260 + Math.min(speed, 48) * 16, t, 0.08);
+        scrapeFilter.frequency.setTargetAtTime(48 + Math.min(speed, 48) * 4, t, 0.08);
       }
     },
     /** Hold-the-mouth rising tone. */
@@ -318,12 +329,17 @@ export function createAudioEngine() {
           try { chargeOsc.stop(); } catch { /* already stopped */ }
           chargeOsc = null;
         }
-        chargeOsc = makeOsc(ctx, "sine", 64);
+        chargeOsc = makeOsc(ctx, "sawtooth", 22);
         chargeGain = ctx.createGain();
         chargeGain.gain.setValueAtTime(0.0001, t);
-        chargeGain.gain.exponentialRampToValueAtTime(0.16, t + 0.06);
-        chargeOsc.frequency.exponentialRampToValueAtTime(310, t + 1.32);
-        chargeOsc.connect(chargeGain);
+        chargeGain.gain.exponentialRampToValueAtTime(0.22, t + 0.08);
+        chargeOsc.frequency.exponentialRampToValueAtTime(48, t + 1.32);
+        const chargeLp = ctx.createBiquadFilter();
+        chargeLp.type = "lowpass";
+        chargeLp.frequency.value = 160;
+        chargeLp.Q.value = 6;
+        chargeOsc.connect(chargeLp);
+        chargeLp.connect(chargeGain);
         chargeGain.connect(bellGain);
         chargeOsc.start(t);
       } else if (chargeGain) {
@@ -341,22 +357,23 @@ export function createAudioEngine() {
       if (!started || !ctx || throne.muted || throne.calm) return;
       const c = ctx;
       const t0 = c.currentTime;
-      const freqs = [randRange(96, 170), randRange(220, 410), randRange(680, 1280)];
+      const freqs = [randRange(18, 28), randRange(32, 48), randRange(54, 72)];
       freqs.forEach((f, i) => {
-        const osc = makeOsc(c, i === 2 ? "sawtooth" : "sine", f);
-        const bp = c.createBiquadFilter();
-        bp.type = "bandpass";
-        bp.frequency.value = f * randRange(1.6, 3.4);
-        bp.Q.value = 7;
+        const osc = makeOsc(c, i === 0 ? "sine" : "sawtooth", f);
+        const lp = c.createBiquadFilter();
+        lp.type = "lowpass";
+        lp.frequency.value = 90 + i * 40;
+        lp.Q.value = 4;
         const g = c.createGain();
         g.gain.setValueAtTime(0.0001, t0);
-        g.gain.exponentialRampToValueAtTime(0.11 - i * 0.025, t0 + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0 + randRange(0.4, 1.05));
-        osc.connect(bp);
-        bp.connect(g);
+        g.gain.exponentialRampToValueAtTime(0.2 - i * 0.04, t0 + 0.03);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + randRange(0.7, 1.3));
+        osc.frequency.exponentialRampToValueAtTime(Math.max(10, f * 0.62), t0 + 0.9);
+        osc.connect(lp);
+        lp.connect(g);
         g.connect(bellGain);
         osc.start(t0);
-        osc.stop(t0 + 1.1);
+        osc.stop(t0 + 1.4);
       });
     },
     /** Wheel-cycle swell: a few dB above the bed, then back. Compressor + cap keep it from spiking. */
@@ -380,15 +397,20 @@ export function createAudioEngine() {
     unmake() {
       if (!started || !ctx || throne.muted) return;
       const t0 = ctx.currentTime;
-      const car = makeOsc(ctx, "sine", 920);
+      const car = makeOsc(ctx, "sawtooth", 48);
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = 180;
+      lp.Q.value = 5;
       const g = ctx.createGain();
-      car.frequency.exponentialRampToValueAtTime(140, t0 + 0.4);
-      g.gain.setValueAtTime(0.12, t0);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.45);
-      car.connect(g);
+      car.frequency.exponentialRampToValueAtTime(12, t0 + 0.55);
+      g.gain.setValueAtTime(0.22, t0);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.6);
+      car.connect(lp);
+      lp.connect(g);
       g.connect(bellGain);
       car.start(t0);
-      car.stop(t0 + 0.5);
+      car.stop(t0 + 0.7);
     },
     consume() {
       if (!started || !ctx || throne.muted) return;
@@ -409,20 +431,26 @@ export function createAudioEngine() {
       if (delayG) delayG.gain.setTargetAtTime(on ? 0.38 : 0, t, 0.18);
       if (droneGain) droneGain.gain.setTargetAtTime(0.22 * droneMul * (on ? 1.35 : 1), t, 0.25);
     },
-    /** Stacked glass chord, still gain-capped. */
+    /** Stacked sub hits, still gain-capped. */
     strike() {
       if (!started || !ctx || throne.muted) return;
-      [392, 494, 587, 784].forEach((f, i) => {
-        const t0 = ctx.currentTime + i * 0.05;
-        const car = makeOsc(ctx, "sine", f);
+      [22, 33, 41, 55].forEach((f, i) => {
+        const t0 = ctx.currentTime + i * 0.07;
+        const car = makeOsc(ctx, i % 2 ? "sawtooth" : "square", f);
+        const lp = ctx.createBiquadFilter();
+        lp.type = "lowpass";
+        lp.frequency.value = 140;
+        lp.Q.value = 4.5;
         const g = ctx.createGain();
         g.gain.setValueAtTime(0.0001, t0);
-        g.gain.exponentialRampToValueAtTime(0.11, t0 + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.6);
-        car.connect(g);
+        g.gain.exponentialRampToValueAtTime(0.2, t0 + 0.03);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.4);
+        car.frequency.exponentialRampToValueAtTime(Math.max(10, f * 0.5), t0 + 1.2);
+        car.connect(lp);
+        lp.connect(g);
         g.connect(bellGain);
         car.start(t0);
-        car.stop(t0 + 1.8);
+        car.stop(t0 + 1.6);
       });
     },
     /** Father taken. One remaining voice. */
@@ -434,21 +462,26 @@ export function createAudioEngine() {
       if (droneGain) droneGain.gain.setTargetAtTime(0.06, t0, 0.4);
       if (formantGain) formantGain.gain.setTargetAtTime(0.012, t0, 0.35);
       if (delayG) delayG.gain.setTargetAtTime(0.22, t0, 0.2);
-      [196, 247, 392].forEach((f, i) => {
-        const osc = makeOsc(c, "sine", f);
+      [18, 27, 36].forEach((f, i) => {
+        const osc = makeOsc(c, i === 0 ? "sine" : "sawtooth", f);
+        const lp = c.createBiquadFilter();
+        lp.type = "lowpass";
+        lp.frequency.value = 120;
+        lp.Q.value = 3;
         const g = c.createGain();
-        g.gain.setValueAtTime(0.0001, t0 + i * 0.12);
-        g.gain.exponentialRampToValueAtTime(0.14, t0 + i * 0.12 + 0.04);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.8);
-        osc.connect(g);
+        g.gain.setValueAtTime(0.0001, t0 + i * 0.16);
+        g.gain.exponentialRampToValueAtTime(0.18, t0 + i * 0.16 + 0.06);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 3.2);
+        osc.connect(lp);
+        lp.connect(g);
         g.connect(bellGain);
         osc.start(t0);
-        osc.stop(t0 + 3);
+        osc.stop(t0 + 3.4);
       });
-      const child = makeOsc(c, "sine", 784);
+      const child = makeOsc(c, "sine", 44);
       const cg = c.createGain();
       cg.gain.setValueAtTime(0.0001, t0 + 1.1);
-      cg.gain.exponentialRampToValueAtTime(0.1, t0 + 1.4);
+      cg.gain.exponentialRampToValueAtTime(0.12, t0 + 1.5);
       cg.gain.exponentialRampToValueAtTime(0.0001, t0 + 5.5);
       child.connect(cg);
       cg.connect(bellGain);
@@ -458,15 +491,15 @@ export function createAudioEngine() {
     setAspect(id) {
       aspectId = id;
       const table = {
-        witness: { formant: 1, drone: 1, extra: 0.0001, noise: 0.18, reverse: false, extraHz: 46.25 * 3 },
-        unblinking: { formant: 0.45, drone: 0.7, extra: 0.08, noise: 0.06, reverse: false, extraHz: 880 },
-        merkavah: { formant: 1.2, drone: 1.25, extra: 0.12, noise: 0.22, reverse: false, extraHz: 46.25 * 2.5 },
-        waters: { formant: 2.8, drone: 1.1, extra: 0.04, noise: 0.42, reverse: false, extraHz: 55 },
-        seraph: { formant: 1.8, drone: 1.05, extra: 0.16, noise: 0.1, reverse: false, extraHz: 46.25 * 5 },
-        inverted: { formant: 1.4, drone: 0.95, extra: 0.09, noise: 0.28, reverse: true, extraHz: 41 },
-        name: { formant: 0.3, drone: 0.55, extra: 0.18, noise: 0.04, reverse: false, extraHz: 73 },
-        hush: { formant: 0.15, drone: 0.35, extra: 0.02, noise: 0.03, reverse: false, extraHz: 92 },
-        offered: { formant: 0.4, drone: 0.18, extra: 0.14, noise: 0.02, reverse: false, extraHz: 523 },
+        witness: { formant: 1, drone: 1, extra: 0.0001, noise: 0.18, reverse: false, extraHz: 55 },
+        unblinking: { formant: 0.45, drone: 0.7, extra: 0.1, noise: 0.06, reverse: false, extraHz: 41 },
+        merkavah: { formant: 1.2, drone: 1.25, extra: 0.14, noise: 0.22, reverse: false, extraHz: 27 },
+        waters: { formant: 2.8, drone: 1.1, extra: 0.06, noise: 0.42, reverse: false, extraHz: 22 },
+        seraph: { formant: 1.8, drone: 1.05, extra: 0.16, noise: 0.1, reverse: false, extraHz: 33 },
+        inverted: { formant: 1.4, drone: 0.95, extra: 0.12, noise: 0.28, reverse: true, extraHz: 18 },
+        name: { formant: 0.3, drone: 0.55, extra: 0.2, noise: 0.04, reverse: false, extraHz: 36 },
+        hush: { formant: 0.15, drone: 0.35, extra: 0.04, noise: 0.03, reverse: false, extraHz: 29 },
+        offered: { formant: 0.4, drone: 0.18, extra: 0.16, noise: 0.02, reverse: false, extraHz: 24 },
       };
       const next = table[id] || table.witness;
       formantMul = next.formant;
