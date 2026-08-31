@@ -51,7 +51,7 @@
         <h1 id="veil-title" class="veil-title">THRONE</h1>
         <button id="enter" type="button" class="veil-enter">look upon it</button>
         <p class="veil-hint">You came about a boy.</p>
-        <p class="veil-warn">Drag the dark. Hold the center. Calm Mode and mute stay in the corner.</p>
+        <p class="veil-warn">Drag the dark. Hold the center. The windows still answer. Calm Mode and mute stay in the corner.</p>
       </div>
     </div>
 
@@ -74,6 +74,75 @@
 
     <canvas id="cursor-trail" class="overlay-canvas" aria-hidden="true"></canvas>
     <div id="caption" class="caption" role="status" aria-live="polite"></div>
+    <div id="witness" class="witness" role="status" aria-live="assertive" hidden>Your petition has been witnessed</div>
+
+    <aside id="liturgy-nav" class="plane plane-nav" data-swap data-drift style="right:2%;top:12%" aria-label="The order of service">
+      <p class="plane-kicker">the order of service</p>
+      <ul>
+        <li><a href="#measure" data-nav="measure">The Measure</a></li>
+        <li><a href="#petition" data-nav="petition">Petition</a></li>
+        <li><a href="#attendants" data-nav="attendants">Attendants</a></li>
+        <li><a href="#approach" data-nav="approach">Approach</a></li>
+        <li><a href="#wheel" data-nav="wheel">The Wheel</a></li>
+      </ul>
+    </aside>
+
+    <section id="measure" class="plane plane-measure" data-swap data-drift style="left:2%;top:28%">
+      <h2 data-glitch>MEASURE</h2>
+      <label class="slider-wrap" for="rim-slider">
+        <span>Distance from the rim</span>
+        <input id="rim-slider" type="range" min="0" max="100" value="37" />
+      </label>
+      <div class="progress-wrap">
+        <span>Comprehension: <strong id="comprehension-value">0</strong>%</span>
+        <div class="progress-track" aria-hidden="true">
+          <div id="comprehension-bar" class="progress-bar"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="approach" class="plane plane-approach" data-swap data-drift style="right:2%;top:38%">
+      <h2 data-glitch>APPROACH</h2>
+      <p class="inscription flee" data-flee data-glitch>do not reach for this line</p>
+      <button id="averted" class="averted" type="button">
+        Approach
+        <span class="averted-hint">it will not be touched directly</span>
+      </button>
+    </section>
+
+    <section id="attendants" class="plane plane-attendants" data-swap data-drift style="left:2%;bottom:8%">
+      <h2>ATTENDANTS</h2>
+      <div class="seals" aria-label="Four attending seals">
+        <button type="button" data-seal="merkavah" aria-pressed="false">Rim that counts</button>
+        <button type="button" data-seal="waters" aria-pressed="false">Voice of the deep</button>
+        <button type="button" data-seal="seraph" aria-pressed="false">Fire that attends</button>
+        <button type="button" data-seal="unblinking" aria-pressed="false">Gate that is not a door</button>
+      </div>
+      <label class="slider-wrap" for="depth-slider">
+        <span>Depth of the waters</span>
+        <input id="depth-slider" type="range" min="0" max="100" value="45" />
+      </label>
+      <div class="attendant-actions">
+        <button id="choir-toggle" type="button" aria-pressed="false">Open the choir</button>
+        <button id="strike" type="button">Strike the rim</button>
+        <button id="reset-aspect" type="button">Return the shape</button>
+      </div>
+    </section>
+
+    <section id="petition" class="plane plane-petition" data-swap data-drift style="right:2%;bottom:8%">
+      <h2 data-glitch>PETITION</h2>
+      <form id="petition-form" class="petition-form" autocomplete="off">
+        <label>
+          Name (as it will be forgotten)
+          <input name="forgotten" type="text" maxlength="80" />
+        </label>
+        <label>
+          Enter your Petition
+          <textarea name="petition" rows="2" maxlength="400"></textarea>
+        </label>
+        <button type="submit">Offer</button>
+      </form>
+    </section>
 
     <script type="module" src="js/main.js"></script>
   </body>

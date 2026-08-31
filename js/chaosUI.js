@@ -133,6 +133,10 @@ export function createChaosUI({ audio, wheel }) {
   const geo = document.getElementById("sacred-geo");
   const chroma = document.getElementById("chromatic");
   const daysEl = document.getElementById("days-value");
+  const bar = document.getElementById("comprehension-bar");
+  const barVal = document.getElementById("comprehension-value");
+  const witness = document.getElementById("witness");
+  const averted = document.getElementById("averted");
   const fleeEls = [...document.querySelectorAll("[data-flee]")];
   fleeEls.forEach((el) => {
     el.addEventListener("click", () => {
@@ -146,6 +150,8 @@ export function createChaosUI({ audio, wheel }) {
 
   let lastStrobe = 0;
   let strobeOn = false;
+  let comprehension = randRange(4, 18);
+  let compVel = randRange(2, 9);
   let days = 2_198_447 + Math.floor(throne.rng() * 90000);
   let lastSwap = 0;
   let invertUntil = 0;
@@ -188,6 +194,7 @@ export function createChaosUI({ audio, wheel }) {
   wireOrbit(audio);
   wireMouth(audio, wheel);
   wireGaze(audio, wheel);
+  wireWindows(audio, wheel);
 
   // ----- Cursor + particles -----
   window.addEventListener("pointermove", (e) => {
@@ -461,7 +468,7 @@ export function createChaosUI({ audio, wheel }) {
     window.addEventListener("pointerdown", (e) => {
       if (!throne.entered || e.button !== 0) return;
       const el = e.target instanceof Element ? e.target : null;
-      if (el?.closest(".hud-safe, .veil, .mouth, .fear-not, button, input")) return;
+      if (el?.closest(".hud-safe, .veil, .mouth, .fear-not, .plane, .witness, button, input, textarea, label, a")) return;
       down = true;
       lastX = e.clientX;
       lastY = e.clientY;
@@ -501,6 +508,159 @@ export function createChaosUI({ audio, wheel }) {
         audio.ping("zoom");
       }
     }, { passive: false });
+  }
+
+  function wakePlane(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add("wake");
+    el.style.zIndex = "16";
+    window.setTimeout(() => {
+      el.classList.remove("wake");
+      el.style.zIndex = "";
+    }, 1400);
+  }
+
+  function wireWindows(audio, wheel) {
+    document.getElementById("liturgy-nav")?.addEventListener("click", (e) => {
+      const a = e.target.closest("[data-nav]");
+      if (!a) return;
+      e.preventDefault();
+      const id = a.getAttribute("data-nav");
+      audio.ping("click");
+      if (id === "wheel") {
+        wheel.shudder();
+        wheel.pulse();
+        triggerPulse();
+        showCaption("it answers the count", 2400);
+        return;
+      }
+      wakePlane(id);
+      if (id === "measure") {
+        showCaption("the rim is farther than the hand", 2400);
+      } else if (id === "petition") {
+        document.querySelector("#petition-form input")?.focus();
+        showCaption("say it. it will not keep the name.", 2600);
+      } else if (id === "attendants") {
+        showCaption("they will not introduce themselves", 2400);
+      } else if (id === "approach") {
+        showCaption("looking away was always the door", 2400);
+      }
+    });
+
+    const rim = document.getElementById("rim-slider");
+    rim?.addEventListener("pointerup", () => {
+      if (!throne.entered) return;
+      audio.ping("click");
+      wheel.openDistantEye();
+      wheel.pulse();
+      triggerPulse();
+      showCaption("something distant has opened", 2800);
+      window.dispatchEvent(new CustomEvent("throne:rim", { detail: { value: Number(rim.value) } }));
+    });
+
+    const depth = document.getElementById("depth-slider");
+    depth?.addEventListener("input", () => {
+      const v = Number(depth.value) / 100;
+      audio.setDepth(v);
+      wheel.nudgeZ((v - 0.45) * 0.8);
+    });
+
+    const choirBtn = document.getElementById("choir-toggle");
+    choirBtn?.addEventListener("click", () => {
+      const on = !throne.choir;
+      audio.setChoir(on);
+      choirBtn.setAttribute("aria-pressed", on ? "true" : "false");
+      choirBtn.textContent = on ? "Close the choir" : "Open the choir";
+      audio.ping("click");
+      showCaption(on ? "the waters rise in the throat" : "the waters fall back", 2400);
+    });
+
+    document.getElementById("strike")?.addEventListener("click", () => {
+      audio.strike();
+      wheel.pulse();
+      wheel.shudder();
+      triggerPulse();
+      maybeStrobe(true);
+      showCaption("the rim remembers the blow", 2400);
+      window.dispatchEvent(new CustomEvent("throne:strike"));
+    });
+
+    document.getElementById("reset-aspect")?.addEventListener("click", () => {
+      audio.ping("click");
+      window.dispatchEvent(new CustomEvent("throne:return"));
+    });
+
+    document.querySelectorAll("[data-seal]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-seal");
+        document.querySelectorAll("[data-seal]").forEach((b) => b.setAttribute("aria-pressed", "false"));
+        btn.setAttribute("aria-pressed", "true");
+        audio.ping("click");
+        window.dispatchEvent(new CustomEvent("throne:seal", { detail: { id } }));
+      });
+    });
+
+    document.getElementById("petition-form")?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (!throne.entered) return;
+      audio.ping("click");
+      const data = new FormData(e.target);
+      window.dispatchEvent(
+        new CustomEvent("throne:petition", {
+          detail: {
+            forgotten: String(data.get("forgotten") || ""),
+            petition: String(data.get("petition") || ""),
+          },
+        })
+      );
+      if (witness) {
+        witness.hidden = false;
+        window.setTimeout(() => {
+          witness.hidden = true;
+          e.target.reset();
+        }, 780);
+      }
+      triggerPulse();
+    });
+
+    let avertedArmed = false;
+    averted?.addEventListener("pointerenter", () => {
+      avertedArmed = true;
+      audio.ping("hover");
+    });
+    averted?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      showCaption("it will not be touched directly", 2200);
+    });
+    document.addEventListener("click", (e) => {
+      if (!avertedArmed || !throne.entered) return;
+      if (e.target.closest(".hud-safe, .averted")) return;
+      avertedArmed = false;
+      audio.ping("click");
+      triggerPulse();
+      wheel.openDistantEye();
+      showCaption("looking away was the approach", 2800);
+    });
+
+    fleeEls.forEach((el) => {
+      el.addEventListener("click", () => {
+        audio.ping("click");
+        wheel.shudder();
+        showCaption("it runs because you reached", 2400);
+      });
+    });
+
+    document.querySelectorAll(".plane button, .plane a, .plane label, .plane input").forEach((el) => {
+      let last = 0;
+      el.addEventListener("pointerenter", () => {
+        const now = performance.now();
+        if (now - last < 400) return;
+        last = now;
+        if (throne.rng() > 0.4) audio.ping("hover");
+      });
+    });
   }
 
   function triggerPulse() {
@@ -600,7 +760,32 @@ export function createChaosUI({ audio, wheel }) {
 
   // ----- Per-frame chaos (called from main RAF) -----
   function tick(t) {
+    try {
+      paintComprehension();
+      tickChaos(t);
+    } catch {
+      /* keep the loop alive */
+    }
+  }
 
+  function paintComprehension() {
+    const dt = 0.016;
+    if (!throne.calm) {
+      if (throne.rng() < 0.01) compVel = randRange(-6, 14);
+      comprehension += compVel * dt;
+      if (comprehension > randRange(86, 98) || comprehension < 0) {
+        comprehension = randRange(2, 12);
+        compVel = randRange(1.5, 11);
+      }
+    } else {
+      comprehension += (41 - comprehension) * 0.02;
+    }
+    const shown = Math.max(0, Math.min(99, comprehension));
+    if (bar) bar.style.width = `${shown}%`;
+    if (barVal) barVal.textContent = String(Math.floor(shown));
+  }
+
+  function tickChaos(t) {
     if (geo && !throne.calm) {
       geo.style.opacity = String(0.12 + 0.22 * (0.5 + 0.5 * Math.sin(t * 0.0011)));
     }
