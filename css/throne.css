@@ -238,13 +238,23 @@ html.entered .veil {
 }
 
 /* ----- The hill and the wheels travel together ----- */
+.abyss {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  display: block;
+}
+
 .world {
   position: fixed;
   inset: 0;
   width: 100vw;
   height: 100vh;
   z-index: 0;
-  background: #0c0912;
+  background: transparent;
 }
 
 .sky,
@@ -280,7 +290,7 @@ html.entered .veil {
 .wheel-root {
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: 1;
 }
 
 .wheel-root canvas {
@@ -749,6 +759,10 @@ body.rim-live .orbit {
 html.calm .floater,
 html.calm .charge {
   animation: none;
+}
+
+html.calm .abyss {
+  filter: saturate(0.7);
 }
 
 body.aspect-unblinking {

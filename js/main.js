@@ -16,6 +16,7 @@ import { createAudioEngine } from "./audioEngine.js";
 import { createChaosUI } from "./chaosUI.js";
 import { createCalmMode } from "./calmMode.js";
 import { createArg } from "./arg.js";
+import { createAbyss } from "./abyss.js";
 
 (function boot() {
   const params = new URLSearchParams(location.search);
@@ -35,6 +36,7 @@ import { createArg } from "./arg.js";
   }
 
   const audio = createAudioEngine();
+  const abyss = createAbyss(document.getElementById("abyss"));
   const chaos = createChaosUI({ audio, wheel });
   createCalmMode({ audio, chaos });
   const arg = createArg({ audio, wheel });
@@ -89,6 +91,7 @@ import { createArg } from "./arg.js";
   veil?.addEventListener("click", enterThrone);
 
   function loop(now) {
+    abyss.tick(now);
     if (throne.entered) chaos.tick(now);
     requestAnimationFrame(loop);
   }
