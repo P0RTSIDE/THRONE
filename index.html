@@ -41,7 +41,8 @@
           <input id="volume" type="range" min="0" max="1" step="0.01" value="0.62" />
         </label>
       </div>
-      <p id="days-counter" class="days-counter" title="">
+      <p id="days-counter" class="days-counter" title="three days to the hill">
+        days on the hill
         <strong id="days-value">0</strong>
       </p>
     </aside>
@@ -51,13 +52,22 @@
         <h1 id="veil-title" class="veil-title">THRONE</h1>
         <button id="enter" type="button" class="veil-enter">look upon it</button>
         <p class="veil-hint">You came about a boy.</p>
-        <p class="veil-warn">Drag the dark. Hold the center. The windows still answer. Calm Mode and mute stay in the corner.</p>
+        <p class="veil-warn">You came about a boy. Drag toward what waits in the dark. Fold a window if it covers the wheels. Calm Mode and mute stay in the corner.</p>
       </div>
     </div>
 
     <div id="world" class="world">
       <div id="sky" class="sky" aria-hidden="true"></div>
-      <div id="hill" class="hill" aria-hidden="true"></div>
+      <div id="glory" class="glory" aria-hidden="true"></div>
+      <button type="button" class="world-relic" data-relic="knife" style="left:22%;top:44%">the knife</button>
+      <button type="button" class="world-relic" data-relic="hill" style="left:76%;top:32%">the hill</button>
+      <button type="button" class="world-relic" data-relic="ram" style="left:75%;top:68%">no ram came</button>
+      <button type="button" class="world-relic" data-relic="cord" style="left:23%;top:70%">the cord</button>
+      <button type="button" class="world-relic" data-relic="name" style="left:50%;top:17%">his name</button>
+      <button type="button" class="world-relic" data-relic="morning" style="left:36%;top:15%">the morning</button>
+      <button type="button" class="world-relic" data-relic="wood" style="left:70%;top:22%">the wood</button>
+      <button type="button" class="world-relic" data-relic="lamb" style="left:32%;top:38%">where is the lamb</button>
+      <button type="button" class="world-relic" data-relic="fire" style="left:18%;top:52%">the fire</button>
       <div class="stage">
         <div id="wheel-root" class="wheel-root" aria-hidden="true"></div>
         <div id="vignette" class="vignette" aria-hidden="true"></div>
@@ -75,73 +85,145 @@
     <canvas id="cursor-trail" class="overlay-canvas" aria-hidden="true"></canvas>
     <div id="caption" class="caption" role="status" aria-live="polite"></div>
     <div id="witness" class="witness" role="status" aria-live="assertive" hidden>Your petition has been witnessed</div>
+    <div id="dock" class="dock" aria-label="folded windows"></div>
 
-    <aside id="liturgy-nav" class="plane plane-nav" data-swap data-drift style="right:2%;top:12%" aria-label="The order of service">
-      <p class="plane-kicker">the order of service</p>
-      <ul>
-        <li><a href="#measure" data-nav="measure">The Measure</a></li>
-        <li><a href="#petition" data-nav="petition">Petition</a></li>
-        <li><a href="#attendants" data-nav="attendants">Attendants</a></li>
-        <li><a href="#approach" data-nav="approach">Approach</a></li>
-        <li><a href="#wheel" data-nav="wheel">The Wheel</a></li>
-      </ul>
-    </aside>
+    <section id="ledger" class="plane plane-ledger" data-title="The Hill" style="left:12px;top:72px">
+      <div class="plane-head">
+        <h2>THE HILL</h2>
+        <button type="button" class="plane-min" aria-label="fold">fold</button>
+      </div>
+      <div class="plane-body">
+        <p class="inscription">You came as a father. The boy is not in the wheels. You told him Fear Not and you bound him anyway.</p>
+        <p class="inscription">Three days up. He asked where the lamb was. You said someone else would see to it. No ram in the thicket.</p>
+        <p class="inscription">You stacked the wood. You reached for him. No voice arrived in time.</p>
+        <p class="inscription small">The knife, the cord, the hill, and his name wait in the dark around the wheels. Carry Fear Not into the light. Hold the center until it takes you in his place.</p>
+      </div>
+    </section>
 
-    <section id="measure" class="plane plane-measure" data-swap data-drift style="left:2%;top:28%">
-      <h2 data-glitch>MEASURE</h2>
-      <label class="slider-wrap" for="rim-slider">
-        <span>Distance from the rim</span>
-        <input id="rim-slider" type="range" min="0" max="100" value="37" />
-      </label>
-      <div class="progress-wrap">
-        <span>Comprehension: <strong id="comprehension-value">0</strong>%</span>
-        <div class="progress-track" aria-hidden="true">
-          <div id="comprehension-bar" class="progress-bar"></div>
+    <section id="measure" class="plane" data-title="Measure" style="left:12px;bottom:88px">
+      <div class="plane-head">
+        <h2>MEASURE</h2>
+        <button type="button" class="plane-min" aria-label="fold">fold</button>
+      </div>
+      <div class="plane-body">
+        <p class="inscription small">How far from the rim to the boy you cannot see.</p>
+        <label class="slider-wrap" for="rim-slider">
+          <span>Distance from the rim</span>
+          <input id="rim-slider" type="range" min="0" max="100" value="37" />
+        </label>
+        <div class="progress-wrap">
+          <span>Comprehension: <strong id="comprehension-value">0</strong>%</span>
+          <div class="progress-track" aria-hidden="true">
+            <div id="comprehension-bar" class="progress-bar"></div>
+          </div>
         </div>
       </div>
     </section>
 
-    <section id="approach" class="plane plane-approach" data-swap data-drift style="right:2%;top:38%">
-      <h2 data-glitch>APPROACH</h2>
-      <p class="inscription flee" data-flee data-glitch>do not reach for this line</p>
-      <button id="averted" class="averted" type="button">
-        Approach
-        <span class="averted-hint">it will not be touched directly</span>
-      </button>
-    </section>
-
-    <section id="attendants" class="plane plane-attendants" data-swap data-drift style="left:2%;bottom:8%">
-      <h2>ATTENDANTS</h2>
-      <div class="seals" aria-label="Four attending seals">
-        <button type="button" data-seal="merkavah" aria-pressed="false">Rim that counts</button>
-        <button type="button" data-seal="waters" aria-pressed="false">Voice of the deep</button>
-        <button type="button" data-seal="seraph" aria-pressed="false">Fire that attends</button>
-        <button type="button" data-seal="unblinking" aria-pressed="false">Gate that is not a door</button>
+    <section id="petition" class="plane" data-title="Petition" style="right:12px;bottom:88px">
+      <div class="plane-head">
+        <h2>PETITION</h2>
+        <button type="button" class="plane-min" aria-label="fold">fold</button>
       </div>
-      <label class="slider-wrap" for="depth-slider">
-        <span>Depth of the waters</span>
-        <input id="depth-slider" type="range" min="0" max="100" value="45" />
-      </label>
-      <div class="attendant-actions">
-        <button id="choir-toggle" type="button" aria-pressed="false">Open the choir</button>
-        <button id="strike" type="button">Strike the rim</button>
-        <button id="reset-aspect" type="button">Return the shape</button>
+      <div class="plane-body">
+        <p class="inscription small">Ask for him back. It keeps the asking and drops the name unless you say the boy.</p>
+        <form id="petition-form" class="petition-form" autocomplete="off">
+          <label>
+            Name (as it will be forgotten)
+            <input name="forgotten" type="text" maxlength="80" placeholder="the boy" />
+          </label>
+          <label>
+            Enter your Petition
+            <textarea name="petition" rows="2" maxlength="400" placeholder="take me instead"></textarea>
+          </label>
+          <button type="submit">Offer</button>
+        </form>
       </div>
     </section>
 
-    <section id="petition" class="plane plane-petition" data-swap data-drift style="right:2%;bottom:8%">
-      <h2 data-glitch>PETITION</h2>
-      <form id="petition-form" class="petition-form" autocomplete="off">
-        <label>
-          Name (as it will be forgotten)
-          <input name="forgotten" type="text" maxlength="80" />
+    <aside id="liturgy-nav" class="plane plane-nav folded" data-title="Order" style="right:12px;top:72px" aria-label="The order of service">
+      <div class="plane-head">
+        <p class="plane-kicker">the order of service</p>
+        <button type="button" class="plane-min" aria-label="fold">fold</button>
+      </div>
+      <div class="plane-body">
+        <ul>
+          <li><a href="#ledger" data-nav="ledger">The Hill</a></li>
+          <li><a href="#boy" data-nav="boy">The Boy</a></li>
+          <li><a href="#measure" data-nav="measure">The Measure</a></li>
+          <li><a href="#petition" data-nav="petition">Petition</a></li>
+          <li><a href="#attendants" data-nav="attendants">Attendants</a></li>
+          <li><a href="#approach" data-nav="approach">Approach</a></li>
+          <li><a href="#litany" data-nav="litany">Litany</a></li>
+          <li><a href="#wheel" data-nav="wheel">The Wheel</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <section id="boy" class="plane folded" data-title="The Boy" style="right:18%;top:22%">
+      <div class="plane-head">
+        <h2>THE BOY</h2>
+        <button type="button" class="plane-min" aria-label="fold">fold</button>
+      </div>
+      <div class="plane-body">
+        <p class="inscription">He walked beside you. He carried the wood because you asked. He believed Fear Not because it came from your mouth.</p>
+        <p class="inscription">He asked where the lamb was. You did not say the true answer. The hill already knew.</p>
+        <p class="inscription small">His name is still in the dark above the wheels. Saying it does not return him. Trading yourself might.</p>
+      </div>
+    </section>
+
+    <section id="approach" class="plane folded" data-title="Approach" style="right:12px;top:38%">
+      <div class="plane-head">
+        <h2>APPROACH</h2>
+        <button type="button" class="plane-min" aria-label="fold">fold</button>
+      </div>
+      <div class="plane-body">
+        <p class="inscription flee" data-flee>do not reach for this line</p>
+        <button id="averted" class="averted" type="button">
+          Approach
+          <span class="averted-hint">it will not be touched directly</span>
+        </button>
+      </div>
+    </section>
+
+    <section id="attendants" class="plane folded" data-title="Attendants" style="left:12px;top:42%">
+      <div class="plane-head">
+        <h2>ATTENDANTS</h2>
+        <button type="button" class="plane-min" aria-label="fold">fold</button>
+      </div>
+      <div class="plane-body">
+        <p class="inscription small">fourfold and also one. they will not introduce themselves.</p>
+        <div class="seals" aria-label="Four attending seals">
+          <button type="button" data-seal="merkavah" aria-pressed="false">Rim that counts</button>
+          <button type="button" data-seal="waters" aria-pressed="false">Voice of the deep</button>
+          <button type="button" data-seal="seraph" aria-pressed="false">Fire that attends</button>
+          <button type="button" data-seal="unblinking" aria-pressed="false">Gate that is not a door</button>
+        </div>
+        <label class="slider-wrap" for="depth-slider">
+          <span>Depth of the waters</span>
+          <input id="depth-slider" type="range" min="0" max="100" value="45" />
         </label>
-        <label>
-          Enter your Petition
-          <textarea name="petition" rows="2" maxlength="400"></textarea>
-        </label>
-        <button type="submit">Offer</button>
-      </form>
+        <div class="attendant-actions">
+          <button id="choir-toggle" type="button" aria-pressed="false">Open the choir</button>
+          <button id="strike" type="button">Strike the rim</button>
+          <button id="reset-aspect" type="button">Return the shape</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="litany" class="plane folded" data-title="Litany" style="right:28%;bottom:20%">
+      <div class="plane-head">
+        <h2>LITANY</h2>
+        <button type="button" class="plane-min" aria-label="fold">fold</button>
+      </div>
+      <div class="plane-body">
+        <p class="inscription">a voice like many waters, and none of them yours</p>
+        <p class="inscription">be not afraid is an instruction, not a comfort</p>
+        <p class="inscription">the wheels moved when the living creatures moved</p>
+        <p class="inscription">their rims were full of eyes, all around, and within</p>
+        <p class="inscription">the appearance of the wheels was like burnished bronze</p>
+        <p class="inscription small">a father came about a boy. the count kept the father.</p>
+      </div>
     </section>
 
     <script type="module" src="js/main.js"></script>

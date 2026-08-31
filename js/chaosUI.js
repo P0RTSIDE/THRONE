@@ -94,7 +94,7 @@ function blurbPool() {
   if (lore.raptured >= 1 && throne.raptured) return BLURBS.inside;
   if (lore.fed >= 1) return BLURBS.fed;
   if (lore.feared >= 1) return BLURBS.fear;
-  if (throne.entered) return [...BLURBS.angel, ...BLURBS.father];
+  if (throne.entered) return BLURBS.father;
   return BLURBS.angel;
 }
 
@@ -195,6 +195,7 @@ export function createChaosUI({ audio, wheel }) {
   wireMouth(audio, wheel);
   wireGaze(audio, wheel);
   wireWindows(audio, wheel);
+  wirePlaneDrag();
 
   // ----- Cursor + particles -----
   window.addEventListener("pointermove", (e) => {
@@ -444,8 +445,7 @@ export function createChaosUI({ audio, wheel }) {
 
     function paintWorld() {
       if (!world) return;
-      const o = wheel.getOrbit ? wheel.getOrbit() : { yaw: 0 };
-      world.style.transform = `translate3d(${panX.toFixed(1)}px, ${panY.toFixed(1)}px, 0) rotate(${(o.yaw * 7).toFixed(2)}deg)`;
+      world.style.transform = `translate3d(${panX.toFixed(1)}px, ${panY.toFixed(1)}px, 0)`;
     }
 
     function endGaze() {
@@ -468,7 +468,7 @@ export function createChaosUI({ audio, wheel }) {
     window.addEventListener("pointerdown", (e) => {
       if (!throne.entered || e.button !== 0) return;
       const el = e.target instanceof Element ? e.target : null;
-      if (el?.closest(".hud-safe, .veil, .mouth, .fear-not, .plane, .witness, button, input, textarea, label, a")) return;
+      if (el?.closest(".hud-safe, .veil, .mouth, .fear-not, .plane, .witness, .dock, .world-relic, button, input, textarea, label, a")) return;
       down = true;
       lastX = e.clientX;
       lastY = e.clientY;
@@ -485,8 +485,8 @@ export function createChaosUI({ audio, wheel }) {
       lastY = e.clientY;
       const speed = Math.hypot(dx, dy);
       traveled += speed;
-      panX += dx;
-      panY += dy;
+      panX = Math.max(-420, Math.min(420, panX + dx * 0.95));
+      panY = Math.max(-280, Math.min(280, panY + dy * 0.95));
       wheel.orbit(dx, dy);
       paintWorld();
       audio.scrape(speed);
@@ -510,9 +510,88 @@ export function createChaosUI({ audio, wheel }) {
     }, { passive: false });
   }
 
+  function foldPlane(plane, fold) {
+    plane.classList.toggle("folded", fold);
+    const id = plane.id;
+    if (!id) return;
+    const dock = document.getElementById("dock");
+    let chip = document.querySelector(`.dock-chip[data-open="${id}"]`);
+    if (fold) {
+      if (!chip && dock) {
+        chip = document.createElement("button");
+        chip.className = "dock-chip";
+        chip.type = "button";
+        chip.dataset.open = id;
+        chip.textContent = plane.dataset.title || "window";
+        dock.appendChild(chip);
+        chip.addEventListener("click", () => foldPlane(plane, false));
+      }
+      if (chip) chip.hidden = false;
+    } else if (chip) {
+      chip.hidden = true;
+    }
+  }
+
+  function wirePlaneDrag() {
+    document.querySelectorAll(".plane").forEach((plane) => {
+      if (plane.classList.contains("folded")) foldPlane(plane, true);
+      plane.querySelector(".plane-min")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        foldPlane(plane, true);
+      });
+      const grip = plane.querySelector(".plane-head");
+      if (!grip) return;
+      grip.classList.add("plane-grip");
+      let dragging = false;
+      let ox = 0;
+      let oy = 0;
+      let sl = 0;
+      let st = 0;
+      plane.addEventListener("pointerdown", () => {
+        document.querySelectorAll(".plane").forEach((p) => {
+          p.style.zIndex = p === plane ? "18" : "12";
+        });
+      });
+      grip.addEventListener("pointerdown", (e) => {
+        if (e.target.closest("a, button, input, textarea, .plane-min")) return;
+        e.preventDefault();
+        e.stopPropagation();
+        dragging = true;
+        plane.dataset.pinned = "1";
+        plane.classList.add("dragging");
+        const r = plane.getBoundingClientRect();
+        ox = e.clientX;
+        oy = e.clientY;
+        sl = r.left;
+        st = r.top;
+        plane.style.left = `${r.left}px`;
+        plane.style.top = `${r.top}px`;
+        plane.style.right = "auto";
+        plane.style.bottom = "auto";
+        plane.style.transition = "none";
+        grip.setPointerCapture(e.pointerId);
+      });
+      grip.addEventListener("pointermove", (e) => {
+        if (!dragging) return;
+        const x = sl + e.clientX - ox;
+        const y = st + e.clientY - oy;
+        plane.style.left = `${Math.max(8, Math.min(window.innerWidth - 80, x))}px`;
+        plane.style.top = `${Math.max(8, Math.min(window.innerHeight - 40, y))}px`;
+      });
+      const end = () => {
+        dragging = false;
+        plane.classList.remove("dragging");
+      };
+      grip.addEventListener("pointerup", end);
+      grip.addEventListener("pointercancel", end);
+    });
+  }
+
   function wakePlane(id) {
     const el = document.getElementById(id);
     if (!el) return;
+    if (el.classList.contains("plane")) foldPlane(el, false);
     el.classList.add("wake");
     el.style.zIndex = "16";
     window.setTimeout(() => {
@@ -528,6 +607,8 @@ export function createChaosUI({ audio, wheel }) {
       e.preventDefault();
       const id = a.getAttribute("data-nav");
       audio.ping("click");
+      const target = id && document.getElementById(id);
+      if (target?.classList.contains("plane")) foldPlane(target, false);
       if (id === "wheel") {
         wheel.shudder();
         wheel.pulse();
@@ -545,6 +626,10 @@ export function createChaosUI({ audio, wheel }) {
         showCaption("they will not introduce themselves", 2400);
       } else if (id === "approach") {
         showCaption("looking away was always the door", 2400);
+      } else if (id === "boy") {
+        showCaption("he asked where the lamb was", 2600);
+      } else if (id === "litany") {
+        showCaption("a voice like many waters, and none of them yours", 2600);
       }
     });
 
@@ -649,6 +734,14 @@ export function createChaosUI({ audio, wheel }) {
         audio.ping("click");
         wheel.shudder();
         showCaption("it runs because you reached", 2400);
+      });
+    });
+
+    document.querySelectorAll("[data-relic]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        audio.ping("click");
+        window.dispatchEvent(new CustomEvent("throne:relic", { detail: { id: btn.getAttribute("data-relic") } }));
       });
     });
 
@@ -813,8 +906,8 @@ export function createChaosUI({ audio, wheel }) {
       });
     }
     if (!throne.calm && t > invertUntil && throne.rng() < 0.002) {
-      const el = glitchEls[randInt(0, glitchEls.length - 1)];
-      el.style.transform = throne.rng() > 0.5 ? "scaleX(-1)" : "rotate(180deg)";
+      const el = glitchEls[randInt(0, Math.max(0, glitchEls.length - 1))];
+      if (el) el.style.transform = throne.rng() > 0.5 ? "scaleX(-1)" : "rotate(180deg)";
       invertUntil = t + 400;
       setTimeout(() => {
         el.style.transform = "";
@@ -824,7 +917,7 @@ export function createChaosUI({ audio, wheel }) {
 
     if (!throne.calm && t - lastSwap > 7000 + throne.rng() * 6000) {
       lastSwap = t;
-      const live = driftEls.filter((p) => !p.matches(":hover"));
+        const live = driftEls.filter((p) => !p.matches(":hover") && !p.dataset.pinned);
       if (live.length >= 1) {
         const a = live[randInt(0, live.length - 1)];
         a.style.transition = "left 1.4s ease, top 1.4s ease";
@@ -874,7 +967,7 @@ export function createChaosUI({ audio, wheel }) {
     if (!throne.calm && throne.rng() < 0.003) maybeStrobe(false);
 
     if (!throne.calm && throne.entered) {
-      if (!nextBlurbAt) nextBlurbAt = t + 22000;
+      if (!nextBlurbAt) nextBlurbAt = t + 4000;
       if (t > nextBlurbAt) {
         nextBlurbAt = t + 8000 + throne.rng() * 12000;
         speakBlurb(3400);

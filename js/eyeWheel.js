@@ -119,12 +119,12 @@ const EYE_FRAG = /* glsl */ `
 
 function qualityConfig(q) {
   if (q === "low") {
-    return { uSeg: 12, vSeg: 7, tube: 16, radial: 48, dpr: 1, glow: false };
+    return { uSeg: 14, vSeg: 8, tube: 14, radial: 40, dpr: 1, glow: false, host: 3 };
   }
   if (q === "high") {
-    return { uSeg: 26, vSeg: 14, tube: 28, radial: 96, dpr: Math.min(2, window.devicePixelRatio || 1), glow: true };
+    return { uSeg: 28, vSeg: 16, tube: 26, radial: 88, dpr: Math.min(2, window.devicePixelRatio || 1), glow: true, host: 7 };
   }
-  return { uSeg: 20, vSeg: 11, tube: 20, radial: 72, dpr: Math.min(1.5, window.devicePixelRatio || 1), glow: true };
+  return { uSeg: 22, vSeg: 12, tube: 18, radial: 64, dpr: Math.min(1.5, window.devicePixelRatio || 1), glow: true, host: 5 };
 }
 
 /** Place an eye on a torus, facing along the surface normal. */
@@ -138,7 +138,7 @@ function torusPoint(R, r, u, v, target, normal) {
 }
 
 function makeEyeField(R, r, uSeg, vSeg, eyeSize) {
-  const count = uSeg * vSeg;
+  const count = uSeg * vSeg * 2;
   const geom = new THREE.PlaneGeometry(eyeSize, eyeSize * 0.58);
   const mat = new THREE.ShaderMaterial({
     uniforms: {
@@ -170,21 +170,25 @@ function makeEyeField(R, r, uSeg, vSeg, eyeSize) {
   const up = new THREE.Vector3(0, 0, 1);
 
   let i = 0;
-  for (let iu = 0; iu < uSeg; iu++) {
-    for (let iv = 0; iv < vSeg; iv++) {
-      const u = (iu / uSeg) * Math.PI * 2;
-      const v = (iv / vSeg) * Math.PI * 2;
-      torusPoint(R, r, u, v, pos, nrm);
-      dummy.position.copy(pos).addScaledVector(nrm, r * 0.18);
-      dummy.up.copy(up);
-      dummy.lookAt(pos.clone().add(nrm));
-      dummy.rotateZ((throne.rng() - 0.5) * 0.5);
-      dummy.scale.setScalar(0.82 + throne.rng() * 0.35);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
-      phases[i] = throne.rng();
-      alive[i] = 1;
-      i++;
+  for (let side = 0; side < 2; side++) {
+    const inward = side === 1;
+    for (let iu = 0; iu < uSeg; iu++) {
+      for (let iv = 0; iv < vSeg; iv++) {
+        const u = ((iu + (inward ? 0.35 : 0)) / uSeg) * Math.PI * 2;
+        const v = ((iv + (inward ? 0.2 : 0)) / vSeg) * Math.PI * 2;
+        torusPoint(R, r, u, v, pos, nrm);
+        const face = inward ? nrm.clone().negate() : nrm;
+        dummy.position.copy(pos).addScaledVector(face, r * 0.2);
+        dummy.up.copy(up);
+        dummy.lookAt(pos.clone().add(face));
+        dummy.rotateZ((throne.rng() - 0.5) * 0.8);
+        dummy.scale.setScalar(0.45 + throne.rng() * 0.95);
+        dummy.updateMatrix();
+        mesh.setMatrixAt(i, dummy.matrix);
+        phases[i] = throne.rng();
+        alive[i] = 1;
+        i++;
+      }
     }
   }
 
@@ -198,66 +202,83 @@ function makeEyeField(R, r, uSeg, vSeg, eyeSize) {
 export function createEyeWheel(root) {
   const cfg = qualityConfig(throne.quality);
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x100804, 0.032);
-  scene.background = new THREE.Color(0x100804);
+  scene.fog = new THREE.FogExp2(0x140e18, 0.022);
+  scene.background = new THREE.Color(0x0c0912);
 
-  const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 80);
-  camera.position.set(0, 1.1, 8.2);
+  const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 90);
+  camera.position.set(0, 0.35, 7.6);
 
   const renderer = new THREE.WebGLRenderer({ antialias: cfg.dpr > 1, alpha: false, powerPreference: "high-performance" });
   renderer.setPixelRatio(cfg.dpr);
-  renderer.setClearColor(0x100804, 1);
+  renderer.setClearColor(0x0c0912, 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NoToneMapping;
   renderer.toneMappingExposure = 1;
   root.appendChild(renderer.domElement);
 
-  const ambient = new THREE.AmbientLight(0x2a1a0c, 0.7);
-  const hemi = new THREE.HemisphereLight(0x8a6030, 0x100804, 0.7);
-  const key = new THREE.PointLight(0xe8b050, 2.1, 22, 1.2);
-  key.position.set(1.2, 3.2, 4.2);
-  const fill = new THREE.PointLight(0x5a3010, 0.6, 16, 1.4);
-  fill.position.set(-2.6, -0.4, 2.2);
-  scene.add(ambient, hemi, key, fill);
+  const ambient = new THREE.AmbientLight(0x3a2a18, 0.55);
+  const hemi = new THREE.HemisphereLight(0xf0d078, 0x100814, 0.85);
+  const key = new THREE.PointLight(0xffe6a8, 2.4, 28, 1.1);
+  key.position.set(0.4, 5.4, 3.2);
+  const fill = new THREE.PointLight(0x6a3a14, 0.55, 18, 1.4);
+  fill.position.set(-2.8, -1.2, 2.4);
+  const glory = new THREE.PointLight(0xfff1c8, 1.6, 36, 1.8);
+  glory.position.set(0, 9, -1);
+  scene.add(ambient, hemi, key, fill, glory);
   scene.environment = null;
+
+  const dome = new THREE.Mesh(
+    new THREE.SphereGeometry(32, 24, 16),
+    new THREE.MeshBasicMaterial({ color: 0x2a1c10, transparent: true, opacity: 0.35, side: THREE.BackSide })
+  );
+  scene.add(dome);
+  const vault = new THREE.Mesh(
+    new THREE.SphereGeometry(18, 20, 12, 0, Math.PI * 2, 0, Math.PI * 0.48),
+    new THREE.MeshBasicMaterial({ color: 0xf0d078, transparent: true, opacity: 0.06, side: THREE.BackSide, depthWrite: false })
+  );
+  vault.position.y = 4;
+  scene.add(vault);
+
+  const host = new THREE.Group();
+  scene.add(host);
+  const hostMat = new THREE.MeshBasicMaterial({ color: 0xc9a227, transparent: true, opacity: 0.09, depthWrite: false });
+  for (let h = 0; h < cfg.host + 6; h++) {
+    const g = new THREE.Mesh(new THREE.TorusGeometry(0.22 + (h % 4) * 0.1, 0.03, 8, 18), hostMat);
+    const a = (h / (cfg.host + 6)) * Math.PI * 2 + 0.4;
+    const far = h < cfg.host;
+    const rad = far ? 14 + (h % 3) : 5.4 + (h % 3) * 1.1;
+    g.position.set(Math.cos(a) * rad, ((h % 5) - 2) * (far ? 3.2 : 1.4), Math.sin(a) * rad - (far ? 6 : 1));
+    g.rotation.set(0.7 + h * 0.2, a, 0.3 + h * 0.15);
+    host.add(g);
+  }
 
   const outerGroup = new THREE.Group();
   const innerGroup = new THREE.Group();
   const thirdGroup = new THREE.Group();
   const fourthGroup = new THREE.Group();
+  const fifthGroup = new THREE.Group();
+  const sixthGroup = new THREE.Group();
   const wingGroup = new THREE.Group();
   const looseGroup = new THREE.Group();
-  innerGroup.rotation.x = 1.12;
-  innerGroup.rotation.z = 0.28;
-  thirdGroup.rotation.z = 0.95;
-  thirdGroup.rotation.x = 0.4;
-  thirdGroup.scale.setScalar(0.001);
-  fourthGroup.visible = false;
-  wingGroup.visible = false;
-  scene.add(outerGroup, innerGroup, thirdGroup, fourthGroup, wingGroup, looseGroup);
+  innerGroup.rotation.x = Math.PI * 0.5;
+  innerGroup.rotation.z = 0.18;
+  thirdGroup.rotation.z = Math.PI * 0.5;
+  thirdGroup.rotation.x = 0.32;
+  fourthGroup.rotation.x = 1.15;
+  fourthGroup.rotation.y = 0.62;
+  fifthGroup.rotation.x = 0.55;
+  fifthGroup.rotation.z = 1.15;
+  sixthGroup.rotation.y = 0.88;
+  sixthGroup.rotation.x = 0.95;
+  scene.add(outerGroup, innerGroup, thirdGroup, fourthGroup, fifthGroup, sixthGroup, wingGroup, looseGroup);
 
-  const ground = new THREE.Mesh(
-    new THREE.CircleGeometry(36, 40),
-    new THREE.MeshStandardMaterial({ color: 0x2c1a0c, roughness: 0.97, metalness: 0.02 })
-  );
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -2.55;
-  scene.add(ground);
-  const altar = new THREE.Mesh(
-    new THREE.BoxGeometry(2.4, 0.38, 1.5),
-    new THREE.MeshStandardMaterial({ color: 0x3a2814, roughness: 0.88, metalness: 0.12 })
-  );
-  altar.position.set(0, -2.35, 0);
-  scene.add(altar);
-  const stone = new THREE.MeshStandardMaterial({ color: 0x4a3420, roughness: 0.92, metalness: 0.06 });
-  for (let i = 0; i < 5; i++) {
-    const h = 2.6 + (i % 3) * 0.7;
-    const col = new THREE.Mesh(new THREE.BoxGeometry(0.55, h, 0.28), stone);
-    const a = (i / 5) * Math.PI * 2 + 0.35;
-    col.position.set(Math.cos(a) * 5.6, -2.55 + h * 0.5, Math.sin(a) * 5.6);
-    col.rotation.y = a + 0.4;
-    scene.add(col);
-  }
+  const kernelMat = new THREE.MeshStandardMaterial({ color: 0x090704, roughness: 0.96, metalness: 0.02 });
+  const kernel = new THREE.Group();
+  const kernelHead = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), kernelMat);
+  const kernelBody = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 8), kernelMat);
+  kernelBody.position.set(0.07, -0.14, 0.03);
+  kernel.add(kernelHead, kernelBody);
+  scene.add(kernel);
 
   const outerR = 2.18;
   const outerTube = 0.4;
@@ -266,7 +287,11 @@ export function createEyeWheel(root) {
   const thirdR = 1.55;
   const thirdTube = 0.22;
   const fourthR = 2.55;
-  const fourthTube = 0.14;
+  const fourthTube = 0.16;
+  const fifthR = 1.12;
+  const fifthTube = 0.2;
+  const sixthR = 2.95;
+  const sixthTube = 0.1;
 
   function metalMat(color, emit) {
     return new THREE.MeshStandardMaterial({
@@ -295,26 +320,83 @@ export function createEyeWheel(root) {
     new THREE.TorusGeometry(fourthR, fourthTube, Math.max(8, cfg.tube - 8), Math.max(40, cfg.radial - 28)),
     metalMat(pal0.metal, pal0.emit)
   );
+  const fifthMesh = new THREE.Mesh(
+    new THREE.TorusGeometry(fifthR, fifthTube, Math.max(10, cfg.tube - 6), Math.max(40, cfg.radial - 20)),
+    metalMat(pal0.metal, pal0.emit)
+  );
+  const sixthMesh = new THREE.Mesh(
+    new THREE.TorusGeometry(sixthR, sixthTube, Math.max(8, cfg.tube - 8), Math.max(36, cfg.radial - 28)),
+    metalMat(pal0.metal, pal0.emit)
+  );
   outerGroup.add(outerMesh);
   innerGroup.add(innerMesh);
   thirdGroup.add(thirdMesh);
   fourthGroup.add(fourthMesh);
+  fifthGroup.add(fifthMesh);
+  sixthGroup.add(sixthMesh);
 
-  const outerEyes = makeEyeField(outerR, outerTube, cfg.uSeg, cfg.vSeg, 0.44);
-  const innerEyes = makeEyeField(innerR, innerTube, Math.max(10, cfg.uSeg - 2), Math.max(6, cfg.vSeg - 1), 0.4);
-  const thirdEyes = makeEyeField(thirdR, thirdTube, Math.max(8, cfg.uSeg - 6), Math.max(5, cfg.vSeg - 3), 0.26);
-  const fourthEyes = makeEyeField(fourthR, fourthTube, Math.max(8, cfg.uSeg - 8), Math.max(4, cfg.vSeg - 4), 0.2);
+  const spokeMat = metalMat(pal0.metal, pal0.emit);
+  const spokes = [];
+  for (let i = 0; i < 10; i++) {
+    const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.02, outerR * 2.05, 6), spokeMat);
+    spoke.rotation.z = (i / 10) * Math.PI;
+    outerGroup.add(spoke);
+    spokes.push(spoke);
+  }
+  for (let i = 0; i < 6; i++) {
+    const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.016, innerR * 2.02, 6), spokeMat);
+    spoke.rotation.x = Math.PI * 0.5;
+    spoke.rotation.z = (i / 6) * Math.PI;
+    innerGroup.add(spoke);
+    spokes.push(spoke);
+  }
+
+  const fire = new THREE.Mesh(
+    new THREE.TorusGeometry(0.62, 0.08, 8, 28),
+    new THREE.MeshBasicMaterial({ color: 0xf0d078, transparent: true, opacity: 0.35 })
+  );
+  const hearth = new THREE.Mesh(
+    new THREE.SphereGeometry(0.42, 14, 12),
+    new THREE.MeshBasicMaterial({ color: 0xf0d078, transparent: true, opacity: 0.2 })
+  );
+  scene.add(fire, hearth);
+
+  const faces = new THREE.Group();
+  const faceMat = new THREE.MeshBasicMaterial({
+    color: 0xc9a227,
+    transparent: true,
+    opacity: 0.08,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  });
+  for (let i = 0; i < 4; i++) {
+    const face = new THREE.Mesh(new THREE.CircleGeometry(0.55, 16), faceMat);
+    const a = (i / 4) * Math.PI * 2;
+    face.position.set(Math.cos(a) * 1.05, Math.sin(a) * 0.35, Math.sin(a) * 1.05);
+    face.lookAt(0, 0, 0);
+    faces.add(face);
+  }
+  scene.add(faces);
+
+  const outerEyes = makeEyeField(outerR, outerTube, cfg.uSeg, cfg.vSeg, 0.34);
+  const innerEyes = makeEyeField(innerR, innerTube, Math.max(12, cfg.uSeg - 2), Math.max(8, cfg.vSeg - 1), 0.32);
+  const thirdEyes = makeEyeField(thirdR, thirdTube, Math.max(10, cfg.uSeg - 4), Math.max(7, cfg.vSeg - 2), 0.28);
+  const fourthEyes = makeEyeField(fourthR, fourthTube, Math.max(10, cfg.uSeg - 6), Math.max(6, cfg.vSeg - 3), 0.2);
+  const fifthEyes = makeEyeField(fifthR, fifthTube, Math.max(8, cfg.uSeg - 8), Math.max(6, cfg.vSeg - 4), 0.22);
+  const sixthEyes = makeEyeField(sixthR, sixthTube, Math.max(8, cfg.uSeg - 8), Math.max(5, cfg.vSeg - 5), 0.16);
   outerGroup.add(outerEyes.mesh);
   innerGroup.add(innerEyes.mesh);
   thirdGroup.add(thirdEyes.mesh);
   fourthGroup.add(fourthEyes.mesh);
+  fifthGroup.add(fifthEyes.mesh);
+  sixthGroup.add(sixthEyes.mesh);
 
-  const eyeFields = [outerEyes, innerEyes, thirdEyes, fourthEyes];
+  const eyeFields = [outerEyes, innerEyes, thirdEyes, fourthEyes, fifthEyes, sixthEyes];
 
-  const looseCount = 0;
+  const looseCount = cfg.host + 8;
   for (let i = 0; i < looseCount; i++) {
     const eye = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.22 + throne.rng() * 0.7, 0.12 + throne.rng() * 0.4),
+      new THREE.PlaneGeometry(0.28 + throne.rng() * 0.85, 0.14 + throne.rng() * 0.48),
       outerEyes.mat
     );
     const a = throne.rng() * Math.PI * 2;
@@ -335,11 +417,12 @@ export function createEyeWheel(root) {
     depthWrite: false,
     side: THREE.DoubleSide,
   });
-  for (let i = 0; i < 6; i++) {
-    const wing = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 0.55), wingMat.clone());
-    wing.rotation.y = (i / 6) * Math.PI * 2;
-    wing.rotation.z = 0.35 * ((i % 2) * 2 - 1);
-    wing.position.y = (i % 2) * 0.15;
+  for (let i = 0; i < 10; i++) {
+    const wing = new THREE.Mesh(new THREE.PlaneGeometry(5.1, 0.42 + (i % 3) * 0.12), wingMat.clone());
+    wing.rotation.y = (i / 10) * Math.PI * 2;
+    wing.rotation.z = 0.38 * ((i % 2) * 2 - 1);
+    wing.rotation.x = 0.18 * ((i % 3) - 1);
+    wing.position.y = ((i % 3) - 1) * 0.12;
     wingGroup.add(wing);
   }
 
@@ -365,8 +448,8 @@ export function createEyeWheel(root) {
     look: 1,
     pupil: 1,
     spin: 1,
-    camZ: 8.2,
-    third: 0,
+    camZ: 7.6,
+    third: 1,
     wings: 0,
     hub: 0,
     presence: 1,
@@ -376,8 +459,8 @@ export function createEyeWheel(root) {
   let spinBoost = 1;
   let zNudge = 0;
   let pulseScale = 1;
-  let yaw = 0.38;
-  let pitch = 0.34;
+  let yaw = 0.22;
+  let pitch = 0.1;
   let offerAge = 0;
   let offering = false;
 
@@ -398,7 +481,7 @@ export function createEyeWheel(root) {
       m.uniforms.uIrisA.value.lerp(pal.irisA, Math.min(1, dt * 1.8));
       m.uniforms.uIrisB.value.lerp(pal.irisB, Math.min(1, dt * 1.8));
     }
-    for (const mesh of [outerMesh, innerMesh, thirdMesh, fourthMesh]) {
+    for (const mesh of [outerMesh, innerMesh, thirdMesh, fourthMesh, fifthMesh, sixthMesh, ...spokes]) {
       mesh.material.color.lerp(new THREE.Color(pal.metal), Math.min(1, dt * 1.2));
       mesh.material.emissive.lerp(new THREE.Color(pal.emit), Math.min(1, dt * 1.2));
     }
@@ -443,8 +526,21 @@ export function createEyeWheel(root) {
     thirdGroup.rotation.z += dt * 0.16 * spin;
     fourthGroup.rotation.x += dt * 0.28 * spin;
     fourthGroup.rotation.y += dt * -0.19 * spin;
+    fifthGroup.rotation.z += dt * 0.38 * spin;
+    fifthGroup.rotation.y += dt * 0.14 * spin;
+    sixthGroup.rotation.x += dt * -0.22 * spin;
+    sixthGroup.rotation.z += dt * 0.11 * spin;
+    fire.rotation.y += dt * 0.8 * spin;
+    fire.rotation.x = Math.sin(t * 0.6) * 0.4;
+    hearth.scale.setScalar(0.85 + Math.sin(t * 1.6) * 0.12);
+    hearth.material.opacity = 0.14 + Math.abs(Math.sin(t * 2.1)) * 0.12;
+    faces.rotation.y += dt * 0.16 * spin;
     looseGroup.rotation.y += dt * 0.12 * spin;
     looseGroup.rotation.x = Math.sin(t * 0.21) * 0.35;
+    host.rotation.y += dt * 0.018 * Math.abs(spin);
+    kernel.visible = !throne.lore.offered;
+    kernel.rotation.y += dt * 0.08;
+    kernel.position.y = Math.sin(t * 0.7) * 0.04;
     pulseScale += (1 - pulseScale) * Math.min(1, dt * 4);
     const ps = pulseScale;
     outerGroup.scale.setScalar(ps);
@@ -455,6 +551,8 @@ export function createEyeWheel(root) {
       outerGroup.scale.setScalar(ps * shrink);
       innerGroup.scale.setScalar(Math.max(0.12, (2 - ps) * shrink));
       fourthGroup.scale.setScalar(Math.min(1.15, 0.45 + offerAge * 0.14));
+      fifthGroup.scale.setScalar(Math.max(0.12, shrink));
+      sixthGroup.scale.setScalar(Math.max(0.18, shrink * 0.9));
       yaw += (0 - yaw) * Math.min(1, dt * 1.25);
       pitch += (0.06 - pitch) * Math.min(1, dt * 1.25);
       scene.fog.density += (0.04 - scene.fog.density) * 0.05;
@@ -470,7 +568,12 @@ export function createEyeWheel(root) {
     const next = s + (thirdTarget - s) * Math.min(1, dt * 3);
     thirdGroup.scale.setScalar(Math.max(0.001, next));
 
-    wingGroup.visible = aspect.wings > 0.5 && !throne.calm;
+    wingGroup.visible = !throne.calm;
+    wingGroup.scale.setScalar(aspect.wings > 0.5 ? 1 : 0.68);
+    const wingOp = aspect.wings > 0.5 ? 0.28 : 0.1;
+    wingGroup.children.forEach((w) => {
+      if (w.material) w.material.opacity = wingOp;
+    });
     hubEye.visible = aspect.hub > 0.5 || throne.lore.offered;
     if (hubEye.visible) {
       hubEye.lookAt(camera.position);
@@ -504,18 +607,18 @@ export function createEyeWheel(root) {
     applyAspectUniforms();
 
     const radius = (throne.raptured ? 0.78 : aspect.camZ) + zNudge;
-    const fovTarget = throne.raptured ? 92 : 46;
+    const fovTarget = throne.raptured ? 88 : 48;
     camera.fov += (fovTarget - camera.fov) * 0.05;
     camera.updateProjectionMatrix();
     const cp = Math.cos(pitch);
     const tx = Math.sin(yaw) * cp * radius;
-    const ty = Math.sin(pitch) * radius * 0.92;
+    const ty = Math.sin(pitch) * radius * 0.7;
     const tz = Math.cos(yaw) * cp * radius;
-    const shake = throne.calm ? 0 : (throne.raptured ? 0.05 : 0.1);
+    const shake = throne.calm ? 0 : (throne.raptured ? 0.03 : 0.04);
     const lx = tx + Math.sin(t * 0.17) * shake;
-    const ly = ty + Math.sin(t * 0.13) * shake * 0.6;
+    const ly = ty + Math.sin(t * 0.13) * shake * 0.5;
     const lz = tz;
-    const ease = 0.88;
+    const ease = 0.32;
     camera.position.x += (lx - camera.position.x) * ease;
     camera.position.y += (ly - camera.position.y) * ease;
     camera.position.z += (lz - camera.position.z) * ease;
@@ -563,8 +666,8 @@ export function createEyeWheel(root) {
       throne.palette = paletteIndex;
     },
     orbit(dx, dy) {
-      yaw -= dx * 0.018;
-      pitch = Math.max(-1.05, Math.min(1.05, pitch + dy * 0.014));
+      yaw -= dx * 0.007;
+      pitch = Math.max(-0.62, Math.min(0.62, pitch + dy * 0.0055));
     },
     getOrbit() {
       return { yaw, pitch };
@@ -575,7 +678,7 @@ export function createEyeWheel(root) {
     setRapture(on) {
       throne.raptured = !!on;
       document.documentElement.classList.toggle("raptured", !!on);
-      scene.fog.density = on ? 0.16 : 0.08;
+      scene.fog.density = on ? 0.14 : 0.022;
       pulseScale = on ? 1.18 : 0.88;
     },
     pulse() {
@@ -600,15 +703,15 @@ export function createEyeWheel(root) {
      */
     setAspect(id) {
       const table = {
-        witness: { blink: 1, look: 1.15, pupil: 1.1, spin: 1, camZ: 8.2, third: 0, wings: 0, hub: 0, presence: 1, palLock: -1, sclera: "#f3ebd6" },
-        unblinking: { blink: 0, look: 2.8, pupil: 1.55, spin: 0.55, camZ: 6.2, third: 0, wings: 0, hub: 0, presence: 1, palLock: 1, sclera: "#ffffff" },
-        merkavah: { blink: 1, look: 1.4, pupil: 1.15, spin: 1.2, camZ: 8.4, third: 1, wings: 0, hub: 0, presence: 1, palLock: 0, sclera: "#f0d078" },
-        waters: { blink: 0.35, look: 0.7, pupil: 0.82, spin: 0.32, camZ: 9.2, third: 0, wings: 0, hub: 0, presence: 1, palLock: 1, sclera: "#ead9a8" },
+        witness: { blink: 1, look: 1.15, pupil: 1.1, spin: 1, camZ: 7.6, third: 1, wings: 0, hub: 0, presence: 1, palLock: -1, sclera: "#f3ebd6" },
+        unblinking: { blink: 0, look: 2.8, pupil: 1.55, spin: 0.55, camZ: 6.4, third: 1, wings: 0, hub: 0, presence: 1, palLock: 1, sclera: "#ffffff" },
+        merkavah: { blink: 1, look: 1.4, pupil: 1.15, spin: 1.2, camZ: 8.2, third: 1, wings: 0, hub: 0, presence: 1, palLock: 0, sclera: "#f0d078" },
+        waters: { blink: 0.35, look: 0.7, pupil: 0.82, spin: 0.32, camZ: 8.8, third: 1, wings: 0, hub: 0, presence: 1, palLock: 1, sclera: "#ead9a8" },
         seraph: { blink: 1, look: 1.8, pupil: 1.2, spin: 1.85, camZ: 6.8, third: 1, wings: 1, hub: 0, presence: 1, palLock: 1, sclera: "#fff6d8" },
-        inverted: { blink: 1, look: 2.1, pupil: 1.7, spin: -1.15, camZ: 6.0, third: 0, wings: 0, hub: 0, presence: 1, palLock: 0, sclera: "#2a1014" },
-        name: { blink: 0, look: 3.2, pupil: 1.7, spin: 0.22, camZ: 5.6, third: 0.2, wings: 0, hub: 1, presence: 0.12, palLock: 0, sclera: "#f4f1e8" },
-        hush: { blink: 1, look: 0.2, pupil: 0.55, spin: 0.1, camZ: 10.5, third: 0.25, wings: 0, hub: 0, presence: 0.08, palLock: 0, sclera: "#6a6048" },
-        offered: { blink: 1, look: 0.45, pupil: 0.82, spin: 0.05, camZ: 5.2, third: 0.06, wings: 0, hub: 1, presence: 0.1, palLock: 1, sclera: "#fff8ea" },
+        inverted: { blink: 1, look: 2.1, pupil: 1.7, spin: -1.15, camZ: 6.2, third: 1, wings: 0, hub: 0, presence: 1, palLock: 0, sclera: "#2a1014" },
+        name: { blink: 0, look: 3.2, pupil: 1.7, spin: 0.22, camZ: 5.8, third: 0.55, wings: 0, hub: 1, presence: 0.12, palLock: 0, sclera: "#f4f1e8" },
+        hush: { blink: 1, look: 0.2, pupil: 0.55, spin: 0.1, camZ: 9.8, third: 0.7, wings: 0, hub: 0, presence: 0.08, palLock: 0, sclera: "#6a6048" },
+        offered: { blink: 1, look: 0.45, pupil: 0.82, spin: 0.05, camZ: 5.4, third: 0.2, wings: 0, hub: 1, presence: 0.1, palLock: 1, sclera: "#fff8ea" },
       };
       const next = table[id] || table.witness;
       aspect = {
