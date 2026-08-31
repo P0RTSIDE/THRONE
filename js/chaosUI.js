@@ -18,10 +18,43 @@
  *   wing pulse     — slow radial wash from center
  */
 
-import { throne, randRange, randInt } from "./throne.js";
+import { throne, randRange, randInt, showCaption } from "./throne.js";
 
 /** Invented sigils. Not Hebrew, not any real liturgical script. */
 const SIGILS = "◊◈◉◎◌◍◐◑◒◓◔◕◘◙☿♄♃♁☥⚜⚝✦✧✩✪✫✬✭✮✯✰❋❊❈❇✺✹✸✷✶✵✴✳";
+
+const BLURBS = [
+  "full of eyes within",
+  "the wheels moved as they went",
+  "it declines to close",
+  "a voice of many",
+  "face within face",
+  "it is not one",
+  "you are already seen",
+  "the mouth is not a mouth",
+  "the rim remembers you",
+  "eyes behind eyes",
+  "it turns because you do",
+  "the center is a door",
+  "do not name it",
+  "the sound is the body",
+  "another rim",
+  "it was going, it was coming",
+  "the living thing had four",
+  "hold still. it is counting.",
+  "the fire goes forth",
+  "fear is a courtesy",
+  "the count continues",
+  "drag the dark around it",
+  "the likeness of a throne",
+  "turn, and look again",
+  "the instruction is not for you",
+  "every rim is watching the others",
+  "it has no front",
+  "the air is full of lids",
+  "what you hear is the looking",
+  "do not reach",
+];
 
 function wrapGlyphs(el) {
   if (el.dataset.wrapped) return;
@@ -78,6 +111,19 @@ export function createChaosUI({ audio, wheel }) {
   let fearCount = 0;
   let fed = 0;
   const MAX_FEAR = 21;
+  let lastBlurb = "";
+  let nextBlurbAt = 0;
+
+  function speakBlurb(ms = 2800) {
+    if (throne.calm || !throne.entered) return;
+    let line = BLURBS[randInt(0, BLURBS.length - 1)];
+    if (BLURBS.length > 1) {
+      while (line === lastBlurb) line = BLURBS[randInt(0, BLURBS.length - 1)];
+    }
+    lastBlurb = line;
+    showCaption(line, ms);
+    audio.utter();
+  }
 
   const particles = [];
   const coarse = window.matchMedia("(pointer: coarse)").matches;
@@ -97,12 +143,12 @@ export function createChaosUI({ audio, wheel }) {
   buildSacredGeometry(geo);
   wireOrbit(audio);
   wireMouth(audio, wheel);
-  wireWild(audio, wheel);
+  wireGaze(audio, wheel);
 
   function seedFloaters() {
     const host = document.getElementById("firmament");
     if (!host) return;
-    const n = throne.quality === "low" ? 10 : 22;
+    const n = throne.quality === "low" ? 3 : 5;
     for (let i = 0; i < n; i++) {
       const d = document.createElement("i");
       d.className = throne.rng() > 0.45 ? "floater eye" : "floater ring";
@@ -121,7 +167,7 @@ export function createChaosUI({ audio, wheel }) {
     throne.mouse.ndcX = (e.clientX / window.innerWidth) * 2 - 1;
     throne.mouse.ndcY = -(e.clientY / window.innerHeight) * 2 + 1;
     if (throne.calm || coarse || !throne.entered) return;
-    if (particles.length < (throne.quality === "low" ? 40 : 90)) {
+    if (particles.length < (throne.quality === "low" ? 12 : 22)) {
       particles.push({
         x: e.clientX,
         y: e.clientY,
@@ -155,8 +201,9 @@ export function createChaosUI({ audio, wheel }) {
         n.className = "fear-not relic";
         n.type = "button";
         n.textContent = "Fear Not";
-        n.style.left = "48%";
-        n.style.top = "86%";
+        n.style.left = "50%";
+        n.style.top = "auto";
+        n.style.bottom = "16px";
         document.getElementById("firmament")?.appendChild(n);
         bindFear(n);
       }, 8000);
@@ -167,6 +214,7 @@ export function createChaosUI({ audio, wheel }) {
     unmakeFear(btn);
     wheel.openDistantEye();
     audio.consume();
+    audio.utter();
     fed += 1;
     window.dispatchEvent(new CustomEvent("throne:fed", { detail: { fed } }));
     triggerPulse();
@@ -217,6 +265,7 @@ export function createChaosUI({ audio, wheel }) {
       dragging = false;
       if (held >= 640) return;
       audio.ping("click");
+      audio.utter();
       if (!throne.calm) {
         document.body.classList.add("shudder");
         wheel.shudder();
@@ -224,18 +273,16 @@ export function createChaosUI({ audio, wheel }) {
       }
       window.dispatchEvent(new CustomEvent("throne:fearnot", { detail: { muted: throne.muted } }));
       if (throne.calm) return;
-      const spawn = Math.min(3, MAX_FEAR - 1 - fearCount);
+      const spawn = Math.min(1, MAX_FEAR - 1 - fearCount);
       for (let i = 0; i < spawn; i++) {
         const n = btn.cloneNode(true);
         n.removeAttribute("id");
         n.classList.add("spawned");
-        n.style.left = `${randRange(8, 86)}vw`;
-        n.style.top = `${randRange(18, 82)}vh`;
-        n.style.transform = `rotate(${randRange(-18, 18)}deg) scale(${randRange(0.62, 0.92)})`;
+        n.style.left = `${randRange(18, 82)}vw`;
+        n.style.top = `${randRange(22, 78)}vh`;
+        n.style.transform = `rotate(${randRange(-12, 12)}deg) scale(${randRange(0.7, 0.9)})`;
         document.body.appendChild(n);
         fearCount++;
-        n.classList.add("orbiting");
-        n.style.setProperty("--spin", `${randRange(8, 22)}s`);
         bindFear(n);
       }
     });
@@ -255,11 +302,8 @@ export function createChaosUI({ audio, wheel }) {
 
   window.addEventListener("throne:cycle", () => {
     audio.swell();
-    triggerPulse();
-    maybeStrobe(true);
+    speakBlurb(1600);
     wheel.pulse();
-    document.body.classList.add("cycle-kick");
-    setTimeout(() => document.body.classList.remove("cycle-kick"), 900);
   });
   window.addEventListener("throne:pulse", () => triggerPulse());
 
@@ -304,20 +348,25 @@ export function createChaosUI({ audio, wheel }) {
     let hold = 0;
     mouth.addEventListener("pointerdown", (e) => {
       e.preventDefault();
+      e.stopPropagation();
       if (throne.raptured) {
         window.dispatchEvent(new CustomEvent("throne:rapture", { detail: { on: false } }));
+        audio.ping("mouth");
         return;
       }
       document.documentElement.classList.add("charging");
-      audio.swell();
+      audio.charge(true);
+      audio.ping("mouth");
       hold = window.setTimeout(() => {
         document.documentElement.classList.remove("charging");
+        audio.charge(false);
         window.dispatchEvent(new CustomEvent("throne:rapture", { detail: { on: true } }));
       }, 1350);
     });
     const cancel = () => {
       clearTimeout(hold);
       document.documentElement.classList.remove("charging");
+      audio.charge(false);
     };
     mouth.addEventListener("pointerup", cancel);
     mouth.addEventListener("pointerleave", cancel);
@@ -328,173 +377,63 @@ export function createChaosUI({ audio, wheel }) {
     });
   }
 
-  function wireWild(audio, wheel) {
-    const host = document.getElementById("firmament");
-    const ripples = document.getElementById("ripples");
+  function wireGaze(audio, wheel) {
+    let down = false;
+    let lastX = 0;
+    let lastY = 0;
+    let traveled = 0;
+    let lastZoom = 0;
 
-    function spawnRipple(x, y, kind = "") {
-      if (throne.calm || !ripples) return;
-      const r = document.createElement("span");
-      r.className = `ripple ${kind}`;
-      r.style.left = `${x}px`;
-      r.style.top = `${y}px`;
-      ripples.appendChild(r);
-      setTimeout(() => r.remove(), 1200);
-    }
-
-    function burstEyes(x, y, count = 8) {
-      if (throne.calm || !host) return;
-      for (let i = 0; i < count; i++) {
-        const d = document.createElement("i");
-        d.className = "floater eye burst";
-        d.style.left = `${x}px`;
-        d.style.top = `${y}px`;
-        d.style.setProperty("--dx", `${randRange(-140, 140)}px`);
-        d.style.setProperty("--dy", `${randRange(-140, 140)}px`);
-        d.style.setProperty("--s", String(randRange(0.6, 1.8)));
-        host.appendChild(d);
-        setTimeout(() => d.remove(), 1400);
-      }
-    }
-
-    function shockwave() {
-      if (throne.calm) return;
-      document.body.classList.add("shock");
-      host?.querySelectorAll(".floater").forEach((el, i) => {
-        const ang = (i / 12) * Math.PI * 2;
-        el.style.transition = "transform 0.7s ease";
-        el.style.transform = `translate(${Math.cos(ang) * 80}px, ${Math.sin(ang) * 80}px)`;
-        setTimeout(() => {
-          el.style.transform = "";
-        }, 720);
-      });
-      setTimeout(() => document.body.classList.remove("shock"), 800);
+    function endGaze() {
+      if (!down) return;
+      down = false;
+      document.body.classList.remove("gazing");
+      audio.scrape(0);
+      const orbit = wheel.getOrbit();
+      window.dispatchEvent(new CustomEvent("throne:orbit", { detail: orbit }));
+      if (traveled > 280) speakBlurb(2200);
+      traveled = 0;
     }
 
     window.addEventListener("pointerdown", (e) => {
-      if (!throne.entered || throne.calm) return;
-      if (e.target.closest(".hud-safe, .veil, button, input")) return;
-      spawnRipple(e.clientX, e.clientY);
+      if (!throne.entered || e.button !== 0) return;
+      const el = e.target instanceof Element ? e.target : null;
+      if (el?.closest(".hud-safe, .veil, .mouth, .fear-not, button, input")) return;
+      down = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      traveled = 0;
+      document.body.classList.add("gazing");
+      audio.ping("drag");
     });
-
-    window.addEventListener("dblclick", (e) => {
-      if (!throne.entered || throne.calm) return;
-      if (e.target.closest(".hud-safe")) return;
-      burstEyes(e.clientX, e.clientY, throne.quality === "low" ? 5 : 11);
-      audio.ping("click");
-      wheel.pulse();
+    window.addEventListener("pointermove", (e) => {
+      if (!down) return;
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      const speed = Math.hypot(dx, dy);
+      traveled += speed;
+      wheel.orbit(dx, dy);
+      audio.scrape(speed);
+      const pitch = Math.abs(wheel.getOrbit().pitch);
+      audio.setDepth(Math.max(0.05, Math.min(1, 0.2 + pitch * 0.7)));
     });
+    window.addEventListener("pointerup", endGaze);
+    window.addEventListener("pointercancel", endGaze);
 
     window.addEventListener("wheel", (e) => {
       if (!throne.entered || throne.calm) return;
       if (e.target.closest(".hud-safe")) return;
       e.preventDefault();
       wheel.nudgeZ(e.deltaY * 0.004);
-      audio.setDepth(Math.max(0, Math.min(1, throne.depth + (e.deltaY > 0 ? 0.02 : -0.02))));
-    }, { passive: false });
-
-    window.addEventListener("contextmenu", (e) => {
-      if (!throne.entered) return;
-      e.preventDefault();
-      if (throne.calm) return;
-      wheel.setSpinBoost(-2.4);
-      document.body.classList.add("reversed");
-      audio.ping("hover");
-      setTimeout(() => document.body.classList.remove("reversed"), 1600);
-    });
-
-    document.getElementById("strike")?.addEventListener("click", () => {
-      shockwave();
-      spawnRipple(window.innerWidth * 0.5, window.innerHeight * 0.48, "big");
-    });
-
-    document.querySelectorAll("[data-seal]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        spawnRipple(
-          btn.getBoundingClientRect().left + 26,
-          btn.getBoundingClientRect().top + 26,
-          "seal"
-        );
-        document.body.classList.add("seal-wake");
-        setTimeout(() => document.body.classList.remove("seal-wake"), 700);
-      });
-    });
-
-    let draggingSeal = null;
-    document.querySelectorAll("[data-seal]").forEach((btn) => {
-      btn.addEventListener("pointerdown", (e) => {
-        if (e.button !== 0) return;
-        draggingSeal = btn;
-        btn.setPointerCapture(e.pointerId);
-      });
-      btn.addEventListener("pointermove", (e) => {
-        if (draggingSeal !== btn) return;
-        btn.style.left = `${(e.clientX / window.innerWidth) * 100}%`;
-        btn.style.top = `${(e.clientY / window.innerHeight) * 100}%`;
-      });
-      btn.addEventListener("pointerup", () => {
-        draggingSeal = null;
-      });
-    });
-
-    let clicks = [];
-    window.addEventListener("pointerup", (e) => {
-      if (!throne.entered || throne.calm) return;
-      if (e.target.closest(".hud-safe")) return;
+      audio.setDepth(Math.max(0, Math.min(1, throne.depth + (e.deltaY > 0 ? 0.03 : -0.03))));
       const now = performance.now();
-      clicks = clicks.filter((stamp) => now - stamp < 900);
-      clicks.push(now);
-      if (clicks.length >= 5) {
-        clicks = [];
-        burstEyes(e.clientX, e.clientY, throne.quality === "low" ? 8 : 16);
-        wheel.setSpinBoost(2.8);
-        document.body.classList.add("frenzy");
-        setTimeout(() => document.body.classList.remove("frenzy"), 1200);
-        audio.ping("click");
-        audio.swell();
+      if (now - lastZoom > 180) {
+        lastZoom = now;
+        audio.ping("zoom");
       }
-    });
-
-    document.getElementById("mouth")?.addEventListener("pointerenter", () => {
-      spawnRipple(window.innerWidth * 0.5, window.innerHeight * 0.48, "seal");
-    });
-
-    window.addEventListener("throne:rapture", (e) => {
-      if (!e.detail?.on || throne.calm) return;
-      burstEyes(window.innerWidth * 0.5, window.innerHeight * 0.48, 18);
-      spawnRipple(window.innerWidth * 0.5, window.innerHeight * 0.48, "big");
-    });
-
-    window.addEventListener("throne:fed", () => {
-      if (throne.calm) return;
-      burstEyes(window.innerWidth * 0.5, window.innerHeight * 0.48, 9);
-      spawnRipple(window.innerWidth * 0.5, window.innerHeight * 0.48, "seal");
-    });
-
-    let keyBurst = 0;
-    let jitterTimer = 0;
-    window.addEventListener("keydown", (e) => {
-      if (!throne.entered || throne.calm) return;
-      if (e.target && ["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
-      if (e.key === "ArrowLeft") wheel.setSpinBoost(-1.8);
-      if (e.key === "ArrowRight") wheel.setSpinBoost(2.2);
-      if (e.key === "ArrowUp") wheel.nudgeZ(-0.35);
-      if (e.key === "ArrowDown") wheel.nudgeZ(0.35);
-      if (e.key.length !== 1 && !e.key.startsWith("Arrow")) return;
-      keyBurst += 1;
-      document.body.classList.add("jitter");
-      clearTimeout(jitterTimer);
-      jitterTimer = window.setTimeout(() => {
-        document.body.classList.remove("jitter");
-        keyBurst = 0;
-      }, 280);
-      if (keyBurst >= 8) {
-        keyBurst = 0;
-        wheel.pulse();
-        wheel.setSpinBoost(1.9);
-        spawnRipple(window.innerWidth * 0.5, window.innerHeight * 0.48, "big");
-      }
-    });
+    }, { passive: false });
   }
 
   function triggerPulse() {
@@ -682,6 +621,14 @@ export function createChaosUI({ audio, wheel }) {
     // Occasional ambient strobe (still 420ms gated).
     if (!throne.calm && throne.rng() < 0.003) maybeStrobe(false);
 
+    if (!throne.calm && throne.entered) {
+      if (!nextBlurbAt) nextBlurbAt = t + 9000;
+      if (t > nextBlurbAt) {
+        nextBlurbAt = t + 8000 + throne.rng() * 12000;
+        speakBlurb(3400);
+      }
+    }
+
     // Cursor trail.
     if (ctx2d && trail && !throne.calm && !coarse) {
       ctx2d.clearRect(0, 0, trail.width, trail.height);
@@ -714,8 +661,8 @@ export function createChaosUI({ audio, wheel }) {
         const y = throne.mouse.y;
         ctx2d.save();
         ctx2d.translate(x, y);
-        const spinMul = (document.body.classList.contains("reversed") ? -6 : 1) * (throne.raptured ? 2.4 : 1);
-        ctx2d.rotate((t * 0.002) * spinMul);
+        const spinMul = document.body.classList.contains("gazing") ? 2.2 : 1;
+        ctx2d.rotate((t * 0.0018) * spinMul);
         ctx2d.strokeStyle = "#f0d078";
         ctx2d.lineWidth = 1.2;
         ctx2d.beginPath();

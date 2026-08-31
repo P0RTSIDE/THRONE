@@ -154,11 +154,11 @@ body.palette-gold {
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(232, 220, 184, 0.72);
-  background: var(--hud-bg);
-  border: 1px solid rgba(201, 162, 39, 0.28);
-  padding: 6px 10px;
-  cursor: pointer;
+  color: rgba(232, 220, 184, 0.45);
+  background: transparent;
+  border: 0;
+  padding: 6px 4px;
+  cursor: default;
 }
 
 .days-counter strong {
@@ -231,6 +231,15 @@ html.entered .veil {
   color: var(--void);
 }
 
+.veil-hint {
+  margin: 22px 0 0;
+  font-family: var(--font-hud);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: var(--gold-hot);
+}
+
 .veil-warn {
   max-width: 36em;
   margin: 28px auto 0;
@@ -301,15 +310,26 @@ html.entered .veil {
   position: absolute;
   left: 50%;
   top: 48%;
-  width: 16vmin;
-  height: 16vmin;
+  width: 18vmin;
+  height: 18vmin;
   transform: translate(-50%, -50%);
   border: 0;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 50% 50%, rgba(244, 241, 232, 0.08), transparent 62%);
+    radial-gradient(circle at 50% 50%, rgba(244, 241, 232, 0.1), transparent 62%);
   cursor: none;
   z-index: 4;
+  animation: mouth-breathe 5.5s ease-in-out infinite;
+}
+
+.mouth::before {
+  content: "";
+  position: absolute;
+  inset: -16%;
+  border: 1px dashed rgba(240, 208, 120, 0.7);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: hint-spin 22s linear infinite;
 }
 
 .mouth:hover,
@@ -405,6 +425,10 @@ html.charging .charge {
 }
 
 .fear-not {
+  left: 50%;
+  top: auto;
+  bottom: 16px;
+  transform: translateX(-50%);
   font-family: var(--font-hud);
   text-transform: uppercase;
   letter-spacing: 0.18em;
@@ -419,6 +443,7 @@ html.charging .charge {
 .fear-not.spawned {
   position: fixed;
   z-index: 7;
+  transform: none;
 }
 
 .fear-not.unmaking {
@@ -787,18 +812,18 @@ body.pulse-on .pulse {
 .caption {
   position: fixed;
   left: 50%;
-  bottom: 28px;
+  bottom: 64px;
   transform: translateX(-50%);
   z-index: 20;
   font-family: var(--font-hud);
-  font-size: 11px;
-  letter-spacing: 0.18em;
+  font-size: 13px;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--gold-hot);
   text-align: center;
   opacity: 0;
   pointer-events: none;
-  text-shadow: 0 0 12px #000;
+  text-shadow: 0 0 12px #000, 0 0 2px #000;
   max-width: 90vw;
 }
 
@@ -881,11 +906,15 @@ html.calm .chromatic {
   filter: none !important;
 }
 
-html.calm .ripples {
-  display: none;
+html.calm .mouth::before {
+  animation: none !important;
 }
 
 /* ----- Keyframes (capped; strobe is JS-gated to under 3 Hz) ----- */
+@keyframes hint-spin {
+  to { transform: rotate(-360deg); }
+}
+
 @keyframes geo-spin {
   from { transform: rotate(0deg) scale(1.05); }
   to { transform: rotate(-360deg) scale(1.05); }

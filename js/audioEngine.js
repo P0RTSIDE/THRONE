@@ -46,6 +46,12 @@ export function createAudioEngine() {
   let droneMul = 1;
   let raptureMul = 1;
   let delayG = null;
+  let scrapeGain = null;
+  let scrapeFilter = null;
+  let chargeOsc = null;
+  let chargeGain = null;
+  let noiseSrc = null;
+  let raf = 0;
 
   function ensureContext() {
     if (ctx) return ctx;
@@ -140,6 +146,16 @@ export function createAudioEngine() {
     noiseG.connect(droneGain);
     noiseSrc.start();
     filters.push(noiseLp);
+
+    scrapeFilter = c.createBiquadFilter();
+    scrapeFilter.type = "bandpass";
+    scrapeFilter.frequency.value = 380;
+    scrapeFilter.Q.value = 1.8;
+    scrapeGain = c.createGain();
+    scrapeGain.gain.value = 0;
+    noiseSrc.connect(scrapeFilter);
+    scrapeFilter.connect(scrapeGain);
+    scrapeGain.connect(comp);
 
     extraOsc = makeOsc(c, "sine", base * 3.01);
     extraGain = c.createGain();
@@ -248,29 +264,100 @@ export function createAudioEngine() {
     setCalm(on) {
       throne.calm = on;
       this.applyFlags();
+      this.scrape(0);
+      this.charge(false);
     },
     /** Interaction glass/bell. Volume-capped FM ping. */
     ping(kind = "click") {
       if (!started || !ctx || throne.muted || throne.calm) return;
       const c = ctx;
       const t0 = c.currentTime;
-      const carrierF = kind === "hover" ? randRange(1400, 2400) : randRange(680, 1600);
-      const car = makeOsc(c, "sine", carrierF);
+      const table = {
+        hover: { f: [1400, 2400], g: 0.08, d: 0.7 },
+        click: { f: [680, 1600], g: 0.18, d: 1.1 },
+        drag: { f: [90, 220], g: 0.14, d: 0.45 },
+        zoom: { f: [240, 520], g: 0.12, d: 0.55 },
+        mouth: { f: [160, 280], g: 0.2, d: 1.4 },
+      };
+      const spec = table[kind] || table.click;
+      const carrierF = randRange(spec.f[0], spec.f[1]);
+      const car = makeOsc(c, kind === "drag" || kind === "mouth" ? "triangle" : "sine", carrierF);
       const mod = makeOsc(c, "sine", carrierF * randRange(1.4, 2.6));
       const modGain = c.createGain();
-      modGain.gain.value = randRange(80, 220);
+      modGain.gain.value = kind === "drag" ? randRange(20, 60) : randRange(80, 220);
       const g = c.createGain();
       g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(kind === "hover" ? 0.08 : 0.16, t0 + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + randRange(0.5, 1.3));
+      g.gain.exponentialRampToValueAtTime(spec.g, t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + spec.d);
       mod.connect(modGain);
       modGain.connect(car.frequency);
       car.connect(g);
       g.connect(bellGain);
       car.start(t0);
       mod.start(t0);
-      car.stop(t0 + 1.4);
-      mod.stop(t0 + 1.4);
+      car.stop(t0 + spec.d + 0.2);
+      mod.stop(t0 + spec.d + 0.2);
+    },
+    /** Grit that follows drag speed. Zero to rest. */
+    scrape(speed) {
+      if (!scrapeGain || !ctx) return;
+      const t = ctx.currentTime;
+      const g = !started || throne.muted || throne.calm ? 0 : Math.min(0.22, Math.max(0, speed) * 0.014);
+      scrapeGain.gain.setTargetAtTime(g, t, 0.05);
+      if (scrapeFilter) {
+        scrapeFilter.frequency.setTargetAtTime(260 + Math.min(speed, 48) * 16, t, 0.08);
+      }
+    },
+    /** Hold-the-mouth rising tone. */
+    charge(on) {
+      if (!started || !ctx) return;
+      const t = ctx.currentTime;
+      if (on) {
+        if (throne.muted || throne.calm) return;
+        if (chargeOsc) {
+          try { chargeOsc.stop(); } catch { /* already stopped */ }
+          chargeOsc = null;
+        }
+        chargeOsc = makeOsc(ctx, "sine", 64);
+        chargeGain = ctx.createGain();
+        chargeGain.gain.setValueAtTime(0.0001, t);
+        chargeGain.gain.exponentialRampToValueAtTime(0.16, t + 0.06);
+        chargeOsc.frequency.exponentialRampToValueAtTime(310, t + 1.32);
+        chargeOsc.connect(chargeGain);
+        chargeGain.connect(bellGain);
+        chargeOsc.start(t);
+      } else if (chargeGain) {
+        chargeGain.gain.cancelScheduledValues(t);
+        chargeGain.gain.setTargetAtTime(0.0001, t, 0.04);
+        const osc = chargeOsc;
+        chargeOsc = null;
+        window.setTimeout(() => {
+          try { osc?.stop(); } catch { /* already stopped */ }
+        }, 180);
+      }
+    },
+    /** Short invented voice for blurbs and answers. */
+    utter() {
+      if (!started || !ctx || throne.muted || throne.calm) return;
+      const c = ctx;
+      const t0 = c.currentTime;
+      const freqs = [randRange(96, 170), randRange(220, 410), randRange(680, 1280)];
+      freqs.forEach((f, i) => {
+        const osc = makeOsc(c, i === 2 ? "sawtooth" : "sine", f);
+        const bp = c.createBiquadFilter();
+        bp.type = "bandpass";
+        bp.frequency.value = f * randRange(1.6, 3.4);
+        bp.Q.value = 7;
+        const g = c.createGain();
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.11 - i * 0.025, t0 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + randRange(0.4, 1.05));
+        osc.connect(bp);
+        bp.connect(g);
+        g.connect(bellGain);
+        osc.start(t0);
+        osc.stop(t0 + 1.1);
+      });
     },
     /** Wheel-cycle swell: a few dB above the bed, then back. Compressor + cap keep it from spiking. */
     swell() {

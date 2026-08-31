@@ -50,46 +50,25 @@
       <div class="veil-inner">
         <h1 id="veil-title" class="veil-title">THRONE</h1>
         <button id="enter" type="button" class="veil-enter">look upon it</button>
-        <p class="veil-warn">Calm Mode and mute stay in the corner. Brief light lives here.</p>
+        <p class="veil-hint">Drag to turn. Hold the center.</p>
+        <p class="veil-warn">Calm Mode and mute stay in the corner.</p>
       </div>
     </div>
 
     <div id="wheel-root" class="wheel-root" aria-hidden="true"></div>
 
     <canvas id="cursor-trail" class="overlay-canvas" aria-hidden="true"></canvas>
-    <svg id="sacred-geo" class="sacred-geo" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
-    <div id="scanlines" class="scanlines" aria-hidden="true"></div>
     <div id="vignette" class="vignette" aria-hidden="true"></div>
-    <div id="chromatic" class="chromatic" aria-hidden="true"></div>
     <div id="pulse" class="pulse" aria-hidden="true"></div>
     <div id="strobe" class="strobe" aria-hidden="true"></div>
-    <div id="grain" class="grain" aria-hidden="true"></div>
     <div id="inside" class="inside" aria-hidden="true"></div>
-    <div id="ripples" class="ripples" aria-hidden="true"></div>
 
     <div id="caption" class="caption" role="status" aria-live="polite"></div>
 
     <div id="firmament" class="firmament">
-      <div id="orbit" class="orbit" title=""></div>
-      <div class="orbit-ghost orbit-ghost-a" aria-hidden="true"></div>
-      <div class="orbit-ghost orbit-ghost-b" aria-hidden="true"></div>
-      <button id="mouth" class="mouth" type="button" aria-label="the mouth"></button>
+      <button id="mouth" class="mouth" type="button" aria-label="hold the center"></button>
       <div id="charge" class="charge" aria-hidden="true"></div>
-
-      <button type="button" class="relic seal" data-seal="rim" data-drift aria-label="rim" style="left:12%;top:22%">◈</button>
-      <button type="button" class="relic seal" data-seal="gate" data-drift aria-label="gate" style="left:82%;top:18%">◎</button>
-      <button type="button" class="relic seal" data-seal="voice" data-drift aria-label="voice" style="left:14%;top:72%">◉</button>
-      <button type="button" class="relic seal" data-seal="fire" data-drift aria-label="fire" style="left:84%;top:70%">✸</button>
-
-      <button id="choir-toggle" class="relic vesica" type="button" aria-pressed="false" aria-label="choir" style="left:6%;top:46%"></button>
-      <button id="strike" class="relic shard-hit" type="button" aria-label="strike" style="left:90%;top:44%">✧</button>
-
-      <button id="fear-not" class="fear-not relic" type="button" style="left:48%;top:86%">Fear Not</button>
-
-      <p class="shard" data-glitch data-drift style="left:8%;top:12%">full of eyes</p>
-      <p class="shard flee" data-flee data-glitch style="left:70%;top:10%">do not reach</p>
-      <p class="shard" data-glitch data-drift style="left:6%;top:88%">it declines to close</p>
-      <p class="shard" data-glitch data-drift style="left:72%;top:88%">the wheels moved</p>
+      <button id="fear-not" class="fear-not relic" type="button">Fear Not</button>
     </div>
 
     <script type="module" src="js/main.js"></script>
