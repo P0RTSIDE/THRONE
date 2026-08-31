@@ -18,7 +18,7 @@
  *   wing pulse     — slow radial wash from center
  */
 
-import { throne, randRange, randInt, showCaption } from "./throne.js";
+import { throne, randRange, randInt } from "./throne.js";
 
 /** Invented sigils. Not Hebrew, not any real liturgical script. */
 const SIGILS = "◊◈◉◎◌◍◐◑◒◓◔◕◘◙☿♄♃♁☥⚜⚝✦✧✩✪✫✬✭✮✯✰❋❊❈❇✺✹✸✷✶✵✴✳";
@@ -57,30 +57,25 @@ export function createChaosUI({ audio, wheel }) {
   const trail = document.getElementById("cursor-trail");
   const geo = document.getElementById("sacred-geo");
   const daysEl = document.getElementById("days-value");
-  const bar = document.getElementById("comprehension-bar");
-  const barVal = document.getElementById("comprehension-value");
-  const witness = document.getElementById("witness");
-  const averted = document.getElementById("averted");
   const fleeEls = [...document.querySelectorAll("[data-flee]")];
   fleeEls.forEach((el) => {
     el.addEventListener("click", () => {
       window.dispatchEvent(new CustomEvent("throne:flee"));
     });
   });
-  const planes = [...document.querySelectorAll("[data-swap]")];
+  const driftEls = [...document.querySelectorAll("[data-drift]")];
   const glitchEls = [...document.querySelectorAll("[data-glitch]")].filter((el) => !el.closest("#veil"));
-  const sections = [...document.querySelectorAll("[data-section]")];
 
   glitchEls.forEach(wrapGlyphs);
+  seedFloaters();
 
   let lastStrobe = 0;
   let strobeOn = false;
-  let comprehension = randRange(4, 18);
-  let compVel = randRange(2, 9);
   let days = 2_198_447 + Math.floor(throne.rng() * 90000);
   let lastSwap = 0;
   let invertUntil = 0;
   let fearCount = 0;
+  let fed = 0;
   const MAX_FEAR = 21;
 
   const particles = [];
@@ -99,6 +94,23 @@ export function createChaosUI({ audio, wheel }) {
   window.addEventListener("resize", sizeTrail);
 
   buildSacredGeometry(geo);
+  wireOrbit(audio);
+  wireMouth(audio, wheel);
+
+  function seedFloaters() {
+    const host = document.getElementById("firmament");
+    if (!host) return;
+    const n = throne.quality === "low" ? 10 : 22;
+    for (let i = 0; i < n; i++) {
+      const d = document.createElement("i");
+      d.className = throne.rng() > 0.45 ? "floater eye" : "floater ring";
+      d.style.left = `${randRange(2, 96)}vw`;
+      d.style.top = `${randRange(3, 94)}vh`;
+      d.style.animationDelay = `${randRange(-12, 8)}s`;
+      d.style.setProperty("--s", String(randRange(0.45, 1.7)));
+      host.appendChild(d);
+    }
+  }
 
   // ----- Cursor + particles -----
   window.addEventListener("pointermove", (e) => {
@@ -120,34 +132,100 @@ export function createChaosUI({ audio, wheel }) {
     }
   });
 
-  // ----- Nav: the way is not the way you expect -----
-  document.getElementById("liturgy-nav")?.addEventListener("click", (e) => {
-    const a = e.target.closest("[data-nav]");
-    if (!a) return;
-    e.preventDefault();
-    if (!sections.length) return;
-    const pick = sections[Math.floor(throne.rng() * sections.length)];
-    pick.scrollIntoView({ behavior: throne.calm ? "smooth" : "auto", block: "center" });
-    showCaption("the way is not the way you expect");
-    audio.ping("click");
-  });
+  // ----- Fear Not: click multiplies, hold unmakes, drag into the mouth to feed it -----
+  function nearMouth(x, y) {
+    const dx = x - window.innerWidth * 0.5;
+    const dy = y - window.innerHeight * 0.48;
+    return Math.hypot(dx, dy) < Math.min(window.innerWidth, window.innerHeight) * 0.16;
+  }
 
-  // ----- Fear Not -----
+  function unmakeFear(btn) {
+    if (btn.classList.contains("unmaking")) return;
+    btn.classList.add("unmaking");
+    audio.unmake();
+    if (btn.classList.contains("spawned")) fearCount = Math.max(0, fearCount - 1);
+    setTimeout(() => btn.remove(), 560);
+    if (!document.getElementById("fear-not")) {
+      setTimeout(() => {
+        if (document.getElementById("fear-not")) return;
+        const n = document.createElement("button");
+        n.id = "fear-not";
+        n.className = "fear-not relic";
+        n.type = "button";
+        n.textContent = "Fear Not";
+        n.style.left = "48%";
+        n.style.top = "86%";
+        document.getElementById("firmament")?.appendChild(n);
+        bindFear(n);
+      }, 8000);
+    }
+  }
+
+  function consumeFear(btn) {
+    unmakeFear(btn);
+    wheel.openDistantEye();
+    audio.consume();
+    fed += 1;
+    window.dispatchEvent(new CustomEvent("throne:fed", { detail: { fed } }));
+    triggerPulse();
+  }
+
   function bindFear(btn) {
-    btn.addEventListener("click", (e) => {
+    let downAt = 0;
+    let startX = 0;
+    let startY = 0;
+    let dragging = false;
+    let holdTimer = 0;
+
+    btn.addEventListener("pointerdown", (e) => {
       e.stopPropagation();
+      downAt = performance.now();
+      startX = e.clientX;
+      startY = e.clientY;
+      dragging = false;
+      btn.setPointerCapture(e.pointerId);
+      holdTimer = window.setTimeout(() => {
+        if (!dragging) unmakeFear(btn);
+      }, 650);
+    });
+    btn.addEventListener("pointermove", (e) => {
+      if (!downAt) return;
+      const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
+      if (dist > 14) {
+        dragging = true;
+        clearTimeout(holdTimer);
+        btn.classList.add("dragging");
+        btn.style.left = `${e.clientX}px`;
+        btn.style.top = `${e.clientY}px`;
+        btn.style.position = "fixed";
+        btn.style.transform = "translate(-50%, -50%)";
+      }
+    });
+    btn.addEventListener("pointerup", (e) => {
+      clearTimeout(holdTimer);
+      btn.classList.remove("dragging");
+      const held = performance.now() - downAt;
+      downAt = 0;
+      if (btn.classList.contains("unmaking")) return;
+      if (dragging && nearMouth(e.clientX, e.clientY)) {
+        consumeFear(btn);
+        dragging = false;
+        return;
+      }
+      dragging = false;
+      if (held >= 640) return;
       audio.ping("click");
       if (!throne.calm) {
         document.body.classList.add("shudder");
         wheel.shudder();
         setTimeout(() => document.body.classList.remove("shudder"), 900);
       }
-      showCaption("be not afraid is an instruction, not a comfort");
       window.dispatchEvent(new CustomEvent("throne:fearnot", { detail: { muted: throne.muted } }));
       if (throne.calm) return;
       const spawn = Math.min(3, MAX_FEAR - 1 - fearCount);
       for (let i = 0; i < spawn; i++) {
         const n = btn.cloneNode(true);
+        n.removeAttribute("id");
         n.classList.add("spawned");
         n.style.left = `${randRange(8, 86)}vw`;
         n.style.top = `${randRange(18, 82)}vh`;
@@ -161,75 +239,13 @@ export function createChaosUI({ audio, wheel }) {
   const fearRoot = document.getElementById("fear-not");
   if (fearRoot) bindFear(fearRoot);
 
-  // ----- Petition: witnessed, then gone -----
-  document.getElementById("petition-form")?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    audio.ping("click");
-    const data = new FormData(e.target);
-    window.dispatchEvent(
-      new CustomEvent("throne:petition", {
-        detail: {
-          forgotten: data.get("forgotten") || "",
-          petition: data.get("petition") || "",
-          direction: data.get("direction") || "",
-        },
-      })
-    );
-    if (!witness) return;
-    witness.hidden = false;
-    showCaption("Your petition has been witnessed", 800);
-    setTimeout(() => {
-      witness.hidden = true;
-      e.target.reset();
-    }, 720);
-  });
-
-  // ----- Slider: inert until release -----
-  const slider = document.getElementById("rim-slider");
-  slider?.addEventListener("input", () => {
-    /* deliberately does nothing while dragging */
-  });
-  slider?.addEventListener("pointerup", () => {
-    audio.ping("click");
-    wheel.openDistantEye();
-    wheel.setPalette(randInt(0, 2));
-    document.body.classList.remove("palette-gold", "palette-white", "palette-violet");
-    document.body.classList.add(["palette-gold", "palette-white", "palette-violet"][throne.palette]);
-    showCaption("something distant has opened");
-    triggerPulse();
-    window.dispatchEvent(new CustomEvent("throne:rim", { detail: { value: Number(slider.value) } }));
-  });
-
-  // ----- Averted button: only counts when you are not on it -----
-  let avertedArmed = false;
-  averted?.addEventListener("pointerenter", () => {
-    avertedArmed = true;
-    audio.ping("hover");
-  });
-  averted?.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    showCaption("it will not be touched directly");
-  });
-  document.addEventListener("click", (e) => {
-    if (!avertedArmed || !throne.entered) return;
-    if (e.target.closest(".hud-safe")) return;
-    if (averted && (averted === e.target || averted.contains(e.target))) return;
-    avertedArmed = false;
-    showCaption("looking away was the approach");
-    audio.ping("click");
-    triggerPulse();
-    document.body.classList.toggle("palette-violet");
-  });
-
-  // ----- Hover bells (sparse: only planes, not every pixel) -----
-  document.querySelectorAll(".plane a, .plane button, .plane label").forEach((el) => {
+  document.querySelectorAll(".relic").forEach((el) => {
     let last = 0;
     el.addEventListener("pointerenter", () => {
       const now = performance.now();
-      if (now - last < 400) return;
+      if (now - last < 350) return;
       last = now;
-      if (throne.rng() > 0.45) audio.ping("hover");
+      audio.ping("hover");
     });
   });
 
@@ -237,11 +253,71 @@ export function createChaosUI({ audio, wheel }) {
     audio.swell();
     triggerPulse();
     maybeStrobe(true);
-    if (!throne.calm && throne.rng() > 0.6) {
-      showCaption("it has already looked at you");
-    }
   });
   window.addEventListener("throne:pulse", () => triggerPulse());
+
+  function wireOrbit(audio) {
+    const orbit = document.getElementById("orbit");
+    if (!orbit) return;
+    let dragging = false;
+    function apply(clientX, clientY) {
+      const r = orbit.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      const ang = Math.atan2(clientY - cy, clientX - cx);
+      const deg = ((ang * 180) / Math.PI + 360 + 90) % 360;
+      orbit.style.transform = `translate(-50%, -50%) rotate(${deg}deg)`;
+      const value = (deg / 360) * 100;
+      audio.setDepth(value / 100);
+      return value;
+    }
+    orbit.addEventListener("pointerdown", (e) => {
+      dragging = true;
+      orbit.setPointerCapture(e.pointerId);
+      apply(e.clientX, e.clientY);
+      audio.ping("hover");
+    });
+    orbit.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      apply(e.clientX, e.clientY);
+    });
+    orbit.addEventListener("pointerup", (e) => {
+      if (!dragging) return;
+      dragging = false;
+      const value = apply(e.clientX, e.clientY);
+      window.dispatchEvent(new CustomEvent("throne:rim", { detail: { value } }));
+    });
+  }
+
+  function wireMouth(audio, wheel) {
+    const mouth = document.getElementById("mouth");
+    if (!mouth) return;
+    let hold = 0;
+    mouth.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      if (throne.raptured) {
+        window.dispatchEvent(new CustomEvent("throne:rapture", { detail: { on: false } }));
+        return;
+      }
+      document.documentElement.classList.add("charging");
+      audio.swell();
+      hold = window.setTimeout(() => {
+        document.documentElement.classList.remove("charging");
+        window.dispatchEvent(new CustomEvent("throne:rapture", { detail: { on: true } }));
+      }, 1350);
+    });
+    const cancel = () => {
+      clearTimeout(hold);
+      document.documentElement.classList.remove("charging");
+    };
+    mouth.addEventListener("pointerup", cancel);
+    mouth.addEventListener("pointerleave", cancel);
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && throne.raptured) {
+        window.dispatchEvent(new CustomEvent("throne:rapture", { detail: { on: false } }));
+      }
+    });
+  }
 
   function triggerPulse() {
     if (throne.calm) return;
@@ -340,24 +416,7 @@ export function createChaosUI({ audio, wheel }) {
 
   // ----- Per-frame chaos (called from main RAF) -----
   function tick(t) {
-    const dt = 0.016;
 
-    // Comprehension bar: inconsistent velocity, hard reset before 100.
-    if (!throne.calm) {
-      if (throne.rng() < 0.01) compVel = randRange(-6, 14);
-      comprehension += compVel * dt;
-      if (comprehension > randRange(86, 98) || comprehension < 0) {
-        comprehension = randRange(2, 12);
-        compVel = randRange(1.5, 11);
-      }
-    } else {
-      comprehension += (41 - comprehension) * 0.02;
-    }
-    const shown = Math.max(0, Math.min(99, comprehension));
-    if (bar) bar.style.width = `${shown}%`;
-    if (barVal) barVal.textContent = String(Math.floor(shown));
-
-    // Geometry opacity flicker (slow, not a strobe).
     if (geo && !throne.calm) {
       geo.style.opacity = String(0.12 + 0.22 * (0.5 + 0.5 * Math.sin(t * 0.0011)));
     }
@@ -394,22 +453,14 @@ export function createChaosUI({ audio, wheel }) {
     }
     if (throne.calm) glitchEls.forEach(restoreGlyphs);
 
-    // Layout swap when unobserved: exchange margins and tilt, not DOM order.
-    if (!throne.calm && t - lastSwap > 9000 + throne.rng() * 7000) {
+    if (!throne.calm && t - lastSwap > 7000 + throne.rng() * 6000) {
       lastSwap = t;
-      const live = planes.filter((p) => !p.matches(":hover"));
-      if (live.length >= 2) {
+      const live = driftEls.filter((p) => !p.matches(":hover"));
+      if (live.length >= 1) {
         const a = live[randInt(0, live.length - 1)];
-        let b = live[randInt(0, live.length - 1)];
-        if (a === b) b = live[(live.indexOf(a) + 1) % live.length];
-        a.style.transition = "transform 0.9s ease, margin 0.9s ease";
-        b.style.transition = "transform 0.9s ease, margin 0.9s ease";
-        const am = a.style.marginLeft;
-        const at = a.style.transform;
-        a.style.marginLeft = b.style.marginLeft || `${randRange(4, 36)}vw`;
-        b.style.marginLeft = am || `${randRange(4, 36)}vw`;
-        a.style.transform = at && at.includes("rotate") ? b.style.transform : `rotate(${randRange(-8, 8)}deg)`;
-        b.style.transform = `rotate(${randRange(-8, 8)}deg)`;
+        a.style.transition = "left 1.4s ease, top 1.4s ease";
+        a.style.left = `${randRange(4, 88)}%`;
+        a.style.top = `${randRange(8, 86)}%`;
       }
     }
 
@@ -491,9 +542,6 @@ export function createChaosUI({ audio, wheel }) {
       if (on) {
         strobeEl?.classList.remove("on");
         glitchEls.forEach(restoreGlyphs);
-        planes.forEach((p) => {
-          p.style.transform = "";
-        });
         particles.length = 0;
         if (ctx2d && trail) ctx2d.clearRect(0, 0, trail.width, trail.height);
       }

@@ -30,7 +30,8 @@
 html,
 body {
   margin: 0;
-  min-height: 100%;
+  height: 100%;
+  overflow: hidden;
   background: var(--void);
   color: var(--ink);
   cursor: none;
@@ -43,7 +44,6 @@ html.calm * {
 
 body {
   font-family: var(--font-body);
-  overflow-x: hidden;
   background:
     radial-gradient(ellipse 80% 60% at 50% 42%, rgba(80, 40, 10, 0.28), transparent 55%),
     radial-gradient(ellipse 50% 40% at 50% 50%, rgba(90, 20, 140, 0.18), transparent 60%),
@@ -148,7 +148,7 @@ body.palette-gold {
 }
 
 .days-counter {
-  flex-basis: 100%;
+  flex-basis: auto;
   margin: 4px 0 0;
   font-family: var(--font-hud);
   font-size: 10px;
@@ -157,14 +157,15 @@ body.palette-gold {
   color: rgba(232, 220, 184, 0.72);
   background: var(--hud-bg);
   border: 1px solid rgba(201, 162, 39, 0.28);
-  padding: 6px 8px;
+  padding: 6px 10px;
+  cursor: pointer;
 }
 
 .days-counter strong {
   display: block;
   color: var(--gold-hot);
   font-size: 13px;
-  margin-top: 2px;
+  margin: 0;
 }
 
 /* ----- Entry veil ----- */
@@ -252,114 +253,252 @@ html.entered .veil {
   height: 100%;
 }
 
-.stage {
-  position: relative;
-  z-index: 2;
-  min-height: 220vh;
-  padding: 110px 6vw 20vh;
+.firmament {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
   pointer-events: none;
+  overflow: hidden;
 }
 
-.stage a,
-.stage button,
-.stage input,
-.stage textarea,
-.stage label,
-.stage .plane {
+.firmament .relic,
+.firmament .shard,
+.firmament .mouth,
+.firmament .orbit,
+.firmament .fear-not {
   pointer-events: auto;
 }
 
-.plane {
-  position: relative;
-  width: min(420px, 88vw);
-  margin: 8vh 0;
-  padding: 22px 24px 26px;
-  background: var(--panel);
-  border: 1px solid rgba(201, 162, 39, 0.35);
-  backdrop-filter: blur(4px);
-  box-shadow:
-    10px 14px 0 rgba(90, 20, 140, 0.22),
-    -12px 8px 0 rgba(201, 162, 39, 0.12),
-    4px -16px 40px rgba(0, 0, 0, 0.55),
-    18px 4px 0 rgba(244, 241, 232, 0.05);
-}
-
-.nav-plane {
+.orbit {
   position: absolute;
-  top: 96px;
-  right: 5vw;
-  margin: 0;
-  transform: rotate(3.5deg);
+  left: 50%;
+  top: 48%;
+  width: min(78vmin, 640px);
+  height: min(78vmin, 640px);
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(201, 162, 39, 0.28);
+  border-radius: 50%;
+  box-shadow:
+    0 0 40px rgba(201, 162, 39, 0.08),
+    inset 0 0 60px rgba(180, 76, 255, 0.06);
+  cursor: none;
 }
 
-.epigraph-plane {
-  margin-left: 4vw;
-  transform: rotate(-4deg);
+.orbit::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--gold-hot);
+  box-shadow: 0 0 16px var(--gold);
+  top: -7px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
-.wheelhouse-plane {
-  margin-left: auto;
-  margin-right: 12vw;
-  transform: rotate(2.2deg);
+.mouth {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: 16vmin;
+  height: 16vmin;
+  transform: translate(-50%, -50%);
+  border: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(244, 241, 232, 0.08), transparent 62%);
+  cursor: none;
+  z-index: 4;
 }
 
-.litany-plane {
-  margin-left: 18vw;
-  transform: rotate(-6deg);
+.mouth:hover,
+html.charging .mouth {
+  box-shadow: 0 0 40px rgba(240, 208, 120, 0.35);
 }
 
-.petition-plane {
-  margin-left: 8vw;
-  transform: rotate(5deg);
+.charge {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: 18vmin;
+  height: 18vmin;
+  transform: translate(-50%, -50%) scale(0.4);
+  border: 2px solid var(--gold-hot);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 4;
 }
 
-.comprehension-plane {
-  margin-left: auto;
-  margin-right: 8vw;
-  transform: rotate(-2.5deg);
+html.charging .charge {
+  opacity: 0.85;
+  animation: charge-grow 1.35s linear forwards;
 }
 
-.attendants-plane {
-  margin-left: 10vw;
-  transform: rotate(-3.2deg);
+@keyframes charge-grow {
+  to { transform: translate(-50%, -50%) scale(1.15); opacity: 0.15; }
 }
 
-.seals {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin: 12px 0 16px;
-}
-
-.seals button,
-.attendant-actions button {
-  font-family: var(--font-hud);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 10px;
+.relic {
+  position: absolute;
+  z-index: 5;
   background: transparent;
+  border: 0;
   color: var(--gold-hot);
-  border: 1px solid var(--gold);
-  padding: 10px 8px;
-  cursor: pointer;
+  font-size: 28px;
+  line-height: 1;
+  text-shadow: 0 0 12px rgba(201, 162, 39, 0.55);
+  padding: 8px;
 }
 
-.seals button.lit,
-.seals button[aria-pressed="true"] {
+.relic.seal {
+  width: 52px;
+  height: 52px;
+  border: 1px solid rgba(201, 162, 39, 0.4);
+  border-radius: 50%;
+  background: rgba(8, 6, 12, 0.35);
+}
+
+.relic.seal.lit,
+.relic.seal[aria-pressed="true"] {
   background: var(--gold);
   color: var(--void);
-  box-shadow: 0 0 18px rgba(240, 208, 120, 0.45);
+  box-shadow: 0 0 28px rgba(240, 208, 120, 0.7);
+  border-color: var(--gold-hot);
 }
 
-.attendant-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
+.relic.vesica {
+  width: 42px;
+  height: 68px;
+  border-radius: 50%;
+  border: 1px solid var(--gold);
+  background: radial-gradient(circle at 50% 50%, rgba(180, 76, 255, 0.25), transparent 70%);
+  box-shadow: -10px 0 0 rgba(201, 162, 39, 0.2), 10px 0 0 rgba(201, 162, 39, 0.2);
 }
 
-.days-counter {
-  cursor: pointer;
+.relic.vesica[aria-pressed="true"] {
+  box-shadow:
+    -12px 0 18px rgba(180, 76, 255, 0.55),
+    12px 0 18px rgba(240, 208, 120, 0.55);
+  background: rgba(180, 76, 255, 0.35);
+}
+
+.relic.shard-hit {
+  font-size: 36px;
+  rotate: 18deg;
+}
+
+.shard {
+  position: absolute;
+  margin: 0;
+  font-size: 15px;
+  font-style: italic;
+  color: rgba(232, 220, 184, 0.55);
+  max-width: 10em;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.shard.flee {
+  pointer-events: auto;
+}
+
+.fear-not {
+  font-family: var(--font-hud);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  background: rgba(8, 6, 12, 0.45);
+  color: var(--gold-hot);
+  border: 1px solid var(--gold);
+  padding: 10px 14px;
+  font-size: 11px;
+  z-index: 6;
+}
+
+.fear-not.spawned {
+  position: fixed;
+  z-index: 7;
+}
+
+.fear-not.unmaking {
+  animation: unmake 0.55s ease-in forwards;
+  pointer-events: none;
+}
+
+.fear-not.dragging {
+  opacity: 0.7;
+  z-index: 20;
+}
+
+@keyframes unmake {
+  to {
+    transform: scale(0.1) rotate(40deg);
+    opacity: 0;
+    filter: blur(8px);
+  }
+}
+
+.floater {
+  position: absolute;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.45;
+  animation: drift 18s ease-in-out infinite;
+}
+
+.floater.eye {
+  width: 22px;
+  height: 12px;
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, #f4f1e8 30%, #c9a227 32%, #050308 38%, transparent 40%);
+}
+
+.floater.ring {
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  border-radius: 50%;
+}
+
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) scale(var(--s, 1)); }
+  50% { transform: translate(12px, -18px) scale(calc(var(--s, 1) * 1.08)); }
+}
+
+.inside {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    repeating-conic-gradient(from 0deg at 50% 48%, rgba(201, 162, 39, 0.07) 0 8deg, transparent 8deg 16deg),
+    radial-gradient(circle at 50% 48%, rgba(244, 241, 232, 0.18), transparent 42%);
+  transition: opacity 1.2s ease;
+}
+
+html.raptured .inside {
+  opacity: 1;
+}
+
+html.raptured .orbit,
+html.raptured .shard,
+html.raptured .floater,
+html.raptured .relic.seal,
+html.raptured .relic.vesica,
+html.raptured .relic.shard-hit {
+  opacity: 0.12;
+}
+
+html.raptured .vignette {
+  box-shadow: inset 0 0 180px 80px rgba(0, 0, 0, 0.82);
+}
+
+html.calm .floater,
+html.calm .charge {
+  animation: none;
 }
 
 body.aspect-unblinking {
@@ -397,191 +536,6 @@ body.aspect-name .sacred-geo {
 body.aspect-hush .scanlines,
 body.aspect-hush .chromatic {
   opacity: 0.12;
-}
-
-html.calm .seals button,
-html.calm .attendant-actions button {
-  cursor: pointer;
-}
-
-.remainder-plane {
-  margin-left: 22vw;
-  transform: rotate(1.5deg);
-}
-
-html.calm .plane {
-  transform: none !important;
-  left: auto !important;
-  top: auto !important;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
-  transition: transform 0.6s ease;
-}
-
-.plane h2 {
-  font-family: var(--font-title);
-  font-size: 22px;
-  letter-spacing: 0.18em;
-  margin: 0 0 12px;
-  color: var(--gold-hot);
-}
-
-.plane-kicker {
-  font-family: var(--font-hud);
-  font-size: 10px;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  margin: 0 0 10px;
-  color: var(--gold);
-}
-
-.inscription {
-  margin: 0 0 10px;
-  font-size: 18px;
-  line-height: 1.35;
-  font-style: italic;
-}
-
-.inscription.small {
-  font-size: 14px;
-  opacity: 0.75;
-}
-
-.inscription.flee {
-  display: inline-block;
-  position: relative;
-}
-
-/* ----- Nav liturgy ----- */
-.nav-plane ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.nav-plane a {
-  color: var(--ink);
-  text-decoration: none;
-  font-family: var(--font-hud);
-  font-size: 12px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  display: inline-block;
-  padding: 6px 0;
-  border-bottom: 1px solid transparent;
-}
-
-.nav-plane a:hover,
-.nav-plane a:focus-visible {
-  color: var(--gold-hot);
-  border-bottom-color: var(--gold);
-}
-
-.has-sub {
-  position: relative;
-}
-
-.submenu {
-  display: none;
-  font-family: var(--font-hud);
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--uv);
-  padding: 4px 0 8px;
-}
-
-.has-sub:hover .submenu,
-.has-sub:focus-within .submenu {
-  display: block;
-}
-
-/* ----- Form / controls ----- */
-.petition-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.petition-form label,
-.slider-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-family: var(--font-hud);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.petition-form input,
-.petition-form textarea {
-  font-family: var(--font-body);
-  font-size: 16px;
-  background: rgba(5, 3, 8, 0.7);
-  color: var(--ink);
-  border: 1px solid rgba(201, 162, 39, 0.4);
-  padding: 8px;
-  resize: vertical;
-}
-
-.petition-form button,
-.fear-not,
-.averted {
-  font-family: var(--font-hud);
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  background: transparent;
-  color: var(--gold-hot);
-  border: 1px solid var(--gold);
-  padding: 10px 14px;
-  cursor: pointer;
-}
-
-.fear-not {
-  margin-top: 12px;
-}
-
-.fear-not.spawned {
-  position: fixed;
-  z-index: 5;
-}
-
-.averted {
-  position: relative;
-  margin-top: 8px;
-}
-
-.averted-hint {
-  display: block;
-  margin-top: 6px;
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  color: rgba(232, 220, 184, 0.5);
-}
-
-.progress-wrap {
-  margin-top: 18px;
-  font-family: var(--font-hud);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.progress-track {
-  margin-top: 8px;
-  height: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(201, 162, 39, 0.35);
-}
-
-.progress-bar {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, var(--brass), var(--gold-hot), var(--uv));
-}
-
-.slider-wrap input {
-  accent-color: var(--gold);
 }
 
 /* ----- Overlays ----- */
@@ -716,7 +670,7 @@ body.pulse-on .pulse {
 }
 
 body.shudder .wheel-root,
-body.shudder .stage {
+body.shudder .firmament {
   animation: shudder 0.9s ease-in-out;
 }
 
@@ -738,11 +692,11 @@ html.calm .vignette {
 }
 
 html.calm body.shudder .wheel-root,
-html.calm body.shudder .stage {
+html.calm body.shudder .firmament {
   animation: none;
 }
 
-html.calm .inscription.flee {
+html.calm .shard.flee {
   transform: none !important;
 }
 
@@ -810,7 +764,7 @@ html.calm .inscription.flee {
   }
 
   body.shudder .wheel-root,
-  body.shudder .stage {
+  body.shudder .firmament {
     animation: none;
   }
 }

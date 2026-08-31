@@ -44,6 +44,8 @@ export function createAudioEngine() {
   let formantMul = 1;
   let reverseAlways = false;
   let droneMul = 1;
+  let raptureMul = 1;
+  let delayG = null;
 
   function ensureContext() {
     if (ctx) return ctx;
@@ -146,6 +148,14 @@ export function createAudioEngine() {
     extraGain.connect(droneGain);
     extraOsc.start();
 
+    const delay = c.createDelay(0.45);
+    delay.delayTime.value = 0.16;
+    delayG = c.createGain();
+    delayG.gain.value = 0;
+    formantGain.connect(delay);
+    delay.connect(delayG);
+    delayG.connect(comp);
+
     // --- Formant "voices": a pulse-adjacent saw into three moving bandpasses ---
     formantOsc = makeOsc(c, "sawtooth", 110);
     const fg = c.createGain();
@@ -193,7 +203,10 @@ export function createAudioEngine() {
       }
       // Sparse presence: voices swell in and out so they are not a constant choir.
       const presence =
-        (0.02 + 0.04 * Math.max(0, Math.sin(now * 0.19) * Math.sin(now * 0.05))) * choirMul * formantMul;
+        (0.02 + 0.04 * Math.max(0, Math.sin(now * 0.19) * Math.sin(now * 0.05))) *
+        choirMul *
+        formantMul *
+        raptureMul;
       formantGain.gain.setTargetAtTime(presence, ctx.currentTime, 0.4);
     }
     if (droneGain) droneGain.gain.setTargetAtTime(0.22 * droneMul, ctx.currentTime, 0.35);
@@ -276,6 +289,38 @@ export function createAudioEngine() {
     setChoir(on) {
       throne.choir = !!on;
       choirMul = on ? 3.4 : 1;
+    },
+    unmake() {
+      if (!started || !ctx || throne.muted) return;
+      const t0 = ctx.currentTime;
+      const car = makeOsc(ctx, "sine", 920);
+      const g = ctx.createGain();
+      car.frequency.exponentialRampToValueAtTime(140, t0 + 0.4);
+      g.gain.setValueAtTime(0.12, t0);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.45);
+      car.connect(g);
+      g.connect(bellGain);
+      car.start(t0);
+      car.stop(t0 + 0.5);
+    },
+    consume() {
+      if (!started || !ctx || throne.muted) return;
+      const t0 = ctx.currentTime;
+      const car = makeOsc(ctx, "triangle", 70);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.18, t0);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.7);
+      car.connect(g);
+      g.connect(droneGain);
+      car.start(t0);
+      car.stop(t0 + 0.75);
+    },
+    setRapture(on) {
+      raptureMul = on ? 2.8 : 1;
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      if (delayG) delayG.gain.setTargetAtTime(on ? 0.38 : 0, t, 0.18);
+      if (droneGain) droneGain.gain.setTargetAtTime(0.22 * droneMul * (on ? 1.35 : 1), t, 0.25);
     },
     /** Stacked glass chord, still gain-capped. */
     strike() {

@@ -16,6 +16,7 @@ export const throne = {
   aspect: "witness",
   depth: 0.45,
   choir: false,
+  raptured: false,
 };
 
 /** Deterministic 0..1 PRNG (Mulberry32). */
