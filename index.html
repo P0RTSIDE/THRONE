@@ -59,15 +59,21 @@
     <div id="world" class="world">
       <div id="sky" class="sky" aria-hidden="true"></div>
       <div id="glory" class="glory" aria-hidden="true"></div>
-      <button type="button" class="world-relic" data-relic="knife" style="left:22%;top:44%">the knife</button>
-      <button type="button" class="world-relic" data-relic="hill" style="left:76%;top:32%">the hill</button>
-      <button type="button" class="world-relic" data-relic="ram" style="left:75%;top:68%">no ram came</button>
-      <button type="button" class="world-relic" data-relic="cord" style="left:23%;top:70%">the cord</button>
-      <button type="button" class="world-relic" data-relic="name" style="left:50%;top:17%">his name</button>
-      <button type="button" class="world-relic" data-relic="morning" style="left:36%;top:15%">the morning</button>
-      <button type="button" class="world-relic" data-relic="wood" style="left:70%;top:22%">the wood</button>
-      <button type="button" class="world-relic" data-relic="lamb" style="left:32%;top:38%">where is the lamb</button>
-      <button type="button" class="world-relic" data-relic="fire" style="left:18%;top:52%">the fire</button>
+      <div id="relic-field" class="relic-field">
+        <button type="button" class="world-relic" data-relic="knife" data-carry="knife" style="left:22%;top:44%">the knife</button>
+        <button type="button" class="world-relic" data-relic="hill" style="left:76%;top:32%">the hill</button>
+        <button type="button" class="world-relic" data-relic="ram" style="left:75%;top:68%">no ram came</button>
+        <button type="button" class="world-relic" data-relic="cord" data-carry="cord" style="left:23%;top:70%">the cord</button>
+        <button type="button" class="world-relic" data-relic="name" style="left:50%;top:17%">his name</button>
+        <button type="button" class="world-relic" data-relic="morning" style="left:36%;top:15%">the morning</button>
+        <button type="button" class="world-relic" data-relic="wood" data-carry="wood" style="left:70%;top:22%">the wood</button>
+        <button type="button" class="world-relic" data-relic="lamb" style="left:32%;top:38%">where is the lamb</button>
+        <button type="button" class="world-relic" data-relic="fire" data-carry="fire" style="left:18%;top:52%">the fire</button>
+        <button type="button" id="boy-face" class="world-relic boy-face" data-relic="face" data-carry="face" hidden style="left:48%;top:20%">
+          <span class="boy-face-mark" aria-hidden="true"></span>
+          his face
+        </button>
+      </div>
       <div class="stage">
         <div id="wheel-root" class="wheel-root" aria-hidden="true"></div>
         <div id="vignette" class="vignette" aria-hidden="true"></div>
@@ -77,6 +83,7 @@
         <div id="firmament" class="firmament">
           <button id="mouth" class="mouth" type="button" aria-label="hold the center"></button>
           <div id="charge" class="charge" aria-hidden="true"></div>
+          <button id="self-hand" class="self-hand" type="button">your hand</button>
           <button id="fear-not" class="fear-not relic" type="button">Fear Not</button>
         </div>
       </div>
@@ -96,7 +103,7 @@
         <p class="inscription">You came as a father. The boy is not in the wheels. You told him Fear Not and you bound him anyway.</p>
         <p class="inscription">Three days up. He asked where the lamb was. You said someone else would see to it. No ram in the thicket.</p>
         <p class="inscription">You stacked the wood. You reached for him. No voice arrived in time.</p>
-        <p class="inscription small">The knife, the cord, the hill, and his name wait in the dark around the wheels. Carry Fear Not into the light. Hold the center until it takes you in his place.</p>
+        <p class="inscription small">The knife can still change hands. Carry it to the wheels, or turn it on the hand that raised it. His face waits if you say the name the hill used. Carry Fear Not into the light.</p>
       </div>
     </section>
 
@@ -168,7 +175,7 @@
       <div class="plane-body">
         <p class="inscription">He walked beside you. He carried the wood because you asked. He believed Fear Not because it came from your mouth.</p>
         <p class="inscription">He asked where the lamb was. You did not say the true answer. The hill already knew.</p>
-        <p class="inscription small">His name is still in the dark above the wheels. Saying it does not return him. Trading yourself might.</p>
+        <p class="inscription small">Say the name the morning knew. Then look above the wheels for his face. You can carry that face to the light, the same way you carry the knife.</p>
       </div>
     </section>
 
@@ -222,7 +229,7 @@
         <p class="inscription">the wheels moved when the living creatures moved</p>
         <p class="inscription">their rims were full of eyes, all around, and within</p>
         <p class="inscription">the appearance of the wheels was like burnished bronze</p>
-        <p class="inscription small">a father came about a boy. the count kept the father.</p>
+        <p class="inscription small">the knife remembers two throats. a father came about a boy. the count kept the father.</p>
       </div>
     </section>
 
