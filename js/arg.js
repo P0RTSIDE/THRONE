@@ -224,6 +224,32 @@ export function createArg({ audio, wheel }) {
   });
   window.addEventListener("throne:offer", () => offer());
 
+  window.addEventListener("throne:seal", (e) => {
+    const id = e.detail?.id;
+    if (id) become(id);
+  });
+
+  window.addEventListener("throne:return", () => {
+    become("witness", "it returns to the shape you first survived");
+    document.querySelectorAll("[data-seal]").forEach((b) => b.setAttribute("aria-pressed", "false"));
+  });
+
+  window.addEventListener("throne:petition", (e) => {
+    if (throne.lore.offered) return;
+    const blob = `${e.detail?.forgotten || ""} ${e.detail?.petition || ""}`.toUpperCase();
+    if (/\bISAAC\b|\bSON\b|\bBOY\b|\bCHILD\b/.test(blob)) {
+      nameTheBoy();
+    } else if (/\bKNIFE\b|\bBOUND\b|\bRAM\b|\bABRAHAM\b/.test(blob)) {
+      confess();
+    } else {
+      once("petition", "it keeps the asking and drops the name", 3200);
+    }
+  });
+
+  window.addEventListener("throne:rim", () => {
+    once("rim", "one more lid lifts on the far side", 2800);
+  });
+
   window.addEventListener("keydown", (e) => {
     if (e.target && ["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
     if (throne.lore.offered && e.code !== "Space") return;
