@@ -88,10 +88,21 @@ export function createArg({ audio, wheel }) {
     window.dispatchEvent(new CustomEvent("throne:aspect", { detail: { id } }));
   }
 
+  function revealFace() {
+    const face = document.getElementById("boy-face");
+    if (!face) return;
+    face.hidden = false;
+    throne.lore.face = true;
+  }
+
   function nameTheBoy() {
-    if (throne.lore.named) return;
+    if (throne.lore.named) {
+      revealFace();
+      return;
+    }
     throne.lore.named = true;
-    once("named", "the name lands. he flinches in you.", 3800);
+    revealFace();
+    once("named", "the name lands. he flinches in you. his face is above the wheels.", 4200);
     refreshOffer();
   }
 
@@ -137,7 +148,7 @@ export function createArg({ audio, wheel }) {
     const raw = (location.hash || "").replace("#", "").toLowerCase();
     const known = ["witness", "unblinking", "merkavah", "waters", "seraph", "inverted", "name", "hush"];
     if (known.includes(raw) && throne.entered) become(raw);
-    if (raw === "isaac" && throne.entered) nameTheBoy();
+    if ((raw === "isaac" || raw === "face") && throne.entered) nameTheBoy();
     if (raw === "offered" && throne.entered) {
       throne.lore.confessed = true;
       throne.lore.fed = Math.max(throne.lore.fed, 1);
@@ -254,7 +265,9 @@ export function createArg({ audio, wheel }) {
     if (throne.lore.offered) return;
     const id = e.detail?.id;
     if (id === "knife") {
-      once("knife", "you bound him. the knife did not stay in the bag.", 4200);
+      throne.lore.knife = true;
+      document.documentElement.classList.add("knife-found");
+      once("knife", "you bound him. the knife did not stay in the bag. it will go where you take it.", 4800);
       confess("", true);
     } else if (id === "cord") {
       once("cord", "the cord still remembers his wrists.", 4200);
@@ -275,6 +288,83 @@ export function createArg({ audio, wheel }) {
     } else if (id === "fire") {
       once("fire", "you stacked the wood. you reached for him.", 4200);
       confess("", true);
+    } else if (id === "face") {
+      nameTheBoy();
+      once("face", "carry his face to the light if you can still look at it.", 4200);
+    }
+  });
+
+  function flashBlade(kind) {
+    const root = document.documentElement;
+    root.classList.remove("blade-angel", "blade-self");
+    void root.offsetWidth;
+    root.classList.add(kind);
+    window.setTimeout(() => root.classList.remove(kind), 2800);
+  }
+
+  window.addEventListener("throne:use", (e) => {
+    if (throne.lore.offered) return;
+    const id = e.detail?.id;
+    const target = e.detail?.target;
+    if (id === "knife" && target === "angel") {
+      throne.lore.knife = true;
+      throne.lore.bladeAngel = true;
+      document.documentElement.classList.add("knife-found");
+      confess("", true);
+      flashBlade("blade-angel");
+      wheel.wound?.();
+      audio.strike();
+      audio.utter();
+      become("inverted", "the living thing takes the cut and keeps turning");
+      return;
+    }
+    if (id === "knife" && target === "self") {
+      throne.lore.knife = true;
+      throne.lore.bladeSelf = true;
+      document.documentElement.classList.add("knife-found");
+      confess("you turn the old instruction on the hand that raised it.", true);
+      flashBlade("blade-self");
+      wheel.bleed?.();
+      audio.strike();
+      showCaption("you turn the old instruction on the hand that raised it.", 4200);
+      if (throne.lore.canOffer || (throne.lore.confessed && throne.lore.raptured >= 1)) {
+        window.setTimeout(() => offer(), 1600);
+      } else {
+        once("bladeneed", "the hill still wants Fear Not in the light, then the center held.", 4800);
+      }
+      return;
+    }
+    if (id === "face" && target === "angel") {
+      nameTheBoy();
+      become("name", "one eye is enough, if it is the right one");
+      wheel.showFace?.();
+      return;
+    }
+    if (id === "face" && target === "self") {
+      nameTheBoy();
+      once("faceself", "you cannot keep his face in your hand.", 3600);
+      return;
+    }
+    if (id === "wood" && target === "fire") {
+      once("altar", "the wood takes. the boy is not on it this time.", 4200);
+      confess("", true);
+      wheel.pulse();
+      audio.strike();
+      return;
+    }
+    if (id === "cord" && target === "self") {
+      once("bound", "you know this knot from the other side.", 3800);
+      confess("", true);
+      return;
+    }
+    if (id === "fire" && target === "angel") {
+      become("seraph", "the instruction is taken literally");
+      return;
+    }
+    if (target === "angel") {
+      once(`use-${id}-angel`, "it does not want that offering", 2800);
+    } else if (target === "self") {
+      once(`use-${id}-self`, "that is not the hand it remembers", 2800);
     }
   });
 
@@ -294,7 +384,7 @@ export function createArg({ audio, wheel }) {
     if (e.key.length !== 1) return;
     state.typed = (state.typed + e.key.toUpperCase()).slice(-28);
     const t = state.typed;
-    if (t.includes("ISAAC")) {
+    if (t.includes("ISAAC") || t.includes("HISFACE") || t.includes("THEFACE")) {
       state.typed = "";
       nameTheBoy();
     }

@@ -196,6 +196,7 @@ export function createChaosUI({ audio, wheel }) {
   wireGaze(audio, wheel);
   wireWindows(audio, wheel);
   wirePlaneDrag();
+  wireCarry(audio, wheel);
 
   // ----- Cursor + particles -----
   window.addEventListener("pointermove", (e) => {
@@ -433,6 +434,102 @@ export function createChaosUI({ audio, wheel }) {
     });
   }
 
+  function nearEl(el, x, y, pad = 1.05) {
+    if (!el || el.hidden) return false;
+    const r = el.getBoundingClientRect();
+    if (r.width < 2 && r.height < 2) return false;
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const hit = Math.max(r.width, r.height, 56) * pad;
+    return Math.hypot(x - cx, y - cy) < hit;
+  }
+
+  function wireCarry(audio) {
+    function bindCarry(btn) {
+      let downAt = 0;
+      let startX = 0;
+      let startY = 0;
+      let dragging = false;
+      const homeLeft = btn.style.left;
+      const homeTop = btn.style.top;
+
+      function restore() {
+        btn.classList.remove("carrying");
+        btn.style.position = "";
+        btn.style.left = homeLeft;
+        btn.style.top = homeTop;
+        btn.style.transform = "";
+      }
+
+      function beginCarry(e) {
+        e.stopPropagation();
+        downAt = performance.now();
+        startX = e.clientX;
+        startY = e.clientY;
+        dragging = false;
+        if (e.pointerId != null) {
+          try { btn.setPointerCapture(e.pointerId); } catch { /* already captured */ }
+        }
+      }
+
+      function moveCarry(e) {
+        if (!downAt) return;
+        if (Math.hypot(e.clientX - startX, e.clientY - startY) > 10) {
+          dragging = true;
+          btn.classList.add("carrying");
+          btn.style.position = "fixed";
+          btn.style.left = `${e.clientX}px`;
+          btn.style.top = `${e.clientY}px`;
+          btn.style.transform = "translate(-50%, -50%) rotate(-18deg)";
+        }
+      }
+
+      function endCarry(e) {
+        const id = btn.getAttribute("data-carry") || btn.getAttribute("data-relic");
+        const held = performance.now() - downAt;
+        downAt = 0;
+        if (dragging) {
+          const mouth = document.getElementById("mouth");
+          const hand = document.getElementById("self-hand");
+          const fire = document.querySelector('[data-relic="fire"]');
+          let target = "";
+          if (nearEl(mouth, e.clientX, e.clientY, 1.6)) target = "angel";
+          else if (nearEl(hand, e.clientX, e.clientY, 1.6)) target = "self";
+          else if (id === "wood" && nearEl(fire, e.clientX, e.clientY, 1.4)) target = "fire";
+          restore();
+          dragging = false;
+          if (target) {
+            window.dispatchEvent(new CustomEvent("throne:use", { detail: { id, target } }));
+            return;
+          }
+          if (id === "knife") showCaption("the wheels, or the hand that raised it", 2800);
+          return;
+        }
+        dragging = false;
+        restore();
+        if (held >= 500) return;
+        audio.ping("click");
+        window.dispatchEvent(new CustomEvent("throne:relic", { detail: { id } }));
+      }
+
+      btn.addEventListener("pointerdown", beginCarry);
+      btn.addEventListener("pointermove", moveCarry);
+      btn.addEventListener("pointerup", endCarry);
+      btn.addEventListener("pointercancel", () => {
+        downAt = 0;
+        dragging = false;
+        restore();
+      });
+      btn.addEventListener("mousedown", beginCarry);
+      btn.addEventListener("mouseup", endCarry);
+      window.addEventListener("mousemove", (e) => {
+        if (downAt) moveCarry(e);
+      });
+    }
+
+    document.querySelectorAll("[data-carry]").forEach(bindCarry);
+  }
+
   function wireGaze(audio, wheel) {
     let down = false;
     let lastX = 0;
@@ -441,11 +538,13 @@ export function createChaosUI({ audio, wheel }) {
     let lastZoom = 0;
     let panX = 0;
     let panY = 0;
-    const world = document.getElementById("world");
+    const field = document.getElementById("relic-field");
+    const maxX = () => Math.min(360, window.innerWidth * 0.34);
+    const maxY = () => Math.min(240, window.innerHeight * 0.32);
 
     function paintWorld() {
-      if (!world) return;
-      world.style.transform = `translate3d(${panX.toFixed(1)}px, ${panY.toFixed(1)}px, 0)`;
+      if (!field) return;
+      field.style.transform = `translate3d(${panX.toFixed(1)}px, ${panY.toFixed(1)}px, 0)`;
     }
 
     function endGaze() {
@@ -468,7 +567,7 @@ export function createChaosUI({ audio, wheel }) {
     window.addEventListener("pointerdown", (e) => {
       if (!throne.entered || e.button !== 0) return;
       const el = e.target instanceof Element ? e.target : null;
-      if (el?.closest(".hud-safe, .veil, .mouth, .fear-not, .plane, .witness, .dock, .world-relic, button, input, textarea, label, a")) return;
+      if (el?.closest(".hud-safe, .veil, .mouth, .fear-not, .plane, .witness, .dock, .world-relic, .self-hand, .carrying, button, input, textarea, label, a")) return;
       down = true;
       lastX = e.clientX;
       lastY = e.clientY;
@@ -485,8 +584,8 @@ export function createChaosUI({ audio, wheel }) {
       lastY = e.clientY;
       const speed = Math.hypot(dx, dy);
       traveled += speed;
-      panX = Math.max(-420, Math.min(420, panX + dx * 0.95));
-      panY = Math.max(-280, Math.min(280, panY + dy * 0.95));
+      panX = Math.max(-maxX(), Math.min(maxX(), panX + dx * 0.9));
+      panY = Math.max(-maxY(), Math.min(maxY(), panY + dy * 0.9));
       wheel.orbit(dx, dy);
       paintWorld();
       audio.scrape(speed);
@@ -737,7 +836,13 @@ export function createChaosUI({ audio, wheel }) {
       });
     });
 
-    document.querySelectorAll("[data-relic]").forEach((btn) => {
+    document.getElementById("self-hand")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      audio.ping("click");
+      showCaption("the hand that raised it. the knife still knows the way.", 3600);
+    });
+
+    document.querySelectorAll("[data-relic]:not([data-carry])").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         audio.ping("click");
