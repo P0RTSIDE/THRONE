@@ -349,6 +349,9 @@ export function createEyeWheel(root) {
     sclera: new THREE.Color("#f3ebd6"),
     palLock: -1,
   };
+  let spinBoost = 1;
+  let zNudge = 0;
+  let pulseScale = 1;
   let tiltX = 0;
   let tiltY = 0;
 
@@ -402,7 +405,7 @@ export function createEyeWheel(root) {
     throne.time = t;
 
     const calm = throne.calm ? 1 : 0;
-    const spin = (throne.calm ? 0.08 : 1) * aspect.spin * (throne.raptured ? 1.65 : 1);
+    const spin = (throne.calm ? 0.08 : 1) * aspect.spin * (throne.raptured ? 1.65 : 1) * spinBoost;
 
     outerGroup.rotation.y += dt * 0.35 * spin;
     outerGroup.rotation.z += dt * 0.07 * spin;
@@ -410,6 +413,12 @@ export function createEyeWheel(root) {
     innerGroup.rotation.y += dt * 0.11 * spin;
     thirdGroup.rotation.y += dt * 0.5 * spin;
     thirdGroup.rotation.z += dt * 0.16 * spin;
+    pulseScale += (1 - pulseScale) * Math.min(1, dt * 4);
+    const ps = pulseScale;
+    outerGroup.scale.setScalar(ps);
+    innerGroup.scale.setScalar(2 - ps);
+    spinBoost += (1 - spinBoost) * Math.min(1, dt * 1.8);
+    zNudge *= 0.92;
     wingGroup.rotation.y += dt * 0.55 * Math.abs(spin);
     wingGroup.rotation.x = Math.sin(t * 0.4) * 0.12;
 
@@ -420,7 +429,10 @@ export function createEyeWheel(root) {
 
     wingGroup.visible = aspect.wings > 0.5 && !throne.calm;
     hubEye.visible = aspect.hub > 0.5;
-    if (hubEye.visible) hubEye.lookAt(camera.position);
+    if (hubEye.visible) {
+      hubEye.lookAt(camera.position);
+      hubEye.scale.setScalar(1 + (pulseScale - 1) * 2.4);
+    }
 
     outerAngle += dt * 0.35 * Math.abs(spin);
     if (outerAngle - lastCycle > Math.PI * 2) {
@@ -451,7 +463,7 @@ export function createEyeWheel(root) {
       const shake = throne.raptured ? 0.08 : 0.22;
       camera.position.x = Math.sin(t * 0.17) * shake + tiltX;
       camera.position.y = (throne.raptured ? 0.15 : 0.4) + Math.sin(t * 0.13) * (throne.raptured ? 0.2 : 0.12) + tiltY;
-      camera.position.z += (camZ - camera.position.z) * (throne.raptured ? 0.07 : 0.04);
+      camera.position.z += (camZ + zNudge - camera.position.z) * (throne.raptured ? 0.07 : 0.04);
       camera.lookAt(0, 0, 0);
     } else {
       camera.position.x += (0 - camera.position.x) * 0.04;
@@ -515,6 +527,16 @@ export function createEyeWheel(root) {
       throne.raptured = !!on;
       document.documentElement.classList.toggle("raptured", !!on);
       scene.fog.density = on ? 0.16 : 0.08;
+      pulseScale = on ? 1.18 : 0.88;
+    },
+    pulse() {
+      pulseScale = 1.22;
+    },
+    nudgeZ(delta) {
+      zNudge = Math.max(-2.2, Math.min(2.4, zNudge + delta));
+    },
+    setSpinBoost(n) {
+      spinBoost = n;
     },
     /**
      * Rewrite the angel. Aspects change blink, gaze, extra rims, wings, hub eye, and spin.
@@ -573,5 +595,5 @@ export function createFallbackWheel(root) {
       <div style="width:min(70vw,520px);aspect-ratio:1;border:18px solid #c9a227;border-radius:50%;
         box-shadow:0 0 40px #c9a22755, inset 0 0 40px #b44cff33;animation:geo-spin 28s linear infinite;"></div>
     </div>`;
-  return { shudder() {}, openDistantEye() {}, setPalette() {}, setAspect() {}, tilt() {}, setRapture() {}, dispose() {} };
+  return { shudder() {}, openDistantEye() {}, setPalette() {}, setAspect() {}, tilt() {}, setRapture() {}, pulse() {}, nudgeZ() {}, setSpinBoost() {}, dispose() {} };
 }

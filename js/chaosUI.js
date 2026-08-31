@@ -56,6 +56,7 @@ export function createChaosUI({ audio, wheel }) {
   const pulseEl = document.getElementById("pulse");
   const trail = document.getElementById("cursor-trail");
   const geo = document.getElementById("sacred-geo");
+  const chroma = document.getElementById("chromatic");
   const daysEl = document.getElementById("days-value");
   const fleeEls = [...document.querySelectorAll("[data-flee]")];
   fleeEls.forEach((el) => {
@@ -96,6 +97,7 @@ export function createChaosUI({ audio, wheel }) {
   buildSacredGeometry(geo);
   wireOrbit(audio);
   wireMouth(audio, wheel);
+  wireWild(audio, wheel);
 
   function seedFloaters() {
     const host = document.getElementById("firmament");
@@ -232,6 +234,8 @@ export function createChaosUI({ audio, wheel }) {
         n.style.transform = `rotate(${randRange(-18, 18)}deg) scale(${randRange(0.62, 0.92)})`;
         document.body.appendChild(n);
         fearCount++;
+        n.classList.add("orbiting");
+        n.style.setProperty("--spin", `${randRange(8, 22)}s`);
         bindFear(n);
       }
     });
@@ -253,6 +257,9 @@ export function createChaosUI({ audio, wheel }) {
     audio.swell();
     triggerPulse();
     maybeStrobe(true);
+    wheel.pulse();
+    document.body.classList.add("cycle-kick");
+    setTimeout(() => document.body.classList.remove("cycle-kick"), 900);
   });
   window.addEventListener("throne:pulse", () => triggerPulse());
 
@@ -273,6 +280,7 @@ export function createChaosUI({ audio, wheel }) {
     }
     orbit.addEventListener("pointerdown", (e) => {
       dragging = true;
+      document.body.classList.add("rim-live");
       orbit.setPointerCapture(e.pointerId);
       apply(e.clientX, e.clientY);
       audio.ping("hover");
@@ -282,6 +290,7 @@ export function createChaosUI({ audio, wheel }) {
       apply(e.clientX, e.clientY);
     });
     orbit.addEventListener("pointerup", (e) => {
+      document.body.classList.remove("rim-live");
       if (!dragging) return;
       dragging = false;
       const value = apply(e.clientX, e.clientY);
@@ -315,6 +324,175 @@ export function createChaosUI({ audio, wheel }) {
     window.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && throne.raptured) {
         window.dispatchEvent(new CustomEvent("throne:rapture", { detail: { on: false } }));
+      }
+    });
+  }
+
+  function wireWild(audio, wheel) {
+    const host = document.getElementById("firmament");
+    const ripples = document.getElementById("ripples");
+
+    function spawnRipple(x, y, kind = "") {
+      if (throne.calm || !ripples) return;
+      const r = document.createElement("span");
+      r.className = `ripple ${kind}`;
+      r.style.left = `${x}px`;
+      r.style.top = `${y}px`;
+      ripples.appendChild(r);
+      setTimeout(() => r.remove(), 1200);
+    }
+
+    function burstEyes(x, y, count = 8) {
+      if (throne.calm || !host) return;
+      for (let i = 0; i < count; i++) {
+        const d = document.createElement("i");
+        d.className = "floater eye burst";
+        d.style.left = `${x}px`;
+        d.style.top = `${y}px`;
+        d.style.setProperty("--dx", `${randRange(-140, 140)}px`);
+        d.style.setProperty("--dy", `${randRange(-140, 140)}px`);
+        d.style.setProperty("--s", String(randRange(0.6, 1.8)));
+        host.appendChild(d);
+        setTimeout(() => d.remove(), 1400);
+      }
+    }
+
+    function shockwave() {
+      if (throne.calm) return;
+      document.body.classList.add("shock");
+      host?.querySelectorAll(".floater").forEach((el, i) => {
+        const ang = (i / 12) * Math.PI * 2;
+        el.style.transition = "transform 0.7s ease";
+        el.style.transform = `translate(${Math.cos(ang) * 80}px, ${Math.sin(ang) * 80}px)`;
+        setTimeout(() => {
+          el.style.transform = "";
+        }, 720);
+      });
+      setTimeout(() => document.body.classList.remove("shock"), 800);
+    }
+
+    window.addEventListener("pointerdown", (e) => {
+      if (!throne.entered || throne.calm) return;
+      if (e.target.closest(".hud-safe, .veil, button, input")) return;
+      spawnRipple(e.clientX, e.clientY);
+    });
+
+    window.addEventListener("dblclick", (e) => {
+      if (!throne.entered || throne.calm) return;
+      if (e.target.closest(".hud-safe")) return;
+      burstEyes(e.clientX, e.clientY, throne.quality === "low" ? 5 : 11);
+      audio.ping("click");
+      wheel.pulse();
+    });
+
+    window.addEventListener("wheel", (e) => {
+      if (!throne.entered || throne.calm) return;
+      if (e.target.closest(".hud-safe")) return;
+      e.preventDefault();
+      wheel.nudgeZ(e.deltaY * 0.004);
+      audio.setDepth(Math.max(0, Math.min(1, throne.depth + (e.deltaY > 0 ? 0.02 : -0.02))));
+    }, { passive: false });
+
+    window.addEventListener("contextmenu", (e) => {
+      if (!throne.entered) return;
+      e.preventDefault();
+      if (throne.calm) return;
+      wheel.setSpinBoost(-2.4);
+      document.body.classList.add("reversed");
+      audio.ping("hover");
+      setTimeout(() => document.body.classList.remove("reversed"), 1600);
+    });
+
+    document.getElementById("strike")?.addEventListener("click", () => {
+      shockwave();
+      spawnRipple(window.innerWidth * 0.5, window.innerHeight * 0.48, "big");
+    });
+
+    document.querySelectorAll("[data-seal]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        spawnRipple(
+          btn.getBoundingClientRect().left + 26,
+          btn.getBoundingClientRect().top + 26,
+          "seal"
+        );
+        document.body.classList.add("seal-wake");
+        setTimeout(() => document.body.classList.remove("seal-wake"), 700);
+      });
+    });
+
+    let draggingSeal = null;
+    document.querySelectorAll("[data-seal]").forEach((btn) => {
+      btn.addEventListener("pointerdown", (e) => {
+        if (e.button !== 0) return;
+        draggingSeal = btn;
+        btn.setPointerCapture(e.pointerId);
+      });
+      btn.addEventListener("pointermove", (e) => {
+        if (draggingSeal !== btn) return;
+        btn.style.left = `${(e.clientX / window.innerWidth) * 100}%`;
+        btn.style.top = `${(e.clientY / window.innerHeight) * 100}%`;
+      });
+      btn.addEventListener("pointerup", () => {
+        draggingSeal = null;
+      });
+    });
+
+    let clicks = [];
+    window.addEventListener("pointerup", (e) => {
+      if (!throne.entered || throne.calm) return;
+      if (e.target.closest(".hud-safe")) return;
+      const now = performance.now();
+      clicks = clicks.filter((stamp) => now - stamp < 900);
+      clicks.push(now);
+      if (clicks.length >= 5) {
+        clicks = [];
+        burstEyes(e.clientX, e.clientY, throne.quality === "low" ? 8 : 16);
+        wheel.setSpinBoost(2.8);
+        document.body.classList.add("frenzy");
+        setTimeout(() => document.body.classList.remove("frenzy"), 1200);
+        audio.ping("click");
+        audio.swell();
+      }
+    });
+
+    document.getElementById("mouth")?.addEventListener("pointerenter", () => {
+      spawnRipple(window.innerWidth * 0.5, window.innerHeight * 0.48, "seal");
+    });
+
+    window.addEventListener("throne:rapture", (e) => {
+      if (!e.detail?.on || throne.calm) return;
+      burstEyes(window.innerWidth * 0.5, window.innerHeight * 0.48, 18);
+      spawnRipple(window.innerWidth * 0.5, window.innerHeight * 0.48, "big");
+    });
+
+    window.addEventListener("throne:fed", () => {
+      if (throne.calm) return;
+      burstEyes(window.innerWidth * 0.5, window.innerHeight * 0.48, 9);
+      spawnRipple(window.innerWidth * 0.5, window.innerHeight * 0.48, "seal");
+    });
+
+    let keyBurst = 0;
+    let jitterTimer = 0;
+    window.addEventListener("keydown", (e) => {
+      if (!throne.entered || throne.calm) return;
+      if (e.target && ["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
+      if (e.key === "ArrowLeft") wheel.setSpinBoost(-1.8);
+      if (e.key === "ArrowRight") wheel.setSpinBoost(2.2);
+      if (e.key === "ArrowUp") wheel.nudgeZ(-0.35);
+      if (e.key === "ArrowDown") wheel.nudgeZ(0.35);
+      if (e.key.length !== 1 && !e.key.startsWith("Arrow")) return;
+      keyBurst += 1;
+      document.body.classList.add("jitter");
+      clearTimeout(jitterTimer);
+      jitterTimer = window.setTimeout(() => {
+        document.body.classList.remove("jitter");
+        keyBurst = 0;
+      }, 280);
+      if (keyBurst >= 8) {
+        keyBurst = 0;
+        wheel.pulse();
+        wheel.setSpinBoost(1.9);
+        spawnRipple(window.innerWidth * 0.5, window.innerHeight * 0.48, "big");
       }
     });
   }
@@ -482,6 +660,25 @@ export function createChaosUI({ audio, wheel }) {
       });
     }
 
+    // Parallax: debris leans away from the gaze.
+    if (!throne.calm && throne.entered) {
+      const nx = throne.mouse.ndcX;
+      const ny = throne.mouse.ndcY;
+      document.querySelectorAll(".floater:not(.burst)").forEach((el, i) => {
+        const k = ((i % 5) + 1) * 4;
+        el.style.translate = `${(-nx * k).toFixed(1)}px ${(-ny * k).toFixed(1)}px`;
+      });
+      if (geo) {
+        geo.style.translate = `${(-nx * 8).toFixed(1)}px ${(-ny * 6).toFixed(1)}px`;
+      }
+      if (chroma) {
+        const speed = Math.hypot(nx, ny);
+        chroma.style.opacity = String(0.45 + speed * 0.4);
+      }
+    } else if (chroma) {
+      chroma.style.opacity = "";
+    }
+
     // Occasional ambient strobe (still 420ms gated).
     if (!throne.calm && throne.rng() < 0.003) maybeStrobe(false);
 
@@ -517,6 +714,8 @@ export function createChaosUI({ audio, wheel }) {
         const y = throne.mouse.y;
         ctx2d.save();
         ctx2d.translate(x, y);
+        const spinMul = (document.body.classList.contains("reversed") ? -6 : 1) * (throne.raptured ? 2.4 : 1);
+        ctx2d.rotate((t * 0.002) * spinMul);
         ctx2d.strokeStyle = "#f0d078";
         ctx2d.lineWidth = 1.2;
         ctx2d.beginPath();
@@ -544,6 +743,11 @@ export function createChaosUI({ audio, wheel }) {
         glitchEls.forEach(restoreGlyphs);
         particles.length = 0;
         if (ctx2d && trail) ctx2d.clearRect(0, 0, trail.width, trail.height);
+        document.body.classList.remove("cycle-kick", "shock", "reversed", "seal-wake", "frenzy", "jitter", "rim-live", "aspect-wake");
+        document.querySelectorAll(".floater").forEach((el) => {
+          el.style.translate = "";
+          el.style.transform = "";
+        });
       }
     },
   };
