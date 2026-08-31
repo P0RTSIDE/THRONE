@@ -1,17 +1,8 @@
 /**
  * arg.js — the page keeps a ledger the UI does not read aloud.
  *
- * Visible toys (choir, depth, seals, strike, space-to-hum, drag-to-tilt)
- * sit beside quieter doors that rewrite the angel:
- *   days-value clicked seven times
- *   rim released at 72
- *   petition that names many waters
- *   typed instruction BE NOT AFRAID
- *   Fear Not while muted
- *   four seals in the attending order
- *   direction field turned inward
- *   catching the fleeing line three times
- *   hash names for those who already know the way back
+ * Hold the mouth to enter. Drag Fear Not into the mouth to feed it. Hold Fear Not to unmake it.
+ * Drag the orbit to retune the drone. Seals rewrite the voice.
  */
 
 import { throne, showCaption } from "./throne.js";
@@ -39,6 +30,14 @@ export function createArg({ audio, wheel }) {
     holdingHum: false,
     choirBeforeHum: false,
   };
+
+  function rapture(on) {
+    if (!!on === throne.raptured) return;
+    wheel.setRapture(on);
+    audio.setRapture(on);
+    if (on) showCaption("you are inside the count", 2400);
+    else showCaption("", 1);
+  }
 
   function become(id, caption) {
     if (!id || id === throne.aspect) {
@@ -87,26 +86,20 @@ export function createArg({ audio, wheel }) {
     if (v === 72) become("merkavah");
   });
 
-  window.addEventListener("throne:petition", (e) => {
-    const petition = String(e.detail?.petition || "").toLowerCase();
-    const direction = String(e.detail?.direction || "").toLowerCase();
-    const forgotten = String(e.detail?.forgotten || "").toLowerCase();
-    if (petition.includes("many waters")) become("waters");
-    else if (direction.includes("inward")) become("hush");
-    else if (forgotten.trim() === "ledger") {
-      showCaption("the rim remembers seventy-two");
-    }
-  });
-
   window.addEventListener("throne:fearnot", (e) => {
     if (e.detail?.muted) become("inverted");
+  });
+
+  window.addEventListener("throne:rapture", (e) => rapture(!!e.detail?.on));
+  window.addEventListener("throne:fed", (e) => {
+    if (e.detail?.fed >= 7) rapture(true);
   });
 
   window.addEventListener("throne:flee", () => {
     state.fleeHits += 1;
     if (state.fleeHits >= 3) {
-      showCaption("you were not meant to catch it. now it knows you can.");
       audio.strike();
+      become("hush");
     }
   });
 
@@ -116,6 +109,13 @@ export function createArg({ audio, wheel }) {
       btn.classList.add("lit");
       btn.setAttribute("aria-pressed", "true");
       audio.ping("click");
+      if (id === "voice") {
+        audio.setChoir(true);
+        document.getElementById("choir-toggle")?.setAttribute("aria-pressed", "true");
+      }
+      if (id === "fire") audio.strike();
+      if (id === "rim") audio.setDepth(0.72);
+      if (id === "gate") audio.setDepth(0.15);
       state.seals.push(id);
       const lastFour = state.seals.slice(-4);
       const allLit = [...document.querySelectorAll("[data-seal]")].every((b) => b.classList.contains("lit"));
@@ -134,8 +134,6 @@ export function createArg({ audio, wheel }) {
     audio.setChoir(next);
     const btn = document.getElementById("choir-toggle");
     btn?.setAttribute("aria-pressed", next ? "true" : "false");
-    if (btn) btn.textContent = next ? "Choir is listening" : "Open the choir";
-    showCaption(next ? "the waters rise in the mouth" : "the choir folds itself away");
   });
 
   document.getElementById("depth-slider")?.addEventListener("input", (e) => {
@@ -144,24 +142,10 @@ export function createArg({ audio, wheel }) {
 
   document.getElementById("strike")?.addEventListener("click", () => {
     audio.strike();
-    showCaption("the rim answers");
     window.dispatchEvent(new CustomEvent("throne:pulse"));
   });
 
-  document.getElementById("reset-aspect")?.addEventListener("click", () => {
-    document.querySelectorAll("[data-seal]").forEach((b) => {
-      b.classList.remove("lit");
-      b.setAttribute("aria-pressed", "false");
-    });
-    state.seals = [];
-    audio.setChoir(false);
-    const choir = document.getElementById("choir-toggle");
-    if (choir) {
-      choir.setAttribute("aria-pressed", "false");
-      choir.textContent = "Open the choir";
-    }
-    become("witness", ASPECT_CAPTIONS.witness);
-  });
+  // Return the first shape by typing WITNESS. No labeled reset.
 
   window.addEventListener("keydown", (e) => {
     if (e.target && ["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
@@ -180,8 +164,22 @@ export function createArg({ audio, wheel }) {
       state.typed = "";
       become("seraph");
     }
+    if (state.typed.includes("MANYWATERS")) {
+      state.typed = "";
+      become("waters");
+    }
+    if (state.typed.includes("INWARD")) {
+      state.typed = "";
+      rapture(true);
+    }
     if (state.typed.includes("WITNESS")) {
       state.typed = "";
+      rapture(false);
+      document.querySelectorAll("[data-seal]").forEach((b) => {
+        b.classList.remove("lit");
+        b.setAttribute("aria-pressed", "false");
+      });
+      state.seals = [];
       become("witness", ASPECT_CAPTIONS.witness);
     }
   });
@@ -194,7 +192,7 @@ export function createArg({ audio, wheel }) {
 
   window.addEventListener("pointermove", (e) => {
     if (!throne.entered || e.buttons !== 1) return;
-    if (e.target.closest(".hud-safe, .plane, button, input, textarea, a")) return;
+    if (e.target.closest(".hud-safe, .relic, .orbit, .mouth, .fear-not, button, input, textarea, a")) return;
     const nx = (e.clientX / window.innerWidth) * 2 - 1;
     const ny = -((e.clientY / window.innerHeight) * 2 - 1);
     wheel.tilt(nx, ny);

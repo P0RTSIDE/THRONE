@@ -380,7 +380,7 @@ export function createEyeWheel(root) {
     const mats = [...eyeFields.map((f) => f.mat), hubMat];
     for (const m of mats) {
       m.uniforms.uBlinkAllow.value = aspect.blink;
-      m.uniforms.uLookGain.value = aspect.look;
+      m.uniforms.uLookGain.value = aspect.look * (throne.raptured ? 2.4 : 1);
       m.uniforms.uPupilMul.value = aspect.pupil;
       m.uniforms.uSclera.value.copy(aspect.sclera);
     }
@@ -402,7 +402,7 @@ export function createEyeWheel(root) {
     throne.time = t;
 
     const calm = throne.calm ? 1 : 0;
-    const spin = (throne.calm ? 0.08 : 1) * aspect.spin;
+    const spin = (throne.calm ? 0.08 : 1) * aspect.spin * (throne.raptured ? 1.65 : 1);
 
     outerGroup.rotation.y += dt * 0.35 * spin;
     outerGroup.rotation.z += dt * 0.07 * spin;
@@ -443,11 +443,15 @@ export function createEyeWheel(root) {
     applyPalette(paletteIndex, dt);
     applyAspectUniforms();
 
-    const camZ = aspect.camZ;
+    const camZ = throne.raptured ? 0.62 : aspect.camZ;
+    const fovTarget = throne.raptured ? 92 : 42;
+    camera.fov += (fovTarget - camera.fov) * 0.05;
+    camera.updateProjectionMatrix();
     if (!throne.calm) {
-      camera.position.x = Math.sin(t * 0.17) * 0.22 + tiltX;
-      camera.position.y = 0.4 + Math.sin(t * 0.13) * 0.12 + tiltY;
-      camera.position.z += (camZ - camera.position.z) * 0.04;
+      const shake = throne.raptured ? 0.08 : 0.22;
+      camera.position.x = Math.sin(t * 0.17) * shake + tiltX;
+      camera.position.y = (throne.raptured ? 0.15 : 0.4) + Math.sin(t * 0.13) * (throne.raptured ? 0.2 : 0.12) + tiltY;
+      camera.position.z += (camZ - camera.position.z) * (throne.raptured ? 0.07 : 0.04);
       camera.lookAt(0, 0, 0);
     } else {
       camera.position.x += (0 - camera.position.x) * 0.04;
@@ -507,6 +511,11 @@ export function createEyeWheel(root) {
       tiltX = nx * 0.85;
       tiltY = ny * 0.55;
     },
+    setRapture(on) {
+      throne.raptured = !!on;
+      document.documentElement.classList.toggle("raptured", !!on);
+      scene.fog.density = on ? 0.16 : 0.08;
+    },
     /**
      * Rewrite the angel. Aspects change blink, gaze, extra rims, wings, hub eye, and spin.
      */
@@ -564,5 +573,5 @@ export function createFallbackWheel(root) {
       <div style="width:min(70vw,520px);aspect-ratio:1;border:18px solid #c9a227;border-radius:50%;
         box-shadow:0 0 40px #c9a22755, inset 0 0 40px #b44cff33;animation:geo-spin 28s linear infinite;"></div>
     </div>`;
-  return { shudder() {}, openDistantEye() {}, setPalette() {}, setAspect() {}, tilt() {}, dispose() {} };
+  return { shudder() {}, openDistantEye() {}, setPalette() {}, setAspect() {}, tilt() {}, setRapture() {}, dispose() {} };
 }

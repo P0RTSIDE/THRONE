@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>THRONE</title>
-    <meta name="description" content="A wheel within a wheel. Be not afraid." />
+    <meta name="description" content="A wheel within a wheel." />
     <meta name="theme-color" content="#050308" />
     <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="%23050308" stroke="%23c9a227" stroke-width="1.5"/><ellipse cx="16" cy="16" rx="10" ry="6" fill="%23f4f1e8"/><circle cx="16" cy="16" r="4" fill="%23c9a227"/><circle cx="16" cy="16" r="2" fill="%23050308"/></svg>' />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -25,8 +25,8 @@
   <body>
     <!--
       the wheels keep a ledger.
-      the attending do not walk clockwise.
       listen. count. burn. leave.
+      the mouth opens if you stay.
     -->
     <aside id="hud" class="hud-safe" aria-label="Safety controls">
       <button id="calm-toggle" type="button" aria-pressed="false" title="Stop strobing, freeze motion, quiet the sound">
@@ -42,30 +42,20 @@
         </label>
       </div>
       <p id="days-counter" class="days-counter" title="it declines to close">
-        Days Since Last Direct Address to Humanity
         <strong id="days-value">0</strong>
       </p>
     </aside>
 
-    <!-- Entry veil: also the user-gesture unlock for Web Audio. -->
     <div id="veil" class="veil" role="dialog" aria-labelledby="veil-title">
       <div class="veil-inner">
-        <p class="veil-kicker" data-glitch>MANY EYES</p>
         <h1 id="veil-title" class="veil-title">THRONE</h1>
-        <p class="veil-line" data-glitch>you were not invited. you were noticed.</p>
         <button id="enter" type="button" class="veil-enter">look upon it</button>
-        <p class="veil-warn">
-          Motion, a low drone, and brief light changes live here.
-          Calm Mode and mute stay in the corner at all times.
-          If your system asks for less motion, Calm Mode is already on.
-        </p>
+        <p class="veil-warn">Calm Mode and mute stay in the corner. Brief light lives here.</p>
       </div>
     </div>
 
-    <!-- WebGL stage: the ophanim. -->
     <div id="wheel-root" class="wheel-root" aria-hidden="true"></div>
 
-    <!-- 2D overlays: cursor trail, sacred geometry, optical grit. -->
     <canvas id="cursor-trail" class="overlay-canvas" aria-hidden="true"></canvas>
     <svg id="sacred-geo" class="sacred-geo" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
     <div id="scanlines" class="scanlines" aria-hidden="true"></div>
@@ -74,113 +64,29 @@
     <div id="pulse" class="pulse" aria-hidden="true"></div>
     <div id="strobe" class="strobe" aria-hidden="true"></div>
     <div id="grain" class="grain" aria-hidden="true"></div>
+    <div id="inside" class="inside" aria-hidden="true"></div>
 
     <div id="caption" class="caption" role="status" aria-live="polite"></div>
-    <div id="witness" class="witness" role="status" aria-live="assertive" hidden>Your petition has been witnessed</div>
 
-    <div class="stage">
-      <nav id="liturgy-nav" class="plane nav-plane" data-swap aria-label="A map that will not map">
-        <p class="plane-kicker">the order of service</p>
-        <ul>
-          <li class="has-sub">
-            <a href="#threshold" data-nav>Home</a>
-            <span class="submenu">There Is No Home</span>
-          </li>
-          <li><a href="#wheelhouse" data-nav>The Wheel</a></li>
-          <li><a href="#litany" data-nav>Litany</a></li>
-          <li><a href="#petition" data-nav>Petition</a></li>
-          <li><a href="#attendants" data-nav>Attendants</a></li>
-          <li><a href="#remainder" data-nav>Remainder</a></li>
-        </ul>
-      </nav>
+    <div id="firmament" class="firmament">
+      <div id="orbit" class="orbit" title=""></div>
+      <button id="mouth" class="mouth" type="button" aria-label="the mouth"></button>
+      <div id="charge" class="charge" aria-hidden="true"></div>
 
-      <section id="threshold" class="plane epigraph-plane" data-section data-swap>
-        <p class="inscription" data-glitch>the wheels moved when the living creatures moved</p>
-        <p class="inscription delay" data-glitch>full of eyes, all around, and within</p>
-        <p class="inscription delay2" data-glitch>it does not blink so much as it declines to close</p>
-      </section>
+      <button type="button" class="relic seal" data-seal="rim" data-drift aria-label="rim" style="left:12%;top:22%">◈</button>
+      <button type="button" class="relic seal" data-seal="gate" data-drift aria-label="gate" style="left:82%;top:18%">◎</button>
+      <button type="button" class="relic seal" data-seal="voice" data-drift aria-label="voice" style="left:14%;top:72%">◉</button>
+      <button type="button" class="relic seal" data-seal="fire" data-drift aria-label="fire" style="left:84%;top:70%">✸</button>
 
-      <section id="wheelhouse" class="plane wheelhouse-plane" data-section data-swap>
-        <h2 data-glitch>OPHANIM</h2>
-        <p class="inscription" data-glitch>a rim so high it is dreadful to name</p>
-        <p class="inscription" data-glitch>burnished as if it had passed through fire and kept going</p>
-        <p class="inscription" data-glitch>fourfold and also one, which is a problem for counting</p>
-        <button id="fear-not" class="fear-not" type="button">Fear Not</button>
-      </section>
+      <button id="choir-toggle" class="relic vesica" type="button" aria-pressed="false" aria-label="choir" style="left:6%;top:46%"></button>
+      <button id="strike" class="relic shard-hit" type="button" aria-label="strike" style="left:90%;top:44%">✧</button>
 
-      <section id="litany" class="plane litany-plane" data-section data-swap>
-        <h2 data-glitch>LITANY OF UNKNOWING</h2>
-        <p class="inscription" data-glitch>a voice like many waters, and none of them yours</p>
-        <p class="inscription flee" data-flee data-glitch>do not reach for this line</p>
-        <p class="inscription" data-glitch>be not afraid is an instruction, not a comfort</p>
-        <p class="inscription" data-glitch>wherever the spirit would go, they went, and the wheels were lifted up</p>
-        <button id="averted" class="averted" type="button">
-          Approach
-          <span class="averted-hint">it will not be touched directly</span>
-        </button>
-      </section>
+      <button id="fear-not" class="fear-not relic" type="button" style="left:48%;top:86%">Fear Not</button>
 
-      <section id="petition" class="plane petition-plane" data-section data-swap>
-        <h2 data-glitch>PETITION</h2>
-        <form id="petition-form" class="petition-form" autocomplete="off">
-          <label>
-            Name (as it will be forgotten)
-            <input name="forgotten" type="text" maxlength="80" />
-          </label>
-          <label>
-            Enter your Petition
-            <textarea name="petition" rows="3" maxlength="400"></textarea>
-          </label>
-          <label>
-            True direction you are facing (optional, ignored)
-            <input name="direction" type="text" maxlength="40" />
-          </label>
-          <button type="submit">Offer</button>
-        </form>
-      </section>
-
-      <section id="comprehension" class="plane comprehension-plane" data-section data-swap>
-        <h2 data-glitch>MEASURE</h2>
-        <label class="slider-wrap">
-          <span>Distance from the rim</span>
-          <input id="rim-slider" type="range" min="0" max="100" value="37" />
-        </label>
-        <div class="progress-wrap">
-          <span>Comprehension: <strong id="comprehension-value">0</strong>%</span>
-          <div class="progress-track" aria-hidden="true">
-            <div id="comprehension-bar" class="progress-bar"></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="attendants" class="plane attendants-plane" data-section data-swap>
-        <h2>ATTENDANTS</h2>
-        <p class="inscription small">fourfold and also one. they will not introduce themselves.</p>
-        <div class="seals" aria-label="Four attending seals">
-          <button type="button" data-seal="rim" aria-pressed="false">Rim that counts</button>
-          <button type="button" data-seal="gate" aria-pressed="false">Gate that is not a door</button>
-          <button type="button" data-seal="voice" aria-pressed="false">Voice of the deep</button>
-          <button type="button" data-seal="fire" aria-pressed="false">Fire that attends</button>
-        </div>
-        <label class="slider-wrap">
-          <span>Depth of the waters</span>
-          <input id="depth-slider" type="range" min="0" max="100" value="45" />
-        </label>
-        <div class="attendant-actions">
-          <button id="choir-toggle" type="button" aria-pressed="false">Open the choir</button>
-          <button id="strike" type="button">Strike the rim</button>
-          <button id="reset-aspect" type="button">Return the shape</button>
-        </div>
-        <p class="inscription small">hold space to let the waters rise. drag the void to lean the gaze.</p>
-      </section>
-
-      <section id="remainder" class="plane remainder-plane" data-section data-swap>
-        <h2 data-glitch>REMAINDER</h2>
-        <p class="inscription" data-glitch>the fire did not consume. it attended.</p>
-        <p class="inscription" data-glitch>each eye is a complete argument against being seen</p>
-        <p class="inscription" data-glitch>you may leave. leaving is not the same as having not come.</p>
-        <p class="inscription small" data-glitch>it has already looked at you</p>
-      </section>
+      <p class="shard" data-glitch data-drift style="left:8%;top:12%">full of eyes</p>
+      <p class="shard flee" data-flee data-glitch style="left:70%;top:10%">do not reach</p>
+      <p class="shard" data-glitch data-drift style="left:6%;top:88%">it declines to close</p>
+      <p class="shard" data-glitch data-drift style="left:72%;top:88%">the wheels moved</p>
     </div>
 
     <script type="module" src="js/main.js"></script>
