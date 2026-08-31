@@ -50,26 +50,30 @@
       <div class="veil-inner">
         <h1 id="veil-title" class="veil-title">THRONE</h1>
         <button id="enter" type="button" class="veil-enter">look upon it</button>
-        <p class="veil-hint">Drag to turn. Hold the center.</p>
-        <p class="veil-warn">Calm Mode and mute stay in the corner.</p>
+        <p class="veil-hint">You came about a boy.</p>
+        <p class="veil-warn">Drag the dark. Hold the center. Calm Mode and mute stay in the corner.</p>
       </div>
     </div>
 
-    <div id="wheel-root" class="wheel-root" aria-hidden="true"></div>
+    <div id="world" class="world">
+      <div id="sky" class="sky" aria-hidden="true"></div>
+      <div id="hill" class="hill" aria-hidden="true"></div>
+      <div class="stage">
+        <div id="wheel-root" class="wheel-root" aria-hidden="true"></div>
+        <div id="vignette" class="vignette" aria-hidden="true"></div>
+        <div id="pulse" class="pulse" aria-hidden="true"></div>
+        <div id="strobe" class="strobe" aria-hidden="true"></div>
+        <div id="inside" class="inside" aria-hidden="true"></div>
+        <div id="firmament" class="firmament">
+          <button id="mouth" class="mouth" type="button" aria-label="hold the center"></button>
+          <div id="charge" class="charge" aria-hidden="true"></div>
+          <button id="fear-not" class="fear-not relic" type="button">Fear Not</button>
+        </div>
+      </div>
+    </div>
 
     <canvas id="cursor-trail" class="overlay-canvas" aria-hidden="true"></canvas>
-    <div id="vignette" class="vignette" aria-hidden="true"></div>
-    <div id="pulse" class="pulse" aria-hidden="true"></div>
-    <div id="strobe" class="strobe" aria-hidden="true"></div>
-    <div id="inside" class="inside" aria-hidden="true"></div>
-
     <div id="caption" class="caption" role="status" aria-live="polite"></div>
-
-    <div id="firmament" class="firmament">
-      <button id="mouth" class="mouth" type="button" aria-label="hold the center"></button>
-      <div id="charge" class="charge" aria-hidden="true"></div>
-      <button id="fear-not" class="fear-not relic" type="button">Fear Not</button>
-    </div>
 
     <script type="module" src="js/main.js"></script>
   </body>

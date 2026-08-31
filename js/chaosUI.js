@@ -143,7 +143,6 @@ export function createChaosUI({ audio, wheel }) {
   const glitchEls = [...document.querySelectorAll("[data-glitch]")].filter((el) => !el.closest("#veil"));
 
   glitchEls.forEach(wrapGlyphs);
-  seedFloaters();
 
   let lastStrobe = 0;
   let strobeOn = false;
@@ -158,6 +157,7 @@ export function createChaosUI({ audio, wheel }) {
 
   function speakBlurb(ms = 2800) {
     if (throne.calm || !throne.entered || throne.lore.lock) return;
+    if (document.getElementById("caption")?.classList.contains("show")) return;
     const pool = blurbPool();
     if (!pool.length) return;
     let line = pool[randInt(0, pool.length - 1)];
@@ -189,21 +189,6 @@ export function createChaosUI({ audio, wheel }) {
   wireMouth(audio, wheel);
   wireGaze(audio, wheel);
 
-  function seedFloaters() {
-    const host = document.getElementById("firmament");
-    if (!host) return;
-    const n = throne.quality === "low" ? 3 : 5;
-    for (let i = 0; i < n; i++) {
-      const d = document.createElement("i");
-      d.className = throne.rng() > 0.45 ? "floater eye" : "floater ring";
-      d.style.left = `${randRange(2, 96)}vw`;
-      d.style.top = `${randRange(3, 94)}vh`;
-      d.style.animationDelay = `${randRange(-12, 8)}s`;
-      d.style.setProperty("--s", String(randRange(0.45, 1.7)));
-      host.appendChild(d);
-    }
-  }
-
   // ----- Cursor + particles -----
   window.addEventListener("pointermove", (e) => {
     throne.mouse.x = e.clientX;
@@ -226,9 +211,13 @@ export function createChaosUI({ audio, wheel }) {
 
   // ----- Fear Not: click multiplies, hold unmakes, drag into the mouth to feed it -----
   function nearMouth(x, y) {
-    const dx = x - window.innerWidth * 0.5;
-    const dy = y - window.innerHeight * 0.48;
-    return Math.hypot(dx, dy) < Math.min(window.innerWidth, window.innerHeight) * 0.16;
+    const mouth = document.getElementById("mouth");
+    if (!mouth) return false;
+    const r = mouth.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const hit = Math.max(r.width, r.height) * 0.9;
+    return Math.hypot(x - cx, y - cy) < hit;
   }
 
   function unmakeFear(btn) {
@@ -323,10 +312,10 @@ export function createChaosUI({ audio, wheel }) {
         const n = btn.cloneNode(true);
         n.removeAttribute("id");
         n.classList.add("spawned");
-        n.style.left = `${randRange(18, 82)}vw`;
-        n.style.top = `${randRange(22, 78)}vh`;
+        n.style.left = `${randRange(18, 82)}%`;
+        n.style.top = `${randRange(22, 78)}%`;
         n.style.transform = `rotate(${randRange(-12, 12)}deg) scale(${randRange(0.7, 0.9)})`;
-        document.body.appendChild(n);
+        document.getElementById("firmament")?.appendChild(n);
         fearCount++;
         bindFear(n);
       }
@@ -442,17 +431,32 @@ export function createChaosUI({ audio, wheel }) {
     let lastY = 0;
     let traveled = 0;
     let lastZoom = 0;
+    let panX = 0;
+    let panY = 0;
+    const world = document.getElementById("world");
+
+    function paintWorld() {
+      if (!world) return;
+      const o = wheel.getOrbit ? wheel.getOrbit() : { yaw: 0 };
+      world.style.transform = `translate3d(${panX.toFixed(1)}px, ${panY.toFixed(1)}px, 0) rotate(${(o.yaw * 7).toFixed(2)}deg)`;
+    }
 
     function endGaze() {
       if (!down) return;
       down = false;
       document.body.classList.remove("gazing");
       audio.scrape(0);
-      const orbit = wheel.getOrbit();
-      window.dispatchEvent(new CustomEvent("throne:orbit", { detail: orbit }));
-      if (traveled > 280) speakBlurb(2200);
+      const orbit = wheel.getOrbit ? wheel.getOrbit() : { yaw: 0, pitch: 0 };
+      window.dispatchEvent(new CustomEvent("throne:orbit", { detail: { ...orbit, traveled } }));
+      if (traveled > 180 && (throne.lore.feared || throne.lore.fed || throne.time > 24)) speakBlurb(2200);
       traveled = 0;
     }
+
+    window.addEventListener("throne:offer", () => {
+      panX = 0;
+      panY = 0;
+      paintWorld();
+    });
 
     window.addEventListener("pointerdown", (e) => {
       if (!throne.entered || e.button !== 0) return;
@@ -462,6 +466,7 @@ export function createChaosUI({ audio, wheel }) {
       lastX = e.clientX;
       lastY = e.clientY;
       traveled = 0;
+      e.preventDefault();
       document.body.classList.add("gazing");
       audio.ping("drag");
     });
@@ -473,9 +478,12 @@ export function createChaosUI({ audio, wheel }) {
       lastY = e.clientY;
       const speed = Math.hypot(dx, dy);
       traveled += speed;
+      panX += dx;
+      panY += dy;
       wheel.orbit(dx, dy);
+      paintWorld();
       audio.scrape(speed);
-      const pitch = Math.abs(wheel.getOrbit().pitch);
+      const pitch = Math.abs((wheel.getOrbit ? wheel.getOrbit() : { pitch: 0 }).pitch);
       audio.setDepth(Math.max(0.05, Math.min(1, 0.2 + pitch * 0.7)));
     });
     window.addEventListener("pointerup", endGaze);
@@ -681,7 +689,7 @@ export function createChaosUI({ audio, wheel }) {
     if (!throne.calm && throne.rng() < 0.003) maybeStrobe(false);
 
     if (!throne.calm && throne.entered) {
-      if (!nextBlurbAt) nextBlurbAt = t + 9000;
+      if (!nextBlurbAt) nextBlurbAt = t + 22000;
       if (t > nextBlurbAt) {
         nextBlurbAt = t + 8000 + throne.rng() * 12000;
         speakBlurb(3400);
@@ -703,7 +711,7 @@ export function createChaosUI({ audio, wheel }) {
         ctx2d.save();
         ctx2d.translate(p.x, p.y);
         ctx2d.globalAlpha = p.life * 0.7;
-        ctx2d.strokeStyle = p.gold ? "#f0d078" : "#c77dff";
+        ctx2d.strokeStyle = p.gold ? "#f0d078" : "#8a5a22";
         ctx2d.fillStyle = "rgba(244,241,232,0.8)";
         ctx2d.beginPath();
         ctx2d.ellipse(0, 0, p.r, p.r * 0.55, 0, 0, Math.PI * 2);
@@ -732,7 +740,7 @@ export function createChaosUI({ audio, wheel }) {
         ctx2d.stroke();
         ctx2d.beginPath();
         ctx2d.arc(0, 0, 2.2, 0, Math.PI * 2);
-        ctx2d.fillStyle = "#6b2d9a";
+        ctx2d.fillStyle = "#3d1c08";
         ctx2d.fill();
         ctx2d.restore();
       }

@@ -74,7 +74,7 @@ import { createArg } from "./arg.js";
     } catch (err) {
       console.warn("[THRONE] audio could not start", err);
     }
-    showCaption("drag to turn. hold the mouth.", 7000);
+    showCaption("you came to bring him back. drag the dark. Fear Not waits below.", 8000);
     arg.onEntered();
     setTimeout(() => {
       veil?.setAttribute("hidden", "true");
