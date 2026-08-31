@@ -48,16 +48,17 @@ void main() {
   }
 
   float t = n / max(uIters, 1.0);
-  float glow = exp(-length(uv) * 1.15);
-  vec3 voidc = vec3(0.047, 0.035, 0.071);
-  vec3 brass = vec3(0.42, 0.24, 0.08);
-  vec3 gold = vec3(0.82, 0.64, 0.28);
-  vec3 ember = vec3(0.55, 0.16, 0.12);
-  vec3 col = mix(voidc, brass, smoothstep(0.02, 0.42, t));
-  col = mix(col, gold, smoothstep(0.48, 0.92, t) * 0.7);
-  col = mix(col, ember, smoothstep(0.78, 1.0, t) * 0.35);
-  col = mix(voidc, col, 0.55 + glow * 0.45);
-  col *= mix(1.0, 0.72, uCalm);
+  float edge = pow(t, 0.55);
+  float glow = exp(-length(uv) * 0.85);
+  vec3 voidc = vec3(0.03, 0.02, 0.05);
+  vec3 brass = vec3(0.55, 0.3, 0.08);
+  vec3 gold = vec3(0.94, 0.78, 0.36);
+  vec3 ember = vec3(0.62, 0.12, 0.1);
+  vec3 col = mix(voidc, brass, smoothstep(0.0, 0.28, edge));
+  col = mix(col, gold, smoothstep(0.32, 0.88, edge));
+  col = mix(col, ember, smoothstep(0.82, 1.0, edge) * 0.45);
+  col += gold * glow * 0.12;
+  col *= mix(1.0, 0.7, uCalm);
   gl_FragColor = vec4(col, 1.0);
 }
 `;
