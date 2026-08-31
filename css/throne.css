@@ -496,6 +496,169 @@ html.raptured .vignette {
   box-shadow: inset 0 0 180px 80px rgba(0, 0, 0, 0.82);
 }
 
+html.raptured .inside {
+  animation: kaleido 18s linear infinite;
+  mix-blend-mode: screen;
+}
+
+html.raptured .chromatic {
+  opacity: 1;
+  animation: chroma-breathe 5.5s ease-in-out infinite;
+}
+
+html.raptured .scanlines {
+  animation-duration: 4.5s;
+}
+
+html.raptured .mouth {
+  animation: mouth-open 2.8s ease-in-out infinite;
+  box-shadow: 0 0 80px rgba(244, 241, 232, 0.45);
+}
+
+html.charging .orbit-ghost {
+  border-color: var(--gold-hot);
+  animation-duration: 4s;
+}
+
+.ripples {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.ripple {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border: 1px solid rgba(240, 208, 120, 0.72);
+  border-radius: 50%;
+  animation: ripple-out 1.1s ease-out forwards;
+}
+
+.ripple.big {
+  border-width: 2px;
+  border-color: rgba(244, 241, 232, 0.88);
+  animation-duration: 1.45s;
+}
+
+.ripple.seal {
+  border-color: rgba(180, 76, 255, 0.85);
+}
+
+.orbit-ghost {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.orbit-ghost-a {
+  width: min(92vmin, 760px);
+  height: min(92vmin, 760px);
+  border: 1px dashed rgba(180, 76, 255, 0.3);
+  animation: ghost-spin 32s linear infinite;
+}
+
+.orbit-ghost-b {
+  width: min(58vmin, 470px);
+  height: min(58vmin, 470px);
+  border: 1px dashed rgba(201, 162, 39, 0.28);
+  animation: ghost-spin 19s linear infinite reverse;
+}
+
+.mouth {
+  animation: mouth-breathe 5.5s ease-in-out infinite;
+}
+
+.relic.seal {
+  animation: seal-idle 7s ease-in-out infinite;
+}
+
+.relic.seal:active {
+  animation: none;
+}
+
+.relic.vesica {
+  animation: vesica-throb 4s ease-in-out infinite;
+}
+
+.relic.shard-hit {
+  animation: shard-twitch 3.2s ease-in-out infinite;
+}
+
+.fear-not:not(.dragging):not(.unmaking) {
+  animation: fear-glow 3.6s ease-in-out infinite;
+}
+
+.fear-not.orbiting:not(.dragging):not(.unmaking) {
+  animation: fear-orbit var(--spin, 16s) linear infinite;
+}
+
+.floater.burst {
+  animation: burst-fly 1.3s ease-out forwards;
+  opacity: 1;
+}
+
+body.cycle-kick .wheel-root {
+  animation: kick 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+body.shock .chromatic {
+  opacity: 1;
+  animation: shock-chroma 0.8s ease-out;
+}
+
+body.shock .vignette {
+  box-shadow: inset 0 0 200px 90px rgba(180, 76, 255, 0.35);
+}
+
+body.reversed .wheel-root {
+  animation: reverse-spin 1.6s ease-in-out;
+  filter: hue-rotate(160deg) saturate(1.35);
+}
+
+body.reversed .orbit-ghost-a,
+body.reversed .orbit-ghost-b {
+  animation-duration: 3.2s;
+}
+
+body.seal-wake .relic.seal {
+  animation: seal-flare 0.7s ease-out;
+}
+
+body.aspect-wake .firmament {
+  animation: aspect-spin 0.9s ease-out;
+}
+
+body.aspect-wake .sacred-geo {
+  animation: geo-spin 2.4s linear infinite;
+}
+
+body.frenzy .wheel-root,
+body.frenzy .firmament {
+  animation: frenzy 1.2s ease-in-out;
+}
+
+body.jitter .firmament {
+  animation: jitter 0.28s steps(3);
+}
+
+body.rim-live .orbit-ghost {
+  animation-duration: 6s;
+  border-color: var(--gold-hot);
+}
+
+body.rim-live .orbit {
+  box-shadow:
+    0 0 70px rgba(240, 208, 120, 0.28),
+    inset 0 0 80px rgba(180, 76, 255, 0.16);
+}
+
 html.calm .floater,
 html.calm .charge {
   animation: none;
@@ -700,6 +863,28 @@ html.calm .shard.flee {
   transform: none !important;
 }
 
+html.calm .orbit-ghost,
+html.calm .ripple,
+html.calm .inside,
+html.calm .mouth,
+html.calm .charge,
+html.calm .relic.seal,
+html.calm .relic.vesica,
+html.calm .relic.shard-hit,
+html.calm .fear-not,
+html.calm .floater,
+html.calm .wheel-root,
+html.calm .firmament,
+html.calm .scanlines,
+html.calm .chromatic {
+  animation: none !important;
+  filter: none !important;
+}
+
+html.calm .ripples {
+  display: none;
+}
+
 /* ----- Keyframes (capped; strobe is JS-gated to under 3 Hz) ----- */
 @keyframes geo-spin {
   from { transform: rotate(0deg) scale(1.05); }
@@ -728,6 +913,109 @@ html.calm .shard.flee {
   36% { transform: scale(1.11) translate(8px, -8px); }
   54% { transform: scale(1.04) translate(-5px, -3px); }
   72% { transform: scale(1.08) translate(4px, 7px); }
+}
+
+@keyframes kaleido {
+  from { transform: rotate(0deg) scale(1.18); filter: hue-rotate(0deg); }
+  to { transform: rotate(360deg) scale(1.18); filter: hue-rotate(28deg); }
+}
+
+@keyframes chroma-breathe {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+@keyframes ripple-out {
+  to { transform: scale(28); opacity: 0; }
+}
+
+@keyframes ghost-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(-360deg); }
+}
+
+@keyframes mouth-breathe {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.12); }
+}
+
+@keyframes mouth-open {
+  0%, 100% { transform: translate(-50%, -50%) scale(1.15); }
+  50% { transform: translate(-50%, -50%) scale(1.42); }
+}
+
+@keyframes seal-idle {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(12deg); }
+}
+
+@keyframes vesica-throb {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+@keyframes shard-twitch {
+  0%, 100% { rotate: 18deg; }
+  40% { rotate: 38deg; }
+  70% { rotate: 8deg; }
+}
+
+@keyframes fear-glow {
+  0%, 100% { box-shadow: 0 0 0 rgba(201, 162, 39, 0); }
+  50% { box-shadow: 0 0 22px rgba(240, 208, 120, 0.45); }
+}
+
+@keyframes fear-orbit {
+  0% { translate: 0 0; rotate: 0deg; }
+  25% { translate: 36px -18px; rotate: 8deg; }
+  50% { translate: 0 -36px; rotate: 0deg; }
+  75% { translate: -36px -18px; rotate: -8deg; }
+  100% { translate: 0 0; rotate: 0deg; }
+}
+
+@keyframes burst-fly {
+  0% { transform: translate(0, 0) scale(0.2); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(var(--s, 1)); opacity: 0; }
+}
+
+@keyframes kick {
+  0% { transform: scale(1) rotate(0deg); }
+  18% { transform: scale(1.08) rotate(-2deg); }
+  40% { transform: scale(0.97) rotate(1.4deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes shock-chroma {
+  0% { transform: scale(1.04); filter: hue-rotate(80deg); }
+  100% { transform: scale(1); filter: none; }
+}
+
+@keyframes reverse-spin {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  40% { transform: rotate(-18deg) scale(1.06); }
+}
+
+@keyframes seal-flare {
+  0% { transform: scale(1.4); box-shadow: 0 0 40px var(--gold-hot); }
+  100% { transform: scale(1); }
+}
+
+@keyframes aspect-spin {
+  0% { filter: contrast(1.4) saturate(1.6); transform: scale(1.04); }
+  100% { filter: none; transform: none; }
+}
+
+@keyframes frenzy {
+  0%, 100% { transform: scale(1) rotate(0deg); filter: saturate(1); }
+  20% { transform: scale(1.12) rotate(3deg); filter: saturate(1.8) contrast(1.2); }
+  45% { transform: scale(0.94) rotate(-4deg); }
+  70% { transform: scale(1.06) rotate(2deg); }
+}
+
+@keyframes jitter {
+  0%, 100% { transform: translate(0, 0); }
+  33% { transform: translate(-6px, 4px); }
+  66% { transform: translate(5px, -3px); }
 }
 
 @media (max-width: 720px) {
@@ -766,5 +1054,23 @@ html.calm .shard.flee {
   body.shudder .wheel-root,
   body.shudder .firmament {
     animation: none;
+  }
+
+  .orbit-ghost,
+  .ripple,
+  .inside,
+  .mouth,
+  .relic.seal,
+  .relic.vesica,
+  .relic.shard-hit,
+  .fear-not,
+  .floater,
+  .wheel-root,
+  .firmament {
+    animation: none !important;
+  }
+
+  .ripples {
+    display: none;
   }
 }

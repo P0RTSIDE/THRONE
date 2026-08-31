@@ -35,8 +35,13 @@ export function createArg({ audio, wheel }) {
     if (!!on === throne.raptured) return;
     wheel.setRapture(on);
     audio.setRapture(on);
-    if (on) showCaption("you are inside the count", 2400);
-    else showCaption("", 1);
+    if (on) {
+      showCaption("you are inside the count", 2400);
+      document.body.classList.add("aspect-wake");
+      setTimeout(() => document.body.classList.remove("aspect-wake"), 900);
+    } else {
+      showCaption("", 1);
+    }
   }
 
   function become(id, caption) {
@@ -48,6 +53,8 @@ export function createArg({ audio, wheel }) {
     audio.setAspect(id);
     showCaption(caption || ASPECT_CAPTIONS[id] || "", 3200);
     window.dispatchEvent(new CustomEvent("throne:aspect", { detail: { id } }));
+    document.body.classList.add("aspect-wake");
+    setTimeout(() => document.body.classList.remove("aspect-wake"), 900);
   }
 
   function applyHash() {
