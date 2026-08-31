@@ -45,9 +45,9 @@ html.calm * {
 body {
   font-family: var(--font-body);
   background:
-    radial-gradient(ellipse 90% 70% at 50% 78%, rgba(42, 24, 10, 0.95), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 50% 30%, rgba(90, 50, 16, 0.35), transparent 60%),
-    #140c06;
+    radial-gradient(ellipse 70% 45% at 50% 8%, rgba(240, 208, 120, 0.22), transparent 58%),
+    radial-gradient(ellipse 90% 70% at 50% 100%, rgba(12, 8, 18, 0.95), transparent 60%),
+    #0c0912;
 }
 
 body.palette-white {
@@ -255,8 +255,8 @@ html.entered .veil {
   transform-origin: 50% 48%;
   will-change: transform;
   background:
-    radial-gradient(ellipse 80% 50% at 50% 8%, rgba(176, 92, 28, 0.38), transparent 58%),
-    linear-gradient(180deg, #2c180c 0%, #140c06 42%, #0a0704 100%);
+    radial-gradient(ellipse 70% 40% at 50% 6%, rgba(240, 208, 120, 0.2), transparent 55%),
+    #0c0912;
 }
 
 .sky {
@@ -264,20 +264,15 @@ html.entered .veil {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 50% 28% at 50% 12%, rgba(240, 168, 72, 0.22), transparent 70%),
-    radial-gradient(ellipse 90% 40% at 50% 0%, rgba(90, 40, 16, 0.4), transparent 62%);
+    radial-gradient(ellipse 46% 24% at 50% 6%, rgba(255, 236, 190, 0.2), transparent 68%),
+    radial-gradient(ellipse 90% 36% at 50% 0%, rgba(90, 50, 20, 0.28), transparent 70%);
 }
 
-.hill {
+.glory {
   position: absolute;
-  left: 8%;
-  right: 8%;
-  top: 46%;
-  bottom: -8%;
-  background:
-    radial-gradient(ellipse 80% 90% at 50% 100%, #2a1608 0%, #1a0e06 55%, transparent 78%),
-    radial-gradient(ellipse 46% 34% at 50% 62%, rgba(120, 72, 24, 0.55), transparent 72%);
+  inset: 0;
   pointer-events: none;
+  background: radial-gradient(circle at 50% 38%, rgba(240, 208, 120, 0.12), transparent 32%);
 }
 
 .stage {
@@ -905,16 +900,103 @@ body.pulse-on .pulse {
 }
 
 /* ----- Floating liturgy windows ----- */
+.world-relic {
+  position: absolute;
+  z-index: 4;
+  pointer-events: auto;
+  background: rgba(18, 10, 6, 0.72);
+  color: var(--gold-hot);
+  border: 1px solid var(--gold);
+  font-family: var(--font-hud);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.world-relic:hover,
+.world-relic:focus-visible {
+  background: var(--gold);
+  color: var(--void);
+}
+
+.dock {
+  position: fixed;
+  top: 56px;
+  right: 12px;
+  z-index: 16;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  max-width: 40vw;
+  pointer-events: none;
+}
+
+.dock-chip {
+  pointer-events: auto;
+  font-family: var(--font-hud);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: rgba(18, 10, 6, 0.88);
+  color: var(--gold-hot);
+  border: 1px solid var(--gold);
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
 .plane {
   position: fixed;
   z-index: 12;
-  width: min(260px, 40vw);
-  padding: 14px 16px 16px;
-  background: rgba(18, 10, 6, 0.82);
+  width: min(248px, 36vw);
+  padding: 0;
+  background: rgba(18, 10, 6, 0.88);
   border: 1px solid rgba(201, 162, 39, 0.4);
-  box-shadow: 6px 8px 0 rgba(40, 20, 8, 0.45), 0 12px 28px rgba(0, 0, 0, 0.4);
+  box-shadow: 4px 6px 0 rgba(40, 20, 8, 0.4), 0 10px 22px rgba(0, 0, 0, 0.4);
   pointer-events: auto;
   cursor: auto;
+}
+
+.plane.folded {
+  display: none;
+}
+
+.plane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(201, 162, 39, 0.25);
+}
+
+.plane-body {
+  padding: 10px 12px 12px;
+  max-height: min(42vh, 320px);
+  overflow: auto;
+}
+
+.plane-min {
+  font-family: var(--font-hud);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--gold);
+  border: 1px solid rgba(201, 162, 39, 0.45);
+  padding: 3px 6px;
+  cursor: pointer;
+}
+
+.plane-ledger {
+  width: min(280px, 38vw);
+}
+
+.inscription.small {
+  font-size: 13px;
+  color: rgba(232, 220, 184, 0.7);
 }
 
 .plane,
@@ -931,8 +1013,22 @@ body.pulse-on .pulse {
   font-family: var(--font-title);
   font-size: 15px;
   letter-spacing: 0.16em;
-  margin: 0 0 10px;
+  margin: 0;
   color: var(--gold-hot);
+}
+
+.plane-grip {
+  cursor: grab;
+  user-select: none;
+}
+
+.plane.dragging,
+.plane-grip:active {
+  cursor: grabbing;
+}
+
+.plane.dragging {
+  z-index: 18;
 }
 
 .plane-kicker {
@@ -940,7 +1036,7 @@ body.pulse-on .pulse {
   font-size: 10px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  margin: 0 0 8px;
+  margin: 0;
   color: var(--gold);
 }
 
@@ -1319,9 +1415,8 @@ html.calm .mouth::before {
     font-size: 12px;
   }
 
-  .plane-nav,
-  .plane-approach {
-    display: none;
+  .dock {
+    max-width: 58vw;
   }
 
   .days-counter {

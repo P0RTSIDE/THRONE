@@ -95,13 +95,13 @@ export function createArg({ audio, wheel }) {
     refreshOffer();
   }
 
-  function confess(text) {
+  function confess(text, silent = false) {
     if (throne.lore.confessed) {
       refreshOffer();
       return;
     }
     throne.lore.confessed = true;
-    once("confessed", text || "no voice arrived in time. you finished it.", 4200);
+    if (!silent) once("confessed", text || "no voice arrived in time. you finished it.", 4200);
     window.setTimeout(refreshOffer, 3400);
   }
 
@@ -195,8 +195,8 @@ export function createArg({ audio, wheel }) {
       become("merkavah");
       once("orbit", "the whole hill turns with your hand", 3600);
     }
-    if ((e.detail?.traveled || 0) > 28) {
-      once("drag1", "the hill turns with you. Fear Not still waits below.", 4000);
+    if ((e.detail?.traveled || 0) > 18) {
+      once("drag1", "the hill is still in your hands. the knife waits in the dark.", 4800);
     }
   });
 
@@ -248,6 +248,34 @@ export function createArg({ audio, wheel }) {
 
   window.addEventListener("throne:rim", () => {
     once("rim", "one more lid lifts on the far side", 2800);
+  });
+
+  window.addEventListener("throne:relic", (e) => {
+    if (throne.lore.offered) return;
+    const id = e.detail?.id;
+    if (id === "knife") {
+      once("knife", "you bound him. the knife did not stay in the bag.", 4200);
+      confess("", true);
+    } else if (id === "cord") {
+      once("cord", "the cord still remembers his wrists.", 4200);
+      confess("", true);
+    } else if (id === "ram") {
+      once("ram", "nothing caught in the thicket.", 4200);
+      confess("", true);
+    } else if (id === "name") {
+      nameTheBoy();
+    } else if (id === "hill") {
+      once("hill", "three days up. you can still feel the grade in your legs.", 4200);
+    } else if (id === "morning") {
+      once("morning", "you told him it was only a walk. you were already lying.", 4200);
+    } else if (id === "wood") {
+      once("wood", "he carried the wood. you carried the fire and the knife.", 4200);
+    } else if (id === "lamb") {
+      once("lamb", "he asked where the lamb was. you said the Lord would see to it.", 4600);
+    } else if (id === "fire") {
+      once("fire", "you stacked the wood. you reached for him.", 4200);
+      confess("", true);
+    }
   });
 
   window.addEventListener("keydown", (e) => {
