@@ -16,9 +16,8 @@ import * as THREE from "three";
 import { throne, randRange } from "./throne.js";
 
 const PALETTES = [
-  { irisA: new THREE.Color("#8a4b12"), irisB: new THREE.Color("#f0d078"), metal: 0xc9a227, emit: 0x3d2b0a },
-  { irisA: new THREE.Color("#d0d0e8"), irisB: new THREE.Color("#ffffff"), metal: 0xe8e4d8, emit: 0x8888aa },
-  { irisA: new THREE.Color("#3a0a6a"), irisB: new THREE.Color("#c77dff"), metal: 0x6b2d9a, emit: 0x2a0050 },
+  { irisA: new THREE.Color("#5c2e0a"), irisB: new THREE.Color("#d4a017"), metal: 0x8a5a22, emit: 0x3d2208 },
+  { irisA: new THREE.Color("#3a2210"), irisB: new THREE.Color("#f0d078"), metal: 0xb8892a, emit: 0x5a3a10 },
 ];
 
 const EYE_VERT = /* glsl */ `
@@ -77,45 +76,42 @@ const EYE_FRAG = /* glsl */ `
 
     vec2 uv = vUv * 2.0 - 1.0;
 
-    // Asynchronous blink: short lid close on a long, phase-shifted cycle.
-    float period = mix(3.2, 9.5, vPhase);
-    float t = mod(uTime * mix(0.55, 1.1, vPhase) + vPhase * 19.0, period);
+    float period = mix(3.4, 10.0, vPhase);
+    float t = mod(uTime * mix(0.45, 0.9, vPhase) + vPhase * 19.0, period);
     float blink = 0.0;
-    if (t < 0.14 && uCalm < 0.5 && uBlinkAllow > 0.5) {
-      blink = sin((t / 0.14) * 3.14159265);
+    if (t < 0.15 && uCalm < 0.5 && uBlinkAllow > 0.5) {
+      blink = sin((t / 0.15) * 3.14159265);
     }
-
-    float yScale = mix(1.0, 11.0, blink);
+    float yScale = mix(1.0, 10.0, blink);
     vec2 e = vec2(uv.x, uv.y * yScale);
 
-    // Almond / vesica silhouette.
-    float almond = length(vec2(e.x * 0.82, e.y * 1.55));
+    float almond = length(vec2(e.x * 0.78, e.y * 1.62));
     if (almond > 1.02) discard;
-    float edge = smoothstep(1.0, 0.86, almond);
+    float edge = smoothstep(1.0, 0.84, almond);
 
-    vec3 sclera = uSclera;
-    vec2 look = clamp(vLook * 0.2, vec2(-0.3), vec2(0.3));
-    look.y *= 0.65;
+    vec3 sclera = mix(uSclera, vec3(0.93, 0.86, 0.68), 0.35);
+    vec2 look = clamp(vLook * 0.18, vec2(-0.22), vec2(0.22));
+    look.y *= 0.6;
     vec2 irisUv = e - look;
     float ir = length(irisUv);
 
-    vec3 iris = mix(uIrisA, uIrisB, 0.5 + 0.5 * sin(vPhase * 9.0));
-    float irisMask = smoothstep(0.54, 0.46, ir);
+    vec3 iris = mix(uIrisA, uIrisB, 0.45 + 0.2 * sin(vPhase * 6.0));
+    float irisMask = smoothstep(0.52, 0.42, ir);
     vec3 col = mix(sclera, iris, irisMask);
 
-    float rings = sin(ir * 30.0 + vPhase * 8.0) * 0.1;
-    col += iris * rings * irisMask;
+    float hatch = sin(ir * 18.0 + vPhase) * 0.06;
+    col += iris * hatch * irisMask;
 
-    float pupilR = 0.15 * vDilate;
-    float pupil = smoothstep(pupilR + 0.025, pupilR - 0.01, ir);
-    col = mix(col, vec3(0.03, 0.015, 0.04), pupil);
+    float pupilR = 0.16 * vDilate;
+    float pupil = smoothstep(pupilR + 0.02, pupilR - 0.01, ir);
+    col = mix(col, vec3(0.07, 0.03, 0.02), pupil);
 
-    float spec = smoothstep(0.09, 0.0, length(irisUv - vec2(-0.11, 0.13)));
-    col += vec3(spec) * 0.85 * (1.0 - blink);
+    float spec = smoothstep(0.08, 0.0, length(irisUv - vec2(-0.1, 0.12)));
+    col += vec3(0.85, 0.75, 0.4) * spec * 0.45 * (1.0 - blink);
 
-    vec3 rim = mix(vec3(0.78, 0.58, 0.16), iris, 0.35);
+    vec3 rim = mix(vec3(0.55, 0.38, 0.1), iris, 0.3);
     col = mix(rim, col, edge);
-    col *= 1.0 - blink * 0.75;
+    col *= 1.0 - blink * 0.7;
 
     gl_FragColor = vec4(col, edge);
   }
@@ -123,12 +119,12 @@ const EYE_FRAG = /* glsl */ `
 
 function qualityConfig(q) {
   if (q === "low") {
-    return { uSeg: 10, vSeg: 6, tube: 16, radial: 48, dpr: 1, glow: false };
+    return { uSeg: 12, vSeg: 7, tube: 16, radial: 48, dpr: 1, glow: false };
   }
   if (q === "high") {
-    return { uSeg: 22, vSeg: 12, tube: 28, radial: 96, dpr: Math.min(2, window.devicePixelRatio || 1), glow: true };
+    return { uSeg: 26, vSeg: 14, tube: 28, radial: 96, dpr: Math.min(2, window.devicePixelRatio || 1), glow: true };
   }
-  return { uSeg: 16, vSeg: 9, tube: 20, radial: 72, dpr: Math.min(1.5, window.devicePixelRatio || 1), glow: true };
+  return { uSeg: 20, vSeg: 11, tube: 20, radial: 72, dpr: Math.min(1.5, window.devicePixelRatio || 1), glow: true };
 }
 
 /** Place an eye on a torus, facing along the surface normal. */
@@ -143,7 +139,7 @@ function torusPoint(R, r, u, v, target, normal) {
 
 function makeEyeField(R, r, uSeg, vSeg, eyeSize) {
   const count = uSeg * vSeg;
-  const geom = new THREE.PlaneGeometry(eyeSize, eyeSize * 0.62);
+  const geom = new THREE.PlaneGeometry(eyeSize, eyeSize * 0.58);
   const mat = new THREE.ShaderMaterial({
     uniforms: {
       uTime: { value: 0 },
@@ -179,9 +175,11 @@ function makeEyeField(R, r, uSeg, vSeg, eyeSize) {
       const u = (iu / uSeg) * Math.PI * 2;
       const v = (iv / vSeg) * Math.PI * 2;
       torusPoint(R, r, u, v, pos, nrm);
-      dummy.position.copy(pos).addScaledVector(nrm, r * 0.22);
+      dummy.position.copy(pos).addScaledVector(nrm, r * 0.18);
       dummy.up.copy(up);
       dummy.lookAt(pos.clone().add(nrm));
+      dummy.rotateZ((throne.rng() - 0.5) * 0.5);
+      dummy.scale.setScalar(0.82 + throne.rng() * 0.35);
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
       phases[i] = throne.rng();
@@ -200,65 +198,83 @@ function makeEyeField(R, r, uSeg, vSeg, eyeSize) {
 export function createEyeWheel(root) {
   const cfg = qualityConfig(throne.quality);
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x050308, 0.08);
+  scene.fog = new THREE.FogExp2(0x100804, 0.032);
+  scene.background = new THREE.Color(0x100804);
 
-  const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 60);
-  camera.position.set(0, 0.4, 7.4);
+  const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 80);
+  camera.position.set(0, 1.1, 8.2);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: cfg.dpr > 1, alpha: true, powerPreference: "high-performance" });
+  const renderer = new THREE.WebGLRenderer({ antialias: cfg.dpr > 1, alpha: false, powerPreference: "high-performance" });
   renderer.setPixelRatio(cfg.dpr);
-  renderer.setClearColor(0x000000, 0);
+  renderer.setClearColor(0x100804, 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.12;
+  renderer.toneMapping = THREE.NoToneMapping;
+  renderer.toneMappingExposure = 1;
   root.appendChild(renderer.domElement);
 
-  const ambient = new THREE.AmbientLight(0x4a3018, 0.7);
-  const hemi = new THREE.HemisphereLight(0xf0d078, 0x1a0828, 1.35);
-  const key = new THREE.PointLight(0xf0d078, 3.2, 18, 1.2);
-  const fill = new THREE.PointLight(0x9d4edd, 1.6, 16, 1.4);
-  fill.position.set(-2.2, -1.4, 2.5);
-  const rim = new THREE.PointLight(0xffffff, 0.9, 14, 1.6);
-  rim.position.set(0, 2.4, -2.2);
-  scene.add(ambient, hemi, key, fill, rim);
-
-  // Metals look black without an environment. A tiny staged scene is enough IBL.
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  const envScene = new THREE.Scene();
-  envScene.add(new THREE.HemisphereLight(0xffe6a0, 0x3a1060, 3.2));
-  envScene.add(
-    new THREE.Mesh(
-      new THREE.SphereGeometry(10, 20, 12),
-      new THREE.MeshBasicMaterial({ color: 0x241018, side: THREE.BackSide })
-    )
-  );
-  scene.environment = pmrem.fromScene(envScene, 0.06).texture;
-  pmrem.dispose();
+  const ambient = new THREE.AmbientLight(0x2a1a0c, 0.7);
+  const hemi = new THREE.HemisphereLight(0x8a6030, 0x100804, 0.7);
+  const key = new THREE.PointLight(0xe8b050, 2.1, 22, 1.2);
+  key.position.set(1.2, 3.2, 4.2);
+  const fill = new THREE.PointLight(0x5a3010, 0.6, 16, 1.4);
+  fill.position.set(-2.6, -0.4, 2.2);
+  scene.add(ambient, hemi, key, fill);
+  scene.environment = null;
 
   const outerGroup = new THREE.Group();
   const innerGroup = new THREE.Group();
   const thirdGroup = new THREE.Group();
+  const fourthGroup = new THREE.Group();
   const wingGroup = new THREE.Group();
-  innerGroup.rotation.x = Math.PI / 2;
-  thirdGroup.rotation.z = Math.PI / 3;
+  const looseGroup = new THREE.Group();
+  innerGroup.rotation.x = 1.12;
+  innerGroup.rotation.z = 0.28;
+  thirdGroup.rotation.z = 0.95;
+  thirdGroup.rotation.x = 0.4;
   thirdGroup.scale.setScalar(0.001);
+  fourthGroup.visible = false;
   wingGroup.visible = false;
-  scene.add(outerGroup, innerGroup, thirdGroup, wingGroup);
+  scene.add(outerGroup, innerGroup, thirdGroup, fourthGroup, wingGroup, looseGroup);
 
-  const outerR = 2.25;
-  const outerTube = 0.36;
-  const innerR = 1.55;
-  const innerTube = 0.3;
-  const thirdR = 1.9;
-  const thirdTube = 0.18;
+  const ground = new THREE.Mesh(
+    new THREE.CircleGeometry(36, 40),
+    new THREE.MeshStandardMaterial({ color: 0x2c1a0c, roughness: 0.97, metalness: 0.02 })
+  );
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -2.55;
+  scene.add(ground);
+  const altar = new THREE.Mesh(
+    new THREE.BoxGeometry(2.4, 0.38, 1.5),
+    new THREE.MeshStandardMaterial({ color: 0x3a2814, roughness: 0.88, metalness: 0.12 })
+  );
+  altar.position.set(0, -2.35, 0);
+  scene.add(altar);
+  const stone = new THREE.MeshStandardMaterial({ color: 0x4a3420, roughness: 0.92, metalness: 0.06 });
+  for (let i = 0; i < 5; i++) {
+    const h = 2.6 + (i % 3) * 0.7;
+    const col = new THREE.Mesh(new THREE.BoxGeometry(0.55, h, 0.28), stone);
+    const a = (i / 5) * Math.PI * 2 + 0.35;
+    col.position.set(Math.cos(a) * 5.6, -2.55 + h * 0.5, Math.sin(a) * 5.6);
+    col.rotation.y = a + 0.4;
+    scene.add(col);
+  }
+
+  const outerR = 2.18;
+  const outerTube = 0.4;
+  const innerR = 1.82;
+  const innerTube = 0.34;
+  const thirdR = 1.55;
+  const thirdTube = 0.22;
+  const fourthR = 2.55;
+  const fourthTube = 0.14;
 
   function metalMat(color, emit) {
     return new THREE.MeshStandardMaterial({
       color,
-      metalness: 0.82,
-      roughness: 0.34,
+      metalness: 0.22,
+      roughness: 0.74,
       emissive: emit,
-      emissiveIntensity: 0.7,
+      emissiveIntensity: 0.35,
     });
   }
 
@@ -275,32 +291,40 @@ export function createEyeWheel(root) {
     new THREE.TorusGeometry(thirdR, thirdTube, Math.max(10, cfg.tube - 6), Math.max(48, cfg.radial - 24)),
     metalMat(pal0.metal, pal0.emit)
   );
+  const fourthMesh = new THREE.Mesh(
+    new THREE.TorusGeometry(fourthR, fourthTube, Math.max(8, cfg.tube - 8), Math.max(40, cfg.radial - 28)),
+    metalMat(pal0.metal, pal0.emit)
+  );
   outerGroup.add(outerMesh);
   innerGroup.add(innerMesh);
   thirdGroup.add(thirdMesh);
+  fourthGroup.add(fourthMesh);
 
-  if (cfg.glow) {
-    const glowMat = new THREE.MeshBasicMaterial({
-      color: 0xc9a227,
-      transparent: true,
-      opacity: 0.09,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      side: THREE.BackSide,
-    });
-    outerGroup.add(new THREE.Mesh(new THREE.TorusGeometry(outerR, outerTube * 1.35, 12, 48), glowMat));
-    innerGroup.add(new THREE.Mesh(new THREE.TorusGeometry(innerR, innerTube * 1.35, 12, 48), glowMat.clone()));
-    thirdGroup.add(new THREE.Mesh(new THREE.TorusGeometry(thirdR, thirdTube * 1.5, 10, 40), glowMat.clone()));
-  }
-
-  const outerEyes = makeEyeField(outerR, outerTube, cfg.uSeg, cfg.vSeg, 0.34);
-  const innerEyes = makeEyeField(innerR, innerTube, Math.max(8, cfg.uSeg - 4), Math.max(5, cfg.vSeg - 2), 0.3);
-  const thirdEyes = makeEyeField(thirdR, thirdTube, Math.max(8, cfg.uSeg - 6), Math.max(4, cfg.vSeg - 4), 0.22);
+  const outerEyes = makeEyeField(outerR, outerTube, cfg.uSeg, cfg.vSeg, 0.44);
+  const innerEyes = makeEyeField(innerR, innerTube, Math.max(10, cfg.uSeg - 2), Math.max(6, cfg.vSeg - 1), 0.4);
+  const thirdEyes = makeEyeField(thirdR, thirdTube, Math.max(8, cfg.uSeg - 6), Math.max(5, cfg.vSeg - 3), 0.26);
+  const fourthEyes = makeEyeField(fourthR, fourthTube, Math.max(8, cfg.uSeg - 8), Math.max(4, cfg.vSeg - 4), 0.2);
   outerGroup.add(outerEyes.mesh);
   innerGroup.add(innerEyes.mesh);
   thirdGroup.add(thirdEyes.mesh);
+  fourthGroup.add(fourthEyes.mesh);
 
-  const eyeFields = [outerEyes, innerEyes, thirdEyes];
+  const eyeFields = [outerEyes, innerEyes, thirdEyes, fourthEyes];
+
+  const looseCount = 0;
+  for (let i = 0; i < looseCount; i++) {
+    const eye = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.22 + throne.rng() * 0.7, 0.12 + throne.rng() * 0.4),
+      outerEyes.mat
+    );
+    const a = throne.rng() * Math.PI * 2;
+    const b = throne.rng() * Math.PI;
+    const rad = 1.1 + throne.rng() * 2.4;
+    eye.position.set(Math.cos(a) * Math.sin(b) * rad, Math.cos(b) * rad * 0.7, Math.sin(a) * Math.sin(b) * rad);
+    eye.lookAt(0, 0, 0);
+    if (throne.rng() > 0.5) eye.rotateZ(throne.rng() * 6);
+    looseGroup.add(eye);
+  }
 
   // Six light-wings: only shown for the seraph aspect.
   const wingMat = new THREE.MeshBasicMaterial({
@@ -341,7 +365,7 @@ export function createEyeWheel(root) {
     look: 1,
     pupil: 1,
     spin: 1,
-    camZ: 7.4,
+    camZ: 8.2,
     third: 0,
     wings: 0,
     hub: 0,
@@ -349,8 +373,13 @@ export function createEyeWheel(root) {
     sclera: new THREE.Color("#f3ebd6"),
     palLock: -1,
   };
-  let tiltX = 0;
-  let tiltY = 0;
+  let spinBoost = 1;
+  let zNudge = 0;
+  let pulseScale = 1;
+  let yaw = 0.38;
+  let pitch = 0.34;
+  let offerAge = 0;
+  let offering = false;
 
   function resize() {
     const w = root.clientWidth || window.innerWidth;
@@ -369,7 +398,7 @@ export function createEyeWheel(root) {
       m.uniforms.uIrisA.value.lerp(pal.irisA, Math.min(1, dt * 1.8));
       m.uniforms.uIrisB.value.lerp(pal.irisB, Math.min(1, dt * 1.8));
     }
-    for (const mesh of [outerMesh, innerMesh, thirdMesh]) {
+    for (const mesh of [outerMesh, innerMesh, thirdMesh, fourthMesh]) {
       mesh.material.color.lerp(new THREE.Color(pal.metal), Math.min(1, dt * 1.2));
       mesh.material.emissive.lerp(new THREE.Color(pal.emit), Math.min(1, dt * 1.2));
     }
@@ -380,7 +409,7 @@ export function createEyeWheel(root) {
     const mats = [...eyeFields.map((f) => f.mat), hubMat];
     for (const m of mats) {
       m.uniforms.uBlinkAllow.value = aspect.blink;
-      m.uniforms.uLookGain.value = aspect.look;
+      m.uniforms.uLookGain.value = aspect.look * (throne.raptured ? 2.4 : 1);
       m.uniforms.uPupilMul.value = aspect.pupil;
       m.uniforms.uSclera.value.copy(aspect.sclera);
     }
@@ -402,14 +431,37 @@ export function createEyeWheel(root) {
     throne.time = t;
 
     const calm = throne.calm ? 1 : 0;
-    const spin = (throne.calm ? 0.08 : 1) * aspect.spin;
+    const spin = (throne.calm ? 0.08 : 1) * aspect.spin * (throne.raptured ? 1.65 : 1) * spinBoost;
 
     outerGroup.rotation.y += dt * 0.35 * spin;
     outerGroup.rotation.z += dt * 0.07 * spin;
+    outerGroup.rotation.x += dt * 0.03 * spin;
     innerGroup.rotation.x += dt * 0.42 * spin;
     innerGroup.rotation.y += dt * 0.11 * spin;
+    innerGroup.rotation.z += dt * 0.05 * spin;
     thirdGroup.rotation.y += dt * 0.5 * spin;
     thirdGroup.rotation.z += dt * 0.16 * spin;
+    fourthGroup.rotation.x += dt * 0.28 * spin;
+    fourthGroup.rotation.y += dt * -0.19 * spin;
+    looseGroup.rotation.y += dt * 0.12 * spin;
+    looseGroup.rotation.x = Math.sin(t * 0.21) * 0.35;
+    pulseScale += (1 - pulseScale) * Math.min(1, dt * 4);
+    const ps = pulseScale;
+    outerGroup.scale.setScalar(ps);
+    innerGroup.scale.setScalar(2 - ps);
+    if (offering) {
+      offerAge += dt;
+      const shrink = Math.max(0.16, 1 - offerAge * 0.14);
+      outerGroup.scale.setScalar(ps * shrink);
+      innerGroup.scale.setScalar(Math.max(0.12, (2 - ps) * shrink));
+      fourthGroup.scale.setScalar(Math.min(1.15, 0.45 + offerAge * 0.14));
+      yaw += (0 - yaw) * Math.min(1, dt * 1.25);
+      pitch += (0.06 - pitch) * Math.min(1, dt * 1.25);
+      scene.fog.density += (0.04 - scene.fog.density) * 0.05;
+      scene.fog.color.lerp(new THREE.Color("#f3e6c4"), 0.03);
+    }
+    spinBoost += (1 - spinBoost) * Math.min(1, dt * 1.8);
+    zNudge *= 0.92;
     wingGroup.rotation.y += dt * 0.55 * Math.abs(spin);
     wingGroup.rotation.x = Math.sin(t * 0.4) * 0.12;
 
@@ -419,8 +471,16 @@ export function createEyeWheel(root) {
     thirdGroup.scale.setScalar(Math.max(0.001, next));
 
     wingGroup.visible = aspect.wings > 0.5 && !throne.calm;
-    hubEye.visible = aspect.hub > 0.5;
-    if (hubEye.visible) hubEye.lookAt(camera.position);
+    hubEye.visible = aspect.hub > 0.5 || throne.lore.offered;
+    if (hubEye.visible) {
+      hubEye.lookAt(camera.position);
+      if (throne.lore.offered) {
+        const grow = Math.min(2.7, 0.35 + offerAge * 0.55);
+        hubEye.scale.setScalar(grow);
+      } else {
+        hubEye.scale.setScalar(1 + (pulseScale - 1) * 2.4);
+      }
+    }
 
     outerAngle += dt * 0.35 * Math.abs(spin);
     if (outerAngle - lastCycle > Math.PI * 2) {
@@ -437,24 +497,29 @@ export function createEyeWheel(root) {
         paletteIndex = (paletteIndex + 1) % PALETTES.length;
         throne.palette = paletteIndex;
         document.body.classList.remove("palette-gold", "palette-white", "palette-violet");
-        document.body.classList.add(["palette-gold", "palette-white", "palette-violet"][paletteIndex]);
+        document.body.classList.add(["palette-gold", "palette-white"][paletteIndex] || "palette-gold");
       }
     }
     applyPalette(paletteIndex, dt);
     applyAspectUniforms();
 
-    const camZ = aspect.camZ;
-    if (!throne.calm) {
-      camera.position.x = Math.sin(t * 0.17) * 0.22 + tiltX;
-      camera.position.y = 0.4 + Math.sin(t * 0.13) * 0.12 + tiltY;
-      camera.position.z += (camZ - camera.position.z) * 0.04;
-      camera.lookAt(0, 0, 0);
-    } else {
-      camera.position.x += (0 - camera.position.x) * 0.04;
-      camera.position.y += (0.4 - camera.position.y) * 0.04;
-      camera.position.z += (camZ - camera.position.z) * 0.04;
-      camera.lookAt(0, 0, 0);
-    }
+    const radius = (throne.raptured ? 0.78 : aspect.camZ) + zNudge;
+    const fovTarget = throne.raptured ? 92 : 46;
+    camera.fov += (fovTarget - camera.fov) * 0.05;
+    camera.updateProjectionMatrix();
+    const cp = Math.cos(pitch);
+    const tx = Math.sin(yaw) * cp * radius;
+    const ty = Math.sin(pitch) * radius * 0.92;
+    const tz = Math.cos(yaw) * cp * radius;
+    const shake = throne.calm ? 0 : (throne.raptured ? 0.05 : 0.1);
+    const lx = tx + Math.sin(t * 0.17) * shake;
+    const ly = ty + Math.sin(t * 0.13) * shake * 0.6;
+    const lz = tz;
+    const ease = 0.88;
+    camera.position.x += (lx - camera.position.x) * ease;
+    camera.position.y += (ly - camera.position.y) * ease;
+    camera.position.z += (lz - camera.position.z) * ease;
+    camera.lookAt(0, 0, 0);
 
     const mouse = new THREE.Vector2(throne.mouse.ndcX, throne.mouse.ndcY);
     for (const field of eyeFields) {
@@ -483,13 +548,7 @@ export function createEyeWheel(root) {
     /** Punch-zoom used by Fear Not. */
     shudder() {
       if (throne.calm) return;
-      camera.position.z = 5.6;
-      const back = () => {
-        camera.position.z += (7.4 - camera.position.z) * 0.12;
-        if (Math.abs(camera.position.z - 7.4) > 0.04) requestAnimationFrame(back);
-        else camera.position.z = 7.4;
-      };
-      requestAnimationFrame(back);
+      pulseScale = 1.28;
     },
     /** Slider-release: force a previously "closed" eye open larger for a few seconds. */
     openDistantEye() {
@@ -503,23 +562,53 @@ export function createEyeWheel(root) {
       paletteIndex = ((index % PALETTES.length) + PALETTES.length) % PALETTES.length;
       throne.palette = paletteIndex;
     },
+    orbit(dx, dy) {
+      yaw -= dx * 0.018;
+      pitch = Math.max(-1.05, Math.min(1.05, pitch + dy * 0.014));
+    },
+    getOrbit() {
+      return { yaw, pitch };
+    },
     tilt(nx, ny) {
-      tiltX = nx * 0.85;
-      tiltY = ny * 0.55;
+      this.orbit(nx * 18, ny * 12);
+    },
+    setRapture(on) {
+      throne.raptured = !!on;
+      document.documentElement.classList.toggle("raptured", !!on);
+      scene.fog.density = on ? 0.16 : 0.08;
+      pulseScale = on ? 1.18 : 0.88;
+    },
+    pulse() {
+      pulseScale = 1.22;
+    },
+    nudgeZ(delta) {
+      zNudge = Math.max(-2.2, Math.min(2.4, zNudge + delta));
+    },
+    setSpinBoost(n) {
+      spinBoost = n;
+    },
+    offer() {
+      offering = true;
+      offerAge = 0;
+      pulseScale = 1.35;
+      zNudge = 0;
+      scene.fog.density = 0.07;
+      this.setAspect("offered");
     },
     /**
      * Rewrite the angel. Aspects change blink, gaze, extra rims, wings, hub eye, and spin.
      */
     setAspect(id) {
       const table = {
-        witness: { blink: 1, look: 1, pupil: 1, spin: 1, camZ: 7.4, third: 0, wings: 0, hub: 0, presence: 1, palLock: -1, sclera: "#f3ebd6" },
-        unblinking: { blink: 0, look: 2.6, pupil: 1.4, spin: 0.55, camZ: 6.2, third: 0, wings: 0, hub: 0, presence: 1, palLock: 1, sclera: "#ffffff" },
-        merkavah: { blink: 1, look: 1.2, pupil: 1.05, spin: 1.2, camZ: 8.4, third: 1, wings: 0, hub: 0, presence: 1, palLock: 0, sclera: "#f0d078" },
-        waters: { blink: 0.35, look: 0.5, pupil: 0.82, spin: 0.32, camZ: 9.2, third: 0, wings: 0, hub: 0, presence: 1, palLock: 2, sclera: "#b8c4e0" },
-        seraph: { blink: 1, look: 1.5, pupil: 1.12, spin: 1.85, camZ: 6.8, third: 1, wings: 1, hub: 0, presence: 1, palLock: 1, sclera: "#fff6d8" },
-        inverted: { blink: 1, look: 1.9, pupil: 1.55, spin: -1.15, camZ: 6.0, third: 0, wings: 0, hub: 0, presence: 1, palLock: 2, sclera: "#2a1014" },
-        name: { blink: 0, look: 3.2, pupil: 1.7, spin: 0.22, camZ: 5.6, third: 0, wings: 0, hub: 1, presence: 0.12, palLock: 0, sclera: "#f4f1e8" },
-        hush: { blink: 1, look: 0.15, pupil: 0.55, spin: 0.1, camZ: 10.5, third: 0, wings: 0, hub: 0, presence: 0.08, palLock: 0, sclera: "#6a6048" },
+        witness: { blink: 1, look: 1.15, pupil: 1.1, spin: 1, camZ: 8.2, third: 0, wings: 0, hub: 0, presence: 1, palLock: -1, sclera: "#f3ebd6" },
+        unblinking: { blink: 0, look: 2.8, pupil: 1.55, spin: 0.55, camZ: 6.2, third: 0, wings: 0, hub: 0, presence: 1, palLock: 1, sclera: "#ffffff" },
+        merkavah: { blink: 1, look: 1.4, pupil: 1.15, spin: 1.2, camZ: 8.4, third: 1, wings: 0, hub: 0, presence: 1, palLock: 0, sclera: "#f0d078" },
+        waters: { blink: 0.35, look: 0.7, pupil: 0.82, spin: 0.32, camZ: 9.2, third: 0, wings: 0, hub: 0, presence: 1, palLock: 1, sclera: "#ead9a8" },
+        seraph: { blink: 1, look: 1.8, pupil: 1.2, spin: 1.85, camZ: 6.8, third: 1, wings: 1, hub: 0, presence: 1, palLock: 1, sclera: "#fff6d8" },
+        inverted: { blink: 1, look: 2.1, pupil: 1.7, spin: -1.15, camZ: 6.0, third: 0, wings: 0, hub: 0, presence: 1, palLock: 0, sclera: "#2a1014" },
+        name: { blink: 0, look: 3.2, pupil: 1.7, spin: 0.22, camZ: 5.6, third: 0.2, wings: 0, hub: 1, presence: 0.12, palLock: 0, sclera: "#f4f1e8" },
+        hush: { blink: 1, look: 0.2, pupil: 0.55, spin: 0.1, camZ: 10.5, third: 0.25, wings: 0, hub: 0, presence: 0.08, palLock: 0, sclera: "#6a6048" },
+        offered: { blink: 1, look: 0.45, pupil: 0.82, spin: 0.05, camZ: 5.2, third: 0.06, wings: 0, hub: 1, presence: 0.1, palLock: 1, sclera: "#fff8ea" },
       };
       const next = table[id] || table.witness;
       aspect = {
@@ -561,8 +650,8 @@ export function createEyeWheel(root) {
 export function createFallbackWheel(root) {
   root.innerHTML = `
     <div class="fallback-wheels" aria-hidden="true" style="position:absolute;inset:0;display:grid;place-items:center;">
-      <div style="width:min(70vw,520px);aspect-ratio:1;border:18px solid #c9a227;border-radius:50%;
-        box-shadow:0 0 40px #c9a22755, inset 0 0 40px #b44cff33;animation:geo-spin 28s linear infinite;"></div>
+      <div style="width:min(70vw,520px);aspect-ratio:1;border:16px solid #8a5a22;border-radius:50%;
+        box-shadow:0 0 28px #c9a22744, inset 0 0 40px #3d220855;"></div>
     </div>`;
-  return { shudder() {}, openDistantEye() {}, setPalette() {}, setAspect() {}, tilt() {}, dispose() {} };
+  return { shudder() {}, openDistantEye() {}, setPalette() {}, setAspect() {}, tilt() {}, orbit() {}, getOrbit() { return { yaw: 0, pitch: 0 }; }, setRapture() {}, pulse() {}, nudgeZ() {}, setSpinBoost() {}, offer() {}, dispose() {} };
 }

@@ -25,6 +25,9 @@ export function createCalmMode({ audio, chaos }) {
     }
     audio.setCalm(on);
     chaos.setCalm(on);
+    if (on) {
+      window.dispatchEvent(new CustomEvent("throne:rapture", { detail: { on: false } }));
+    }
     if (fromSystem && on) {
       btn?.setAttribute("title", "Your system asked for less motion. Calm Mode is on.");
     }
