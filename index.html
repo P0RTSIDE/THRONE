@@ -57,13 +57,18 @@
       <div id="relic-field" class="relic-field">
         <button type="button" class="world-relic" data-relic="knife" data-carry="knife" style="left:22%;top:44%">the knife</button>
         <button type="button" class="world-relic" data-relic="hill" style="left:76%;top:32%">the hill</button>
-        <button type="button" class="world-relic" data-relic="ram" style="left:75%;top:68%">no ram came</button>
+        <button type="button" class="world-relic" data-relic="ram" data-carry="ram" style="left:75%;top:68%">no ram came</button>
         <button type="button" class="world-relic" data-relic="cord" data-carry="cord" style="left:23%;top:70%">the cord</button>
-        <button type="button" class="world-relic" data-relic="name" style="left:50%;top:17%">his name</button>
+        <button type="button" class="world-relic" data-relic="name" data-carry="name" style="left:50%;top:17%">his name</button>
         <button type="button" class="world-relic" data-relic="morning" style="left:36%;top:15%">the morning</button>
         <button type="button" class="world-relic" data-relic="wood" data-carry="wood" style="left:70%;top:22%">the wood</button>
-        <button type="button" class="world-relic" data-relic="lamb" style="left:32%;top:38%">where is the lamb</button>
+        <button type="button" class="world-relic" data-relic="lamb" data-carry="lamb" style="left:32%;top:38%">where is the lamb</button>
         <button type="button" class="world-relic" data-relic="fire" data-carry="fire" style="left:18%;top:52%">the fire</button>
+        <button type="button" id="the-goat" class="world-relic goat-relic" data-relic="goat" data-carry="goat" hidden style="left:62%;top:58%">the goat</button>
+        <button type="button" id="isaac-devil" class="world-relic isaac-devil boy-face" data-relic="isaac" data-carry="isaac" hidden style="left:46%;top:42%">
+          <span class="boy-face-mark" aria-hidden="true"></span>
+          isaac
+        </button>
         <button type="button" id="boy-face" class="world-relic boy-face" data-relic="face" data-carry="face" hidden style="left:48%;top:20%">
           <span class="boy-face-mark" aria-hidden="true"></span>
           his face
@@ -108,6 +113,7 @@
         <p class="inscription">Three days up. He asked where the lamb was. You said someone else would see to it. No ram in the thicket.</p>
         <p class="inscription">You stacked the wood. You reached for him. No voice arrived in time.</p>
         <p class="inscription small">Fear Not did not stay in your mouth. The knife and the fire still remember each other. The cord still knows the blade. The name the morning used is still his, if you can stand to say it.</p>
+        <p class="inscription small">The measure still asks how far. The thicket only answers when you are already too close. A substitute can die two deaths. One of them is not forgiven.</p>
       </div>
     </section>
 
@@ -117,7 +123,7 @@
         <button type="button" class="plane-min" aria-label="fold">fold</button>
       </div>
       <div class="plane-body">
-        <p class="inscription small">How far from the rim to the boy you cannot see.</p>
+        <p class="inscription small">How far from the rim to the boy you cannot see. Pressed close, the thicket lies. Pressed far, another name keeps the distance.</p>
         <label class="slider-wrap" for="rim-slider">
           <span>Distance from the rim</span>
           <input id="rim-slider" type="range" min="0" max="100" value="37" />
@@ -137,7 +143,7 @@
         <button type="button" class="plane-min" aria-label="fold">fold</button>
       </div>
       <div class="plane-body">
-        <p class="inscription small">Ask for him back. It keeps the asking and drops the name unless the name was his. If you ask him to speak, the hill will answer in his throat.</p>
+        <p class="inscription small">Ask for him back. It keeps the asking and drops the name unless the name was his. If you ask him to speak, the hill will answer in his throat. Hate and fear land too. It answers in the temperature you bring it.</p>
         <form id="petition-form" class="petition-form" autocomplete="off">
           <label>
             Name (as it will be forgotten)
@@ -179,7 +185,8 @@
       <div class="plane-body">
         <p class="inscription">He walked beside you. He carried the wood because you asked. He believed Fear Not because it came from your mouth.</p>
         <p class="inscription">He asked where the lamb was. You did not say the true answer. The hill already knew.</p>
-        <p class="inscription small">His name is still the morning's. If you call it, you will have to look at him. If you ask him to speak, you will not hear words.</p>
+        <p class="inscription small">His name is still the morning's. If you call it, you will have to look at him. If you ask him to speak, you will not hear words. If a mark is made of the right death, he may come back wearing it.</p>
+        <p id="forgot-face-line" class="inscription small" hidden>You had the look of him. You put it into the living thing. When the wheels were wheels again you could not find the look in your own head.</p>
       </div>
     </section>
 
@@ -189,8 +196,13 @@
         <button type="button" class="plane-min" aria-label="fold">fold</button>
       </div>
       <div class="plane-body">
-        <p class="inscription small">It will not be touched directly. The line runs because you reached. Looking away was always the door.</p>
-        <p class="inscription flee" data-flee>do not reach for this line</p>
+        <p class="inscription small">It will not be touched directly. The line runs because you reached. The door is not in the button. A long way around is still a way.</p>
+        <div class="approach-field" id="approach-field">
+          <div class="approach-door" id="approach-door" aria-hidden="true"></div>
+          <p class="inscription flee" data-flee>do not reach for this line</p>
+          <p class="inscription flee" data-flee hidden aria-hidden="true">the door is not in the hand</p>
+          <p class="inscription flee" data-flee hidden aria-hidden="true">looking is a kind of reaching</p>
+        </div>
         <button id="averted" class="averted" type="button">
           Approach
           <span class="averted-hint">it will not be touched directly</span>
@@ -247,7 +259,7 @@
         <p class="inscription" data-glitch>the wheels moved when the living creatures moved</p>
         <p class="inscription" data-glitch>their rims were full of eyes, all around, and within</p>
         <p class="inscription" data-glitch>the appearance of the wheels was like burnished bronze</p>
-        <p class="inscription small">the knife remembers two throats. a father came about a boy. the count kept the father.</p>
+        <p class="inscription small">the knife remembers two throats. a father came about a boy. the count kept the father. a substitute can wear a star. a boy can wear another hill.</p>
       </div>
     </section>
 

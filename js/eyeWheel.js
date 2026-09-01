@@ -2,12 +2,13 @@
  * eyeWheel.js — Ophanim Rendering Engine
  *
  * What this file does:
- *   1. Eight interlocking eyed wheels in three.js, plus spokes, axles, loose eyes, a hearth, and wings the fire attendant can raise.
+ *   1. Many interlocking eyed wheels in three.js: gyros inside rims, gear teeth, sinews, a cage, coals, four living faces, spokes, axles, loose eyes, a hearth, and wings.
  *   2. Instanced almond-eyes covering each rim. Each eye blinks on its own phase, dilates slowly,
  *      and the pupil tracks the cursor via a cheap NDC offset in the vertex shader.
  *   3. Attendant aspects rewrite spin, fog, fire, wings, blink, and rim scale so the change is visible.
  *   4. A distant eye can be opened (rim slider release) by boosting one instance's scale.
  *   5. Dispatches `throne:cycle` when the outer wheel wraps 2π so audio can swell (volume-capped).
+ *   6. wearFace: the rims gather into a boy's look, hold it, then become wheels again.
  *
  * Calm Mode: rotations slow to a crawl, blinks freeze open, camera wobble dies.
  */
@@ -119,12 +120,12 @@ const EYE_FRAG = /* glsl */ `
 
 function qualityConfig(q) {
   if (q === "low") {
-    return { uSeg: 14, vSeg: 8, tube: 14, radial: 40, dpr: 1, glow: false, host: 3 };
+    return { uSeg: 14, vSeg: 8, tube: 14, radial: 40, dpr: 1, glow: false, host: 3, extra: 0 };
   }
   if (q === "high") {
-    return { uSeg: 28, vSeg: 16, tube: 26, radial: 88, dpr: Math.min(2, window.devicePixelRatio || 1), glow: true, host: 7 };
+    return { uSeg: 28, vSeg: 16, tube: 26, radial: 88, dpr: Math.min(2, window.devicePixelRatio || 1), glow: true, host: 7, extra: 2 };
   }
-  return { uSeg: 22, vSeg: 12, tube: 18, radial: 64, dpr: Math.min(1.5, window.devicePixelRatio || 1), glow: true, host: 5 };
+  return { uSeg: 22, vSeg: 12, tube: 18, radial: 64, dpr: Math.min(1.5, window.devicePixelRatio || 1), glow: true, host: 5, extra: 1 };
 }
 
 /** Place an eye on a torus, facing along the surface normal. */
@@ -350,8 +351,85 @@ export function createEyeWheel(root) {
   seventhGroup.add(seventhMesh);
   eighthGroup.add(eighthMesh);
 
+  const ninthGroup = new THREE.Group();
+  const tenthGroup = new THREE.Group();
+  ninthGroup.rotation.set(0.42, 1.72, 0.88);
+  tenthGroup.rotation.set(1.08, 0.31, 1.55);
+  const ninthR = 2.28;
+  const ninthTube = 0.09;
+  const tenthR = 0.52;
+  const tenthTube = 0.11;
+  const ninthMesh = new THREE.Mesh(
+    new THREE.TorusGeometry(ninthR, ninthTube, Math.max(8, cfg.tube - 10), Math.max(36, cfg.radial - 28)),
+    metalMat(pal0.metal, pal0.emit)
+  );
+  const tenthMesh = new THREE.Mesh(
+    new THREE.TorusGeometry(tenthR, tenthTube, Math.max(8, cfg.tube - 8), Math.max(28, cfg.radial - 32)),
+    metalMat(pal0.metal, pal0.emit)
+  );
+  ninthGroup.add(ninthMesh);
+  tenthGroup.add(tenthMesh);
+  if (cfg.extra >= 1) scene.add(ninthGroup);
+  if (cfg.extra >= 2) scene.add(tenthGroup);
+
   const spokeMat = metalMat(pal0.metal, pal0.emit);
   const spokes = [];
+  const metalExtras = [ninthMesh, tenthMesh];
+  const gyros = [];
+
+  function addTrack(group, R, tube) {
+    const track = new THREE.Mesh(
+      new THREE.TorusGeometry(R * 0.76, Math.max(0.03, tube * 0.26), 8, Math.max(28, cfg.radial - 30)),
+      metalMat(pal0.metal, pal0.emit)
+    );
+    group.add(track);
+    metalExtras.push(track);
+  }
+
+  function addGyro(parent, R, tube) {
+    const g = new THREE.Group();
+    const mesh = new THREE.Mesh(
+      new THREE.TorusGeometry(R * 0.9, Math.max(0.04, tube * 0.42), Math.max(8, cfg.tube - 8), Math.max(32, cfg.radial - 24)),
+      metalMat(pal0.metal, pal0.emit)
+    );
+    g.rotation.x = Math.PI * 0.5;
+    g.add(mesh);
+    parent.add(g);
+    metalExtras.push(mesh);
+    gyros.push(g);
+    return g;
+  }
+
+  function addTeeth(group, R, tube, count) {
+    const geom = new THREE.BoxGeometry(0.055, tube * 2.15, 0.075);
+    const mesh = new THREE.InstancedMesh(geom, spokeMat, count);
+    const dummy = new THREE.Object3D();
+    for (let i = 0; i < count; i++) {
+      const a = (i / count) * Math.PI * 2;
+      dummy.position.set(Math.cos(a) * R, Math.sin(a) * R, 0);
+      dummy.lookAt(0, 0, 0);
+      dummy.rotateX(Math.PI * 0.5);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+    }
+    group.add(mesh);
+    spokes.push(mesh);
+  }
+
+  addTrack(outerGroup, outerR, outerTube);
+  addTrack(innerGroup, innerR, innerTube);
+  addTrack(thirdGroup, thirdR, thirdTube);
+  addGyro(outerGroup, outerR, outerTube);
+  addGyro(innerGroup, innerR, innerTube);
+  if (cfg.extra >= 1) {
+    addTrack(fifthGroup, fifthR, fifthTube);
+    addGyro(thirdGroup, thirdR, thirdTube);
+    addGyro(fifthGroup, fifthR, fifthTube);
+  }
+  addTeeth(outerGroup, outerR, outerTube, cfg.extra >= 2 ? 32 : cfg.extra >= 1 ? 24 : 14);
+  addTeeth(innerGroup, innerR, innerTube, cfg.extra >= 2 ? 22 : 14);
+  if (cfg.extra >= 1) addTeeth(thirdGroup, thirdR, thirdTube, 16);
+
   for (let i = 0; i < 16; i++) {
     const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.016, outerR * 2.05, 6), spokeMat);
     spoke.rotation.z = (i / 16) * Math.PI;
@@ -365,6 +443,12 @@ export function createEyeWheel(root) {
     innerGroup.add(spoke);
     spokes.push(spoke);
   }
+  for (let i = 0; i < 8; i++) {
+    const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.01, thirdR * 2.0, 5), spokeMat);
+    spoke.rotation.z = (i / 8) * Math.PI + 0.12;
+    thirdGroup.add(spoke);
+    spokes.push(spoke);
+  }
   for (let i = 0; i < 6; i++) {
     const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 6.2, 8), spokeMat);
     axle.rotation.z = (i / 6) * Math.PI;
@@ -372,6 +456,40 @@ export function createEyeWheel(root) {
     scene.add(axle);
     spokes.push(axle);
   }
+  for (let i = 0; i < 4; i++) {
+    const cross = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 5.4, 6), spokeMat);
+    cross.rotation.y = (i / 4) * Math.PI;
+    cross.rotation.x = 0.55 + (i % 2) * 0.35;
+    scene.add(cross);
+    spokes.push(cross);
+  }
+
+  const sinewGroup = new THREE.Group();
+  const sinewN = cfg.extra >= 2 ? 12 : 8;
+  for (let i = 0; i < sinewN; i++) {
+    const a = (i / sinewN) * Math.PI * 2;
+    const sinew = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.016, 0.72, 5), spokeMat);
+    sinew.position.set(Math.cos(a) * 2.0, Math.sin(a) * 0.08, Math.sin(a) * 2.0);
+    sinew.lookAt(0, 0, 0);
+    sinew.rotateX(Math.PI * 0.5);
+    sinewGroup.add(sinew);
+    spokes.push(sinew);
+  }
+  scene.add(sinewGroup);
+
+  const cage = new THREE.Group();
+  const cageN = cfg.extra >= 2 ? 3 : cfg.extra >= 1 ? 2 : 1;
+  for (let i = 0; i < cageN; i++) {
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(3.55 + i * 0.22, 0.028, 6, 42),
+      metalMat(pal0.metal, pal0.emit)
+    );
+    ring.rotation.x = 0.4 + i * 0.55;
+    ring.rotation.y = i * 0.7;
+    cage.add(ring);
+    metalExtras.push(ring);
+  }
+  scene.add(cage);
 
   const fire = new THREE.Mesh(
     new THREE.TorusGeometry(0.62, 0.08, 8, 28),
@@ -381,22 +499,87 @@ export function createEyeWheel(root) {
     new THREE.SphereGeometry(0.42, 14, 12),
     new THREE.MeshBasicMaterial({ color: 0xf0d078, transparent: true, opacity: 0.2 })
   );
-  scene.add(fire, hearth);
+  const fire2 = new THREE.Mesh(
+    new THREE.TorusGeometry(0.88, 0.045, 8, 24),
+    new THREE.MeshBasicMaterial({ color: 0xf0d078, transparent: true, opacity: 0.22 })
+  );
+  scene.add(fire, hearth, fire2);
+
+  const coalGroup = new THREE.Group();
+  const coalMat = new THREE.MeshBasicMaterial({ color: 0xf0d078, transparent: true, opacity: 0.38 });
+  const coalN = cfg.extra >= 2 ? 14 : cfg.extra >= 1 ? 9 : 5;
+  for (let i = 0; i < coalN; i++) {
+    const coal = new THREE.Mesh(new THREE.SphereGeometry(0.035 + throne.rng() * 0.045, 6, 5), coalMat);
+    const a = (i / coalN) * Math.PI * 2;
+    coal.position.set(Math.cos(a) * 0.52, (throne.rng() - 0.5) * 0.18, Math.sin(a) * 0.52);
+    coalGroup.add(coal);
+  }
+  scene.add(coalGroup);
 
   const faces = new THREE.Group();
   const faceMat = new THREE.MeshBasicMaterial({
     color: 0xc9a227,
     transparent: true,
-    opacity: 0.08,
+    opacity: 0.11,
     side: THREE.DoubleSide,
     depthWrite: false,
   });
-  for (let i = 0; i < 8; i++) {
-    const face = new THREE.Mesh(new THREE.CircleGeometry(0.42, 16), faceMat);
-    const a = (i / 8) * Math.PI * 2;
-    face.position.set(Math.cos(a) * 1.15, Math.sin(a * 2) * 0.4, Math.sin(a) * 1.15);
-    face.lookAt(0, 0, 0);
-    faces.add(face);
+  const faceSolid = metalMat(pal0.metal, pal0.emit);
+  faceSolid.transparent = true;
+  faceSolid.opacity = 0.55;
+  faceSolid.depthWrite = false;
+
+  function placeFace(group, a, lift) {
+    group.position.set(Math.cos(a) * 1.28, lift, Math.sin(a) * 1.28);
+    group.lookAt(0, 0, 0);
+    faces.add(group);
+  }
+
+  const man = new THREE.Group();
+  man.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), faceSolid));
+  const manEyeL = new THREE.Mesh(new THREE.CircleGeometry(0.045, 8), faceMat);
+  const manEyeR = manEyeL.clone();
+  manEyeL.position.set(-0.07, 0.04, 0.2);
+  manEyeR.position.set(0.07, 0.04, 0.2);
+  man.add(manEyeL, manEyeR);
+  placeFace(man, 0, 0.18);
+
+  const lion = new THREE.Group();
+  lion.add(new THREE.Mesh(new THREE.SphereGeometry(0.24, 10, 8), faceSolid));
+  const earL = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.14, 6), faceSolid);
+  const earR = earL.clone();
+  earL.position.set(-0.16, 0.16, 0.04);
+  earR.position.set(0.16, 0.16, 0.04);
+  earL.rotation.z = 0.4;
+  earR.rotation.z = -0.4;
+  lion.add(earL, earR);
+  placeFace(lion, Math.PI * 0.5, 0.12);
+
+  const ox = new THREE.Group();
+  ox.add(new THREE.Mesh(new THREE.SphereGeometry(0.26, 10, 8), faceSolid));
+  const hornL = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.22, 6), faceSolid);
+  const hornR = hornL.clone();
+  hornL.position.set(-0.14, 0.22, 0.02);
+  hornR.position.set(0.14, 0.22, 0.02);
+  hornL.rotation.z = 0.55;
+  hornR.rotation.z = -0.55;
+  ox.add(hornL, hornR);
+  placeFace(ox, Math.PI, 0.08);
+
+  const eagle = new THREE.Group();
+  eagle.add(new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), faceSolid));
+  const beak = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.2, 6), faceSolid);
+  beak.rotation.x = Math.PI * 0.5;
+  beak.position.set(0, -0.02, 0.22);
+  eagle.add(beak);
+  placeFace(eagle, Math.PI * 1.5, 0.22);
+
+  for (let i = 0; i < 4; i++) {
+    const ghost = new THREE.Mesh(new THREE.CircleGeometry(0.34, 14), faceMat);
+    const a = (i / 4) * Math.PI * 2 + 0.4;
+    ghost.position.set(Math.cos(a) * 1.05, Math.sin(a * 3) * 0.35, Math.sin(a) * 1.05);
+    ghost.lookAt(0, 0, 0);
+    faces.add(ghost);
   }
   scene.add(faces);
 
@@ -418,8 +601,23 @@ export function createEyeWheel(root) {
   eighthGroup.add(eighthEyes.mesh);
 
   const eyeFields = [outerEyes, innerEyes, thirdEyes, fourthEyes, fifthEyes, sixthEyes, seventhEyes, eighthEyes];
+  if (cfg.extra >= 1) {
+    const ninthEyes = makeEyeField(ninthR, ninthTube, Math.max(8, cfg.uSeg - 8), Math.max(5, cfg.vSeg - 5), 0.14);
+    ninthGroup.add(ninthEyes.mesh);
+    eyeFields.push(ninthEyes);
+  }
+  if (cfg.extra >= 2) {
+    const tenthEyes = makeEyeField(tenthR, tenthTube, Math.max(6, cfg.uSeg - 10), Math.max(4, cfg.vSeg - 6), 0.16);
+    tenthGroup.add(tenthEyes.mesh);
+    eyeFields.push(tenthEyes);
+    if (gyros[0]) {
+      const gyroEyes = makeEyeField(outerR * 0.9, outerTube * 0.42, Math.max(8, cfg.uSeg - 8), Math.max(5, cfg.vSeg - 5), 0.18);
+      gyros[0].add(gyroEyes.mesh);
+      eyeFields.push(gyroEyes);
+    }
+  }
 
-  const looseCount = cfg.host + 14;
+  const looseCount = cfg.host + 14 + (cfg.extra >= 1 ? 8 : 0);
   for (let i = 0; i < looseCount; i++) {
     const eye = new THREE.Mesh(
       new THREE.PlaneGeometry(0.28 + throne.rng() * 0.85, 0.14 + throne.rng() * 0.48),
@@ -443,12 +641,14 @@ export function createEyeWheel(root) {
     depthWrite: false,
     side: THREE.DoubleSide,
   });
-  for (let i = 0; i < 10; i++) {
-    const wing = new THREE.Mesh(new THREE.PlaneGeometry(5.1, 0.42 + (i % 3) * 0.12), wingMat.clone());
-    wing.rotation.y = (i / 10) * Math.PI * 2;
-    wing.rotation.z = 0.38 * ((i % 2) * 2 - 1);
-    wing.rotation.x = 0.18 * ((i % 3) - 1);
-    wing.position.y = ((i % 3) - 1) * 0.12;
+  const wingCount = cfg.extra >= 2 ? 16 : 12;
+  for (let i = 0; i < wingCount; i++) {
+    const wing = new THREE.Mesh(new THREE.PlaneGeometry(5.1 + (i % 4) * 0.35, 0.38 + (i % 3) * 0.14), wingMat.clone());
+    wing.rotation.y = (i / wingCount) * Math.PI * 2;
+    wing.rotation.z = 0.42 * ((i % 2) * 2 - 1);
+    wing.rotation.x = 0.2 * ((i % 3) - 1);
+    wing.position.y = ((i % 4) - 1.5) * 0.1;
+    wing.userData.veil = i % 3 === 0;
     wingGroup.add(wing);
   }
 
@@ -459,6 +659,44 @@ export function createEyeWheel(root) {
   const hubEye = new THREE.Mesh(hubGeom, hubMat);
   hubEye.visible = false;
   scene.add(hubEye);
+
+  const likenessSkin = new THREE.MeshBasicMaterial({
+    color: 0xc4a056,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+  });
+  const likenessShade = new THREE.MeshBasicMaterial({
+    color: 0x1a1008,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+  });
+  const boyEyeMat = outerEyes.mat.clone();
+  boyEyeMat.uniforms = THREE.UniformsUtils.clone(outerEyes.mat.uniforms);
+  const likenessGroup = new THREE.Group();
+  likenessGroup.visible = false;
+  const skull = new THREE.Mesh(new THREE.SphereGeometry(0.78, 18, 14), likenessSkin);
+  skull.scale.set(0.82, 1.06, 0.64);
+  const brow = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.045, 8, 20, Math.PI), likenessSkin);
+  brow.rotation.x = Math.PI;
+  brow.position.set(0, 0.22, 0.42);
+  brow.scale.set(1.05, 0.55, 0.8);
+  const boyEyeL = new THREE.Mesh(new THREE.PlaneGeometry(0.72, 0.38), boyEyeMat);
+  const boyEyeR = new THREE.Mesh(new THREE.PlaneGeometry(0.72, 0.38), boyEyeMat);
+  boyEyeL.position.set(-0.26, 0.12, 0.62);
+  boyEyeR.position.set(0.26, 0.12, 0.62);
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.16, 7), likenessSkin);
+  nose.rotation.x = Math.PI * 0.55;
+  nose.position.set(0, -0.02, 0.62);
+  const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.018, 8, 18, Math.PI * 1.05), likenessShade);
+  mouth.rotation.x = Math.PI * 0.55;
+  mouth.position.set(0, -0.28, 0.5);
+  mouth.scale.set(1.15, 0.45, 1);
+  likenessGroup.add(skull, brow, boyEyeL, boyEyeR, nose, mouth);
+  likenessGroup.position.set(0, 0.06, 1.45);
+  likenessGroup.renderOrder = 8;
+  scene.add(likenessGroup);
 
   const clock = new THREE.Clock();
   let outerAngle = 0;
@@ -478,6 +716,8 @@ export function createEyeWheel(root) {
     third: 1,
     fifth: 1,
     sixth: 1,
+    ninth: 1,
+    tenth: 1,
     wings: 0,
     hub: 0,
     fog: 0.01,
@@ -499,6 +739,13 @@ export function createEyeWheel(root) {
   let woundAge = 0;
   let bleeding = false;
   let bleedAge = 0;
+  let slain = false;
+  let slayAge = 0;
+  let likenessOn = false;
+  let likenessPhase = "idle";
+  let likenessAge = 0;
+  let likeness = 0;
+  let likenessNeedsRestore = false;
 
   function resize() {
     const w = root.clientWidth || window.innerWidth;
@@ -512,20 +759,25 @@ export function createEyeWheel(root) {
 
   function applyPalette(index, dt) {
     const pal = PALETTES[index];
-    const mats = [...eyeFields.map((f) => f.mat), hubMat];
+    const mats = [...eyeFields.map((f) => f.mat), hubMat, boyEyeMat];
     for (const m of mats) {
       m.uniforms.uIrisA.value.lerp(pal.irisA, Math.min(1, dt * 1.8));
       m.uniforms.uIrisB.value.lerp(pal.irisB, Math.min(1, dt * 1.8));
     }
-    for (const mesh of [outerMesh, innerMesh, thirdMesh, fourthMesh, fifthMesh, sixthMesh, seventhMesh, eighthMesh, ...spokes]) {
+    const tint = [outerMesh, innerMesh, thirdMesh, fourthMesh, fifthMesh, sixthMesh, seventhMesh, eighthMesh, ...spokes, ...metalExtras];
+    for (const mesh of tint) {
+      if (!mesh.material) continue;
       mesh.material.color.lerp(new THREE.Color(pal.metal), Math.min(1, dt * 1.2));
-      mesh.material.emissive.lerp(new THREE.Color(pal.emit), Math.min(1, dt * 1.2));
+      if (mesh.material.emissive) mesh.material.emissive.lerp(new THREE.Color(pal.emit), Math.min(1, dt * 1.2));
     }
+    faceSolid.color.lerp(new THREE.Color(pal.metal), Math.min(1, dt * 1.2));
+    if (faceSolid.emissive) faceSolid.emissive.lerp(new THREE.Color(pal.emit), Math.min(1, dt * 1.2));
+    likenessSkin.color.lerp(new THREE.Color(pal.metal).offsetHSL(0.02, 0.08, 0.12), Math.min(1, dt * 1.2));
     key.color.lerp(new THREE.Color(pal.metal), Math.min(1, dt));
   }
 
   function applyAspectUniforms() {
-    const mats = [...eyeFields.map((f) => f.mat), hubMat];
+    const mats = [...eyeFields.map((f) => f.mat), hubMat, boyEyeMat];
     for (const m of mats) {
       m.uniforms.uBlinkAllow.value = aspect.blink;
       m.uniforms.uLookGain.value = aspect.look * (throne.raptured ? 2.4 : 1);
@@ -550,53 +802,110 @@ export function createEyeWheel(root) {
     throne.time = t;
 
     const calm = throne.calm ? 1 : 0;
-    const spin = (throne.calm ? 0.08 : 1) * aspect.spin * (throne.raptured ? 1.65 : 1) * spinBoost * (1 + throne.fall * 6);
+    const rim = Math.max(0, Math.min(1, throne.rim ?? 0.37));
+    const rimSpin = (slain || throne.lore.offered || throne.raptured) ? 1 : (1.28 - rim * 0.42);
+    if (likenessOn && !slain && !offering) {
+      likenessAge += dt;
+      if (likenessPhase === "form") {
+        const u = Math.min(1, likenessAge / 5.8);
+        likeness = u * u * (3 - 2 * u);
+        if (u >= 1) {
+          likeness = 1;
+          likenessPhase = "hold";
+          likenessAge = 0;
+        }
+      } else if (likenessPhase === "hold") {
+        likeness = 1;
+        if (likenessAge > 6.2) {
+          likenessPhase = "fade";
+          likenessAge = 0;
+        }
+      } else if (likenessPhase === "fade") {
+        const u = Math.min(1, likenessAge / 22);
+        likeness = 1 - u * u * (3 - 2 * u);
+        if (u >= 1) {
+          likeness = 0;
+          likenessOn = false;
+          likenessPhase = "idle";
+        }
+      }
+    } else if (slain || offering) {
+      likenessOn = false;
+      likeness = 0;
+      likenessPhase = "idle";
+    }
 
-    outerGroup.rotation.y += dt * 0.35 * spin;
-    outerGroup.rotation.z += dt * 0.07 * spin;
-    outerGroup.rotation.x += dt * 0.03 * spin;
-    innerGroup.rotation.x += dt * 0.42 * spin;
-    innerGroup.rotation.y += dt * 0.11 * spin;
-    innerGroup.rotation.z += dt * 0.05 * spin;
-    thirdGroup.rotation.y += dt * 0.5 * spin;
-    thirdGroup.rotation.z += dt * 0.16 * spin;
-    fourthGroup.rotation.x += dt * 0.28 * spin;
-    fourthGroup.rotation.y += dt * -0.19 * spin;
-    fifthGroup.rotation.z += dt * 0.38 * spin;
-    fifthGroup.rotation.y += dt * 0.14 * spin;
-    sixthGroup.rotation.x += dt * -0.22 * spin;
-    sixthGroup.rotation.z += dt * 0.11 * spin;
-    seventhGroup.rotation.y += dt * 0.62 * spin;
-    seventhGroup.rotation.x += dt * 0.2 * spin;
-    eighthGroup.rotation.z += dt * -0.16 * spin;
-    eighthGroup.rotation.y += dt * 0.09 * spin;
-    fire.rotation.y += dt * 0.8 * spin;
-    fire.rotation.x = Math.sin(t * 0.6) * 0.4;
+    const grave = 0.42;
+    const spin = (throne.calm ? 0.08 : 1) * aspect.spin * (throne.raptured ? 1.2 : 1) * spinBoost * rimSpin * grave * (1 + throne.fall * 3.2) * (1 - likeness * 0.94);
+
+    outerGroup.rotation.y += dt * 0.16 * spin;
+    outerGroup.rotation.z += dt * 0.03 * spin;
+    outerGroup.rotation.x += dt * 0.014 * spin;
+    innerGroup.rotation.x += dt * 0.18 * spin;
+    innerGroup.rotation.y += dt * 0.05 * spin;
+    innerGroup.rotation.z += dt * 0.022 * spin;
+    thirdGroup.rotation.y += dt * 0.2 * spin;
+    thirdGroup.rotation.z += dt * 0.07 * spin;
+    fourthGroup.rotation.x += dt * 0.12 * spin;
+    fourthGroup.rotation.y += dt * -0.08 * spin;
+    fifthGroup.rotation.z += dt * 0.16 * spin;
+    fifthGroup.rotation.y += dt * 0.06 * spin;
+    sixthGroup.rotation.x += dt * -0.1 * spin;
+    sixthGroup.rotation.z += dt * 0.05 * spin;
+    seventhGroup.rotation.y += dt * 0.22 * spin;
+    seventhGroup.rotation.x += dt * 0.08 * spin;
+    eighthGroup.rotation.z += dt * -0.07 * spin;
+    eighthGroup.rotation.y += dt * 0.04 * spin;
+    ninthGroup.rotation.y += dt * 0.11 * spin;
+    ninthGroup.rotation.z += dt * -0.055 * spin;
+    tenthGroup.rotation.x += dt * 0.18 * spin;
+    tenthGroup.rotation.y += dt * -0.13 * spin;
+    gyros.forEach((g, i) => {
+      g.rotation.y += dt * 0.16 * spin * (i % 2 ? -1 : 1);
+      g.rotation.z += dt * 0.03 * spin;
+    });
+    cage.rotation.y += dt * 0.032 * spin;
+    cage.rotation.x += dt * 0.012 * Math.sin(t * 0.09);
+    sinewGroup.rotation.y += dt * 0.045 * spin;
+    sinewGroup.rotation.z = Math.sin(t * 0.11) * 0.05;
+    coalGroup.rotation.y += dt * 0.2 * Math.abs(spin);
+    coalGroup.children.forEach((c, i) => {
+      c.position.y = Math.sin(t * 0.55 + i * 0.4) * 0.05;
+    });
+    fire.rotation.y += dt * 0.22 * spin;
+    fire.rotation.x = Math.sin(t * 0.18) * 0.16;
+    fire2.rotation.y += dt * -0.16 * spin;
+    fire2.rotation.z = Math.sin(t * 0.14) * 0.1;
     const fireMul = aspect.fire || 1;
-    hearth.scale.setScalar((0.85 + Math.sin(t * 1.6) * 0.12) * Math.max(0.4, fireMul));
-    hearth.material.opacity = (0.14 + Math.abs(Math.sin(t * 2.1)) * 0.12) * fireMul;
-    fire.material.opacity = 0.22 * fireMul;
-    fire.scale.setScalar(0.75 + fireMul * 0.45);
-    faces.rotation.y += dt * 0.16 * spin;
-    looseGroup.rotation.y += dt * 0.12 * spin;
-    looseGroup.rotation.x = Math.sin(t * 0.21) * 0.35;
-    host.rotation.y += dt * 0.018 * Math.abs(spin);
-    const hostTarget = aspect.host || 1;
+    hearth.scale.setScalar((0.88 + Math.sin(t * 0.42) * 0.06) * Math.max(0.4, fireMul));
+    hearth.material.opacity = (0.14 + Math.abs(Math.sin(t * 0.55)) * 0.07) * fireMul;
+    fire.material.opacity = 0.2 * fireMul;
+    fire.scale.setScalar(0.78 + fireMul * 0.38);
+    fire2.material.opacity = 0.12 * fireMul;
+    fire2.scale.setScalar(0.74 + fireMul * 0.32);
+    coalMat.opacity = 0.18 * fireMul + Math.abs(Math.sin(t * 0.7)) * 0.1;
+    faces.rotation.y += dt * 0.06 * spin;
+    looseGroup.rotation.y += dt * 0.05 * spin;
+    looseGroup.rotation.x = Math.sin(t * 0.08) * 0.12;
+    host.rotation.y += dt * 0.01 * Math.abs(spin);
+    const hostTarget = (aspect.host || 1) * (slain ? 0.18 : (0.38 + rim * 1.95));
     host.scale.setScalar(host.scale.x + (hostTarget - host.scale.x) * Math.min(1, dt * 2));
     const hostOp = 0.05 + Math.min(0.28, hostTarget * 0.08);
     hostMat.opacity += (hostOp - hostMat.opacity) * Math.min(1, dt * 2);
     kernel.visible = !throne.lore.offered;
-    kernel.rotation.y += dt * 0.08;
-    kernel.position.y = Math.sin(t * 0.7) * 0.04;
-    pulseScale += (1 - pulseScale) * Math.min(1, dt * 4);
+    kernel.rotation.y += dt * 0.03;
+    kernel.position.y = Math.sin(t * 0.22) * 0.03;
+    pulseScale += (1 - pulseScale) * Math.min(1, dt * 0.65);
     const ps = pulseScale;
-    outerGroup.scale.setScalar(ps);
-    innerGroup.scale.setScalar(2 - ps);
+    if (!slain && !offering) {
+      outerGroup.scale.setScalar(ps);
+      innerGroup.scale.setScalar(2 - ps);
+    }
     if (wounding) {
       woundAge += dt;
-      scene.fog.color.lerp(new THREE.Color("#4a1020"), 0.1);
-      spinBoost = -2.6;
-      if (woundAge > 2.5) {
+      scene.fog.color.lerp(new THREE.Color("#4a1020"), 0.03);
+      spinBoost = -0.72;
+      if (woundAge > 5.2) {
         wounding = false;
         spinBoost = 1;
       }
@@ -606,54 +915,147 @@ export function createEyeWheel(root) {
       scene.fog.density += (0.1 - scene.fog.density) * 0.08;
       hubEye.visible = true;
       hubEye.lookAt(camera.position);
-      hubEye.scale.setScalar(Math.min(2.2, 0.4 + bleedAge * 0.5));
+      hubEye.scale.setScalar(Math.min(1.8, 0.4 + bleedAge * 0.16));
     }
     if (offering) {
       offerAge += dt;
-      const shrink = Math.max(0.16, 1 - offerAge * 0.14);
+      const shrink = Math.max(0.16, 1 - offerAge * 0.055);
       outerGroup.scale.setScalar(ps * shrink);
       innerGroup.scale.setScalar(Math.max(0.12, (2 - ps) * shrink));
-      fourthGroup.scale.setScalar(Math.min(1.15, 0.45 + offerAge * 0.14));
+      fourthGroup.scale.setScalar(Math.min(1.15, 0.45 + offerAge * 0.055));
       fifthGroup.scale.setScalar(Math.max(0.12, shrink));
       sixthGroup.scale.setScalar(Math.max(0.18, shrink * 0.9));
-      yaw += (0 - yaw) * Math.min(1, dt * 1.25);
-      pitch += (0.06 - pitch) * Math.min(1, dt * 1.25);
+      ninthGroup.scale.setScalar(Math.max(0.1, shrink));
+      tenthGroup.scale.setScalar(Math.max(0.1, shrink * 0.85));
+      cage.scale.setScalar(Math.max(0.12, shrink));
+      yaw += (0 - yaw) * Math.min(1, dt * 0.45);
+      pitch += (0.06 - pitch) * Math.min(1, dt * 0.45);
       scene.fog.density += (0.04 - scene.fog.density) * 0.05;
       scene.fog.color.lerp(new THREE.Color("#f3e6c4"), 0.03);
     }
-    spinBoost += (1 - spinBoost) * Math.min(1, dt * 1.8);
-    zNudge *= 0.92;
-    wingGroup.rotation.y += dt * 0.55 * Math.abs(spin);
-    wingGroup.rotation.x = Math.sin(t * 0.4) * 0.12;
+    if (slain) {
+      slayAge += dt;
+      const shrink = Math.max(0.05, 1 - slayAge * 0.08);
+      outerGroup.scale.setScalar(ps * shrink);
+      innerGroup.scale.setScalar(Math.max(0.06, (2 - ps) * shrink));
+      fifthGroup.scale.setScalar(Math.max(0.05, shrink * 0.7));
+      sixthGroup.scale.setScalar(Math.max(0.05, shrink * 0.55));
+      ninthGroup.scale.setScalar(Math.max(0.05, shrink * 0.6));
+      tenthGroup.scale.setScalar(Math.max(0.05, shrink * 0.5));
+      cage.scale.setScalar(Math.max(0.08, shrink * 0.4));
+      spinBoost = 0.02;
+      scene.fog.density += (0.09 - scene.fog.density) * 0.06;
+      scene.fog.color.lerp(new THREE.Color("#1a0608"), 0.04);
+    }
+    if (!slain) {
+      spinBoost += (1 - spinBoost) * Math.min(1, dt * 0.5);
+    }
+    zNudge *= 0.97;
+    if (likeness > 0.01) {
+      zNudge += (-1.05 * likeness - zNudge) * Math.min(1, dt * 0.4);
+      yaw += (0.015 - yaw) * Math.min(1, dt * 0.28 * likeness);
+      pitch += (0.045 - pitch) * Math.min(1, dt * 0.28 * likeness);
+    }
+    wingGroup.rotation.y += dt * 0.12 * Math.abs(spin);
+    wingGroup.rotation.x = Math.sin(t * 0.12) * 0.05;
 
     const thirdTarget = aspect.third;
     const s = thirdGroup.scale.x;
-    const next = s + (thirdTarget - s) * Math.min(1, dt * 3);
+    const next = s + (thirdTarget - s) * Math.min(1, dt * 0.85);
     thirdGroup.scale.setScalar(Math.max(0.001, next));
     if (!offering) {
-      const e5 = fifthGroup.scale.x + ((aspect.fifth || 1) - fifthGroup.scale.x) * Math.min(1, dt * 2.2);
-      const e6 = sixthGroup.scale.x + ((aspect.sixth || 1) - sixthGroup.scale.x) * Math.min(1, dt * 2.2);
+      const e5 = fifthGroup.scale.x + ((aspect.fifth || 1) - fifthGroup.scale.x) * Math.min(1, dt * 0.7);
+      const e6 = sixthGroup.scale.x + ((aspect.sixth || 1) - sixthGroup.scale.x) * Math.min(1, dt * 0.7);
+      const e9 = ninthGroup.scale.x + ((aspect.ninth == null ? 1 : aspect.ninth) - ninthGroup.scale.x) * Math.min(1, dt * 0.7);
+      const e10 = tenthGroup.scale.x + ((aspect.tenth == null ? 1 : aspect.tenth) - tenthGroup.scale.x) * Math.min(1, dt * 0.7);
       fifthGroup.scale.setScalar(Math.max(0.05, e5));
       sixthGroup.scale.setScalar(Math.max(0.05, e6));
-      const fogTarget = aspect.fog == null ? 0.01 : aspect.fog;
-      scene.fog.density += (fogTarget - scene.fog.density) * Math.min(1, dt * 1.3);
-      if (aspect.fogCol) scene.fog.color.lerp(aspect.fogCol, Math.min(1, dt * 1.4));
+      ninthGroup.scale.setScalar(Math.max(0.05, e9));
+      tenthGroup.scale.setScalar(Math.max(0.05, e10));
+      const cageTarget = slain ? 0.2 : 1;
+      cage.scale.setScalar(cage.scale.x + (cageTarget - cage.scale.x) * Math.min(1, dt * 0.55));
+      const rimFog = 0.0015 + rim * 0.064;
+      const fogTarget = slain
+        ? (aspect.fog == null ? 0.08 : aspect.fog)
+        : ((aspect.fog == null ? 0.01 : aspect.fog) * 0.32 + rimFog * 0.88);
+      scene.fog.density += (fogTarget - scene.fog.density) * Math.min(1, dt * 0.45);
+      if (aspect.fogCol) scene.fog.color.lerp(aspect.fogCol, Math.min(1, dt * 0.5));
     }
 
-    wingGroup.visible = !throne.calm && aspect.wings > 0.5;
-    wingGroup.scale.setScalar(aspect.wings > 0.5 ? 1.55 : 0.2);
-    const wingOp = aspect.wings > 0.5 ? 0.55 : 0;
+    wingGroup.visible = !throne.calm;
+    const wingUp = aspect.wings > 0.5;
+    wingGroup.scale.setScalar(wingUp ? 1.55 : 0.92);
+    const wingOp = wingUp ? 0.55 : 0.08;
     wingGroup.children.forEach((w) => {
-      if (w.material) w.material.opacity = wingOp;
+      if (w.material) w.material.opacity = w.userData.veil && !wingUp ? 0.12 : wingOp;
     });
-    hubEye.visible = aspect.hub > 0.5 || throne.lore.offered;
+    hubEye.visible = (aspect.hub > 0.5 || throne.lore.offered) && likeness < 0.12;
     if (hubEye.visible) {
       hubEye.lookAt(camera.position);
       if (throne.lore.offered) {
-        const grow = Math.min(2.7, 0.35 + offerAge * 0.55);
+        const grow = Math.min(2.2, 0.35 + offerAge * 0.22);
         hubEye.scale.setScalar(grow);
       } else {
-        hubEye.scale.setScalar(1 + (pulseScale - 1) * 2.4);
+        hubEye.scale.setScalar(1 + (pulseScale - 1) * 1.1);
+      }
+    }
+
+    const L = likeness;
+    if (L > 0.001 && !slain && !offering) {
+      outerGroup.scale.x *= (0.78 + (1 - L) * 0.22) * (1 - L * 0.18);
+      outerGroup.scale.y *= 1 + L * 0.38;
+      outerGroup.scale.z *= 1 - L * 0.72;
+      innerGroup.position.set(-0.5 * L, 0.28 * L, 1.2 * L);
+      innerGroup.scale.x *= 1 - L * 0.68;
+      innerGroup.scale.y *= 1 - L * 0.68;
+      innerGroup.scale.z *= 1 - L * 0.78;
+      thirdGroup.position.set(0.5 * L, 0.28 * L, 1.2 * L);
+      thirdGroup.scale.multiplyScalar(1 - L * 0.64);
+      fifthGroup.position.set(0, 0.02 * L, 1.35 * L);
+      fifthGroup.scale.multiplyScalar(1 - L * 0.74);
+      seventhGroup.position.set(0, -0.52 * L, 1.15 * L);
+      seventhGroup.scale.x *= 1 - L * 0.38;
+      seventhGroup.scale.y *= 1 - L * 0.82;
+      seventhGroup.scale.z *= 1 - L * 0.58;
+      fourthGroup.position.z = -0.45 * L;
+      fourthGroup.scale.multiplyScalar(1 - L * 0.4);
+      sixthGroup.position.z = -0.55 * L;
+      sixthGroup.scale.multiplyScalar(1 - L * 0.48);
+      eighthGroup.scale.multiplyScalar(1 - L * 0.35);
+      ninthGroup.scale.multiplyScalar(1 - L * 0.4);
+      tenthGroup.scale.multiplyScalar(1 - L * 0.45);
+      cage.scale.multiplyScalar(1 - L * 0.28);
+      faces.scale.setScalar(1 - L * 0.72);
+      looseGroup.scale.setScalar(1 - L * 0.55);
+      fire.position.y = -0.48 * L;
+      fire.scale.x *= 1 - L * 0.25;
+      fire.scale.y *= 1 - L * 0.7;
+      fire.material.opacity = (0.2 * (aspect.fire || 1)) * (1 - L * 0.55);
+      fire2.material.opacity = 0.12 * (aspect.fire || 1) * (1 - L * 0.7);
+      likenessGroup.visible = true;
+      likenessGroup.lookAt(camera.position);
+      likenessGroup.scale.setScalar(0.95 + L * 1.15);
+      likenessSkin.opacity = 0.4 + L * 0.52;
+      likenessShade.opacity = 0.35 + L * 0.5;
+      boyEyeL.scale.setScalar(0.7 + L * 0.55);
+      boyEyeR.scale.setScalar(0.7 + L * 0.55);
+      setRimPresence((aspect.presence || 1) * (1 - L * 0.88));
+    } else {
+      innerGroup.position.set(0, 0, 0);
+      thirdGroup.position.set(0, 0, 0);
+      fifthGroup.position.set(0, 0, 0);
+      seventhGroup.position.set(0, 0, 0);
+      fourthGroup.position.z = 0;
+      sixthGroup.position.z = 0;
+      fire.position.y = 0;
+      faces.scale.setScalar(1);
+      looseGroup.scale.setScalar(1);
+      likenessGroup.visible = false;
+      likenessSkin.opacity = 0;
+      likenessShade.opacity = 0;
+      if (likenessNeedsRestore) {
+        setRimPresence(aspect.presence || 1);
+        likenessNeedsRestore = false;
       }
     }
 
@@ -666,7 +1068,7 @@ export function createEyeWheel(root) {
     if (aspect.palLock >= 0) {
       paletteIndex = aspect.palLock;
     } else {
-      paletteMix += dt * (throne.calm ? 0.05 : 0.12);
+      paletteMix += dt * (throne.calm ? 0.02 : 0.035);
       if (paletteMix > 8) {
         paletteMix = 0;
         paletteIndex = (paletteIndex + 1) % PALETTES.length;
@@ -677,23 +1079,30 @@ export function createEyeWheel(root) {
     }
     applyPalette(paletteIndex, dt);
     applyAspectUniforms();
+    if (likeness > 0.2) {
+      boyEyeMat.uniforms.uBlinkAllow.value = 0;
+      boyEyeMat.uniforms.uLookGain.value = 2.4;
+    }
 
     const falling = throne.fall > 0.001;
+    const rimZ = 3.05 + rim * 11.6;
+    const rimBlend = (slain || offering || throne.lore.offered || falling || throne.raptured) ? 0 : 0.82;
+    const baseZ = throne.raptured ? 0.78 : (aspect.camZ * (1 - rimBlend) + rimZ * rimBlend);
     const radius = falling
       ? Math.max(0.06, (aspect.camZ + zNudge) * (1 - throne.fall) * 0.42)
-      : (throne.raptured ? 0.78 : aspect.camZ) + zNudge;
-    const fovTarget = falling ? 32 + throne.fall * 86 : (throne.raptured ? 88 : 48);
+      : baseZ + zNudge;
+    const fovTarget = falling ? 32 + throne.fall * 86 : (throne.raptured ? 88 : (48 - likeness * 7));
     camera.fov += (fovTarget - camera.fov) * (falling ? 0.12 : 0.05);
     camera.updateProjectionMatrix();
     const cp = Math.cos(pitch);
     const tx = Math.sin(yaw) * cp * radius;
     const ty = Math.sin(pitch) * radius * 0.7;
     const tz = Math.cos(yaw) * cp * radius;
-    const shake = throne.calm ? 0 : (throne.raptured ? 0.03 : 0.04);
-    const lx = tx + Math.sin(t * 0.17) * shake;
-    const ly = ty + Math.sin(t * 0.13) * shake * 0.5;
+    const shake = throne.calm ? 0 : (throne.raptured ? 0.01 : 0.014);
+    const lx = tx + Math.sin(t * 0.07) * shake;
+    const ly = ty + Math.sin(t * 0.05) * shake * 0.5;
     const lz = tz;
-    const ease = 0.32;
+    const ease = 0.1;
     camera.position.x += (lx - camera.position.x) * ease;
     camera.position.y += (ly - camera.position.y) * ease;
     camera.position.z += (lz - camera.position.z) * ease;
@@ -708,6 +1117,9 @@ export function createEyeWheel(root) {
     hubMat.uniforms.uTime.value = t;
     hubMat.uniforms.uMouse.value.copy(mouse);
     hubMat.uniforms.uCalm.value = calm;
+    boyEyeMat.uniforms.uTime.value = t;
+    boyEyeMat.uniforms.uMouse.value.copy(mouse);
+    boyEyeMat.uniforms.uCalm.value = calm;
 
     if (distantEye >= 0 && t > distantUntil) {
       outerEyes.alive[distantEye] = 1;
@@ -715,7 +1127,7 @@ export function createEyeWheel(root) {
       distantEye = -1;
     }
 
-    key.position.set(Math.sin(t * 0.4) * 0.4, Math.cos(t * 0.3) * 0.3, 0.2);
+    key.position.set(Math.sin(t * 0.12) * 0.22, Math.cos(t * 0.09) * 0.16, 0.2);
     renderer.render(scene, camera);
     requestAnimationFrame(tick);
   }
@@ -723,10 +1135,10 @@ export function createEyeWheel(root) {
   requestAnimationFrame(tick);
 
   return {
-    /** Punch-zoom used by Fear Not. */
+    /** A slow weight-shift when something is answered. */
     shudder() {
       if (throne.calm) return;
-      pulseScale = 1.28;
+      pulseScale = 1.07;
     },
     /** Slider-release: force a previously "closed" eye open larger for a few seconds. */
     openDistantEye() {
@@ -754,19 +1166,19 @@ export function createEyeWheel(root) {
       throne.raptured = !!on;
       document.documentElement.classList.toggle("raptured", !!on);
       scene.fog.density = on ? 0.14 : 0.022;
-      pulseScale = on ? 1.18 : 0.88;
+      pulseScale = on ? 1.06 : 0.96;
     },
     fallIn() {
       this.setAspect("unblinking");
-      spinBoost = 4.2;
-      pulseScale = 1.8;
+      spinBoost = 1.8;
+      pulseScale = 1.12;
       zNudge = -1.2;
       yaw = 0;
       pitch = 0;
       scene.fog.density = 0.002;
     },
     pulse() {
-      pulseScale = 1.22;
+      pulseScale = 1.045;
     },
     nudgeZ(delta) {
       zNudge = Math.max(-3.2, Math.min(7.4, zNudge + delta));
@@ -777,7 +1189,7 @@ export function createEyeWheel(root) {
     offer() {
       offering = true;
       offerAge = 0;
-      pulseScale = 1.35;
+      pulseScale = 1.08;
       zNudge = 0;
       scene.fog.density = 0.07;
       this.setAspect("offered");
@@ -785,8 +1197,8 @@ export function createEyeWheel(root) {
     wound() {
       wounding = true;
       woundAge = 0;
-      pulseScale = 1.52;
-      spinBoost = -2.8;
+      pulseScale = 1.08;
+      spinBoost = -0.72;
       scene.fog.density = 0.06;
       this.setAspect("inverted");
     },
@@ -799,22 +1211,46 @@ export function createEyeWheel(root) {
     showFace() {
       hubEye.visible = true;
       this.setAspect("name");
-      pulseScale = 1.3;
+      pulseScale = 1.06;
+    },
+    /** Wheels take a boy's look, hold it, then become wheels again. */
+    wearFace() {
+      if (slain || offering || throne.lore.offered) return;
+      likenessOn = true;
+      likenessPhase = "form";
+      likenessAge = 0;
+      likeness = 0;
+      likenessNeedsRestore = true;
+      pulseScale = 1.03;
+    },
+    slay() {
+      slain = true;
+      slayAge = 0;
+      offering = false;
+      wounding = false;
+      pulseScale = 0.42;
+      spinBoost = 0.02;
+      scene.fog.density = 0.08;
+      this.setAspect("slain");
     },
     /**
      * Rewrite the angel. Aspects change blink, gaze, extra rims, wings, hub eye, fog, fire, and spin.
      */
     setAspect(id) {
       const table = {
-        witness: { blink: 1, look: 1.15, pupil: 1.1, spin: 1, camZ: 7.6, third: 1, fifth: 1, sixth: 1, wings: 0, hub: 0, presence: 1, fog: 0.01, fire: 1, host: 1, palLock: -1, sclera: "#f3ebd6", fogCol: "#0c0912" },
-        unblinking: { blink: 0, look: 4.2, pupil: 2.2, spin: 0.18, camZ: 4.6, third: 1.25, fifth: 1.2, sixth: 0.7, wings: 0, hub: 0, presence: 1, fog: 0.002, fire: 0.2, host: 0.55, palLock: 1, sclera: "#ffffff", fogCol: "#1a1610" },
-        merkavah: { blink: 1, look: 1.7, pupil: 1.25, spin: 2.35, camZ: 9.4, third: 1.35, fifth: 1.55, sixth: 2.05, wings: 0, hub: 0, presence: 1, fog: 0.004, fire: 1.7, host: 3.2, palLock: 0, sclera: "#f0d078", fogCol: "#1a0c04" },
-        waters: { blink: 0.12, look: 0.35, pupil: 0.5, spin: 0.08, camZ: 10.4, third: 0.7, fifth: 1.85, sixth: 0.4, wings: 0, hub: 0, presence: 1, fog: 0.058, fire: 0.12, host: 0.25, palLock: 1, sclera: "#c8b8e0", fogCol: "#12081f" },
-        seraph: { blink: 1, look: 2.4, pupil: 1.35, spin: 2.5, camZ: 5.7, third: 1.2, fifth: 1.2, sixth: 1.15, wings: 1, hub: 0, presence: 1, fog: 0.005, fire: 3.4, host: 1.6, palLock: 1, sclera: "#fff6d8", fogCol: "#2a1008" },
-        inverted: { blink: 1, look: 2.4, pupil: 1.85, spin: -1.7, camZ: 5.8, third: 1, fifth: 1, sixth: 1.15, wings: 0, hub: 0, presence: 1, fog: 0.028, fire: 1.9, host: 0.7, palLock: 0, sclera: "#2a1014", fogCol: "#1a0608" },
-        name: { blink: 0, look: 3.4, pupil: 1.85, spin: 0.18, camZ: 5.6, third: 0.45, fifth: 0.4, sixth: 0.35, wings: 0, hub: 1, presence: 0.12, fog: 0.012, fire: 0.5, host: 0.3, palLock: 0, sclera: "#f4f1e8", fogCol: "#100c08" },
-        hush: { blink: 1, look: 0.15, pupil: 0.45, spin: 0.07, camZ: 10.2, third: 0.55, fifth: 0.5, sixth: 0.45, wings: 0, hub: 0, presence: 0.08, fog: 0.036, fire: 0.18, host: 0.22, palLock: 0, sclera: "#6a6048", fogCol: "#0a0808" },
-        offered: { blink: 1, look: 0.4, pupil: 0.75, spin: 0.04, camZ: 5.2, third: 0.16, fifth: 0.16, sixth: 0.16, wings: 0, hub: 1, presence: 0.1, fog: 0.02, fire: 0.22, host: 0.15, palLock: 1, sclera: "#fff8ea", fogCol: "#f3e6c4" },
+        witness: { blink: 1, look: 1.15, pupil: 1.1, spin: 1, camZ: 7.6, third: 1, fifth: 1, sixth: 1, ninth: 1, tenth: 1, wings: 0, hub: 0, presence: 1, fog: 0.01, fire: 1, host: 1, palLock: -1, sclera: "#f3ebd6", fogCol: "#0c0912" },
+        unblinking: { blink: 0, look: 4.2, pupil: 2.2, spin: 0.18, camZ: 4.6, third: 1.25, fifth: 1.2, sixth: 0.7, ninth: 1.15, tenth: 0.8, wings: 0, hub: 0, presence: 1, fog: 0.002, fire: 0.2, host: 0.55, palLock: 1, sclera: "#ffffff", fogCol: "#1a1610" },
+        merkavah: { blink: 1, look: 1.7, pupil: 1.25, spin: 2.35, camZ: 9.4, third: 1.35, fifth: 1.55, sixth: 2.05, ninth: 1.55, tenth: 1.7, wings: 0, hub: 0, presence: 1, fog: 0.004, fire: 1.7, host: 3.2, palLock: 0, sclera: "#f0d078", fogCol: "#1a0c04" },
+        waters: { blink: 0.12, look: 0.35, pupil: 0.5, spin: 0.08, camZ: 10.4, third: 0.7, fifth: 1.85, sixth: 0.4, ninth: 0.45, tenth: 0.35, wings: 0, hub: 0, presence: 1, fog: 0.058, fire: 0.12, host: 0.25, palLock: 1, sclera: "#c8b8e0", fogCol: "#12081f" },
+        seraph: { blink: 1, look: 2.4, pupil: 1.35, spin: 2.5, camZ: 5.7, third: 1.2, fifth: 1.2, sixth: 1.15, ninth: 1.25, tenth: 1.2, wings: 1, hub: 0, presence: 1, fog: 0.005, fire: 3.4, host: 1.6, palLock: 1, sclera: "#fff6d8", fogCol: "#2a1008" },
+        inverted: { blink: 1, look: 2.4, pupil: 1.85, spin: -1.7, camZ: 5.8, third: 1, fifth: 1, sixth: 1.15, ninth: 1.1, tenth: 1.2, wings: 0, hub: 0, presence: 1, fog: 0.028, fire: 1.9, host: 0.7, palLock: 0, sclera: "#2a1014", fogCol: "#1a0608" },
+        name: { blink: 0, look: 3.4, pupil: 1.85, spin: 0.18, camZ: 5.6, third: 0.45, fifth: 0.4, sixth: 0.35, ninth: 0.28, tenth: 0.22, wings: 0, hub: 1, presence: 0.12, fog: 0.012, fire: 0.5, host: 0.3, palLock: 0, sclera: "#f4f1e8", fogCol: "#100c08" },
+        hush: { blink: 1, look: 0.15, pupil: 0.45, spin: 0.07, camZ: 10.2, third: 0.55, fifth: 0.5, sixth: 0.45, ninth: 0.4, tenth: 0.35, wings: 0, hub: 0, presence: 0.08, fog: 0.036, fire: 0.18, host: 0.22, palLock: 0, sclera: "#6a6048", fogCol: "#0a0808" },
+        offered: { blink: 1, look: 0.4, pupil: 0.75, spin: 0.04, camZ: 5.2, third: 0.16, fifth: 0.16, sixth: 0.16, ninth: 0.14, tenth: 0.12, wings: 0, hub: 1, presence: 0.1, fog: 0.02, fire: 0.22, host: 0.15, palLock: 1, sclera: "#fff8ea", fogCol: "#f3e6c4" },
+        judged: { blink: 0.2, look: 3.1, pupil: 1.7, spin: -1.15, camZ: 6.2, third: 0.85, fifth: 0.7, sixth: 0.8, ninth: 0.75, tenth: 0.7, wings: 0, hub: 0, presence: 0.85, fog: 0.038, fire: 2.4, host: 0.45, palLock: 0, sclera: "#3a1014", fogCol: "#1c0608" },
+        praised: { blink: 1, look: 1.6, pupil: 1.2, spin: 1.8, camZ: 6.4, third: 1.15, fifth: 1.2, sixth: 1.1, ninth: 1.2, tenth: 1.15, wings: 1, hub: 0, presence: 1, fog: 0.006, fire: 2.8, host: 1.8, palLock: 1, sclera: "#fff4d4", fogCol: "#241408" },
+        slain: { blink: 0, look: 0.05, pupil: 0.3, spin: 0.01, camZ: 11.4, third: 0.2, fifth: 0.14, sixth: 0.12, ninth: 0.1, tenth: 0.08, wings: 0, hub: 0, presence: 0.04, fog: 0.07, fire: 0.04, host: 0.08, palLock: 0, sclera: "#2a1810", fogCol: "#080404" },
+        adversary: { blink: 1, look: 2.8, pupil: 1.95, spin: -2.2, camZ: 5.4, third: 1.1, fifth: 1.25, sixth: 1.3, ninth: 1.35, tenth: 1.4, wings: 0, hub: 1, presence: 1, fog: 0.022, fire: 2.6, host: 1.4, palLock: 0, sclera: "#4a1020", fogCol: "#140408" },
       };
       const next = table[id] || table.witness;
       aspect = {
@@ -827,6 +1263,8 @@ export function createEyeWheel(root) {
         third: next.third,
         fifth: next.fifth,
         sixth: next.sixth,
+        ninth: next.ninth == null ? 1 : next.ninth,
+        tenth: next.tenth == null ? 1 : next.tenth,
         wings: next.wings,
         hub: next.hub,
         fog: next.fog,
@@ -865,5 +1303,5 @@ export function createFallbackWheel(root) {
       <div style="width:min(70vw,520px);aspect-ratio:1;border:16px solid #8a5a22;border-radius:50%;
         box-shadow:0 0 28px #c9a22744, inset 0 0 40px #3d220855;"></div>
     </div>`;
-  return { shudder() {}, openDistantEye() {}, setPalette() {}, setAspect() {}, tilt() {}, orbit() {}, getOrbit() { return { yaw: 0, pitch: 0 }; }, setRapture() {}, pulse() {}, fallIn() {}, nudgeZ() {}, setSpinBoost() {}, offer() {}, wound() {}, bleed() {}, showFace() {}, dispose() {} };
+  return { shudder() {}, openDistantEye() {}, setPalette() {}, setAspect() {}, tilt() {}, orbit() {}, getOrbit() { return { yaw: 0, pitch: 0 }; }, setRapture() {}, pulse() {}, fallIn() {}, nudgeZ() {}, setSpinBoost() {}, offer() {}, wound() {}, bleed() {}, showFace() {}, wearFace() {}, slay() {}, dispose() {} };
 }
