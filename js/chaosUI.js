@@ -160,6 +160,7 @@ function restoreGlyphs(el) {
     span.style.transform = "";
   });
   el.style.transform = "";
+  el.classList.remove("tremor", "mirror", "invert-flash");
 }
 
 export function createChaosUI({ audio, wheel }) {
@@ -427,6 +428,12 @@ export function createChaosUI({ audio, wheel }) {
   window.addEventListener("throne:cycle", () => {
     audio.swell();
     wheel.pulse();
+    if (!throne.calm) {
+      document.body.classList.remove("cycle-kick");
+      void document.body.offsetWidth;
+      document.body.classList.add("cycle-kick");
+      window.setTimeout(() => document.body.classList.remove("cycle-kick"), 2400);
+    }
     if (throne.time > 14 || throne.lore.feared || throne.lore.fed) speakBlurb(1600);
   });
   window.addEventListener("throne:pulse", () => triggerPulse());
@@ -1043,14 +1050,19 @@ export function createChaosUI({ audio, wheel }) {
       if (now - lastGhostAt < 180) return;
       lastGhostAt = now;
       const r = el.getBoundingClientRect();
-      const ghost = document.createElement("p");
-      ghost.className = "flee-ghost";
-      ghost.textContent = el.textContent;
-      ghost.style.left = `${r.left + r.width * 0.5}px`;
-      ghost.style.top = `${r.top + r.height * 0.5}px`;
-      document.body.appendChild(ghost);
-      window.setTimeout(() => ghost.remove(), 1500);
+      const cx = r.left + r.width * 0.5;
+      const cy = r.top + r.height * 0.5;
+      [-1, 1].forEach((side) => {
+        const ghost = document.createElement("p");
+        ghost.className = "flee-ghost";
+        ghost.textContent = el.textContent;
+        ghost.style.left = `${cx + side * 18}px`;
+        ghost.style.top = `${cy}px`;
+        document.body.appendChild(ghost);
+        window.setTimeout(() => ghost.remove(), 1500);
+      });
       if (document.querySelectorAll(".flee-ghost").length > 8) {
+        document.querySelector(".flee-ghost")?.remove();
         document.querySelector(".flee-ghost")?.remove();
       }
     }
@@ -1380,7 +1392,7 @@ export function createChaosUI({ audio, wheel }) {
     document.body.classList.remove("pulse-on");
     void pulseEl?.offsetWidth;
     document.body.classList.add("pulse-on");
-    setTimeout(() => document.body.classList.remove("pulse-on"), 2400);
+    setTimeout(() => document.body.classList.remove("pulse-on"), 4200);
   }
 
   /**
@@ -1416,6 +1428,7 @@ export function createChaosUI({ audio, wheel }) {
     const NS = "http://www.w3.org/2000/svg";
     svg.innerHTML = "";
     const g = document.createElementNS(NS, "g");
+    g.setAttribute("class", "geo-net");
     g.setAttribute("fill", "none");
     g.setAttribute("stroke", "#c9a227");
     g.setAttribute("stroke-width", "0.12");
@@ -1459,15 +1472,21 @@ export function createChaosUI({ audio, wheel }) {
     vesicaB.setAttribute("cx", 58);
     g.appendChild(vesicaA);
     g.appendChild(vesicaB);
+    const ringsG = document.createElementNS(NS, "g");
+    ringsG.setAttribute("class", "geo-rims");
+    ringsG.setAttribute("fill", "none");
+    ringsG.setAttribute("stroke", "#c9a227");
+    ringsG.setAttribute("stroke-width", "0.12");
     [22, 34, 46].forEach((rr) => {
       const ring = document.createElementNS(NS, "circle");
       ring.setAttribute("cx", 50);
       ring.setAttribute("cy", 50);
       ring.setAttribute("r", rr);
       ring.setAttribute("stroke-opacity", "0.4");
-      g.appendChild(ring);
+      ringsG.appendChild(ring);
     });
     svg.appendChild(g);
+    svg.appendChild(ringsG);
   }
 
   // ----- Per-frame chaos (called from main RAF) -----
@@ -1554,16 +1573,25 @@ export function createChaosUI({ audio, wheel }) {
         }
         if (throne.rng() < 0.012) {
           const i = randInt(0, chars.length - 1);
-          chars[i].style.transform = `translate(${randRange(-0.4, 0.4)}px, ${randRange(-0.5, 0.5)}px)`;
+          const shake = el.classList.contains("tremor") ? 1.6 : 0.45;
+          chars[i].style.transform = `translate(${randRange(-shake, shake)}px, ${randRange(-shake * 1.2, shake * 1.2)}px)`;
         }
       });
     }
     if (!throne.calm && t > invertUntil && throne.rng() < 0.0006) {
       const el = glitchEls[randInt(0, Math.max(0, glitchEls.length - 1))];
-      if (el) el.style.opacity = "0.55";
+      if (el) {
+        el.classList.add("tremor");
+        if (throne.rng() < 0.5) el.classList.add("mirror");
+        else el.classList.add("invert-flash");
+      }
       invertUntil = t + 1800;
       setTimeout(() => {
-        if (el) el.style.opacity = "";
+        if (!el) return;
+        el.classList.remove("tremor", "mirror", "invert-flash");
+        el.querySelectorAll(".ch").forEach((span) => {
+          span.style.transform = "";
+        });
       }, 1600);
     }
     if (throne.calm) glitchEls.forEach(restoreGlyphs);
