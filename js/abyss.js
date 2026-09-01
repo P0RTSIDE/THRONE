@@ -171,10 +171,12 @@ export function createAbyss(canvas) {
   const uMood = gl.getUniformLocation(prog, "uMood");
   const uFall = gl.getUniformLocation(prog, "uFall");
 
-  const iters = throne.quality === "low" ? 48 : throne.quality === "high" ? 88 : 68;
+  const iters = throne.quality === "low" ? 32 : throne.quality === "high" ? 80 : 52;
   let mood = 0;
-  const dpr = throne.quality === "low" ? 0.65 : throne.quality === "high" ? 1 : 0.85;
+  const dpr = throne.quality === "low" ? 0.55 : throne.quality === "high" ? 1 : 0.75;
   let frozen = 0;
+  const skip = throne.quality === "low" ? 3 : throne.quality === "medium" ? 2 : 1;
+  let frame = 0;
 
   function resize() {
     const w = Math.max(1, Math.floor(window.innerWidth * dpr));
@@ -190,7 +192,9 @@ export function createAbyss(canvas) {
   return {
     tick(now) {
       if (!gl) return;
-      resize();
+      frame++;
+      const falling = (throne.fall || 0) > 0.001;
+      if (!falling && skip > 1 && frame % skip !== 0) return;
       const t = now * 0.001;
       if (throne.calm && !frozen) frozen = t;
       if (!throne.calm) frozen = 0;

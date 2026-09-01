@@ -137,13 +137,14 @@ const EYE_FRAG = /* glsl */ `
 `;
 
 function qualityConfig(q) {
+  const native = window.devicePixelRatio || 1;
   if (q === "low") {
-    return { uSeg: 14, vSeg: 8, tube: 14, radial: 40, dpr: 1, glow: false, host: 3, extra: 0 };
+    return { uSeg: 12, vSeg: 6, tube: 10, radial: 32, dpr: Math.min(0.85, native), glow: false, host: 2, extra: 0, eyeSeg: 12 };
   }
   if (q === "high") {
-    return { uSeg: 28, vSeg: 16, tube: 26, radial: 88, dpr: Math.min(2, window.devicePixelRatio || 1), glow: true, host: 7, extra: 2 };
+    return { uSeg: 28, vSeg: 16, tube: 24, radial: 80, dpr: Math.min(1.5, native), glow: true, host: 7, extra: 2, eyeSeg: 24 };
   }
-  return { uSeg: 22, vSeg: 12, tube: 18, radial: 64, dpr: Math.min(1.5, window.devicePixelRatio || 1), glow: true, host: 5, extra: 1 };
+  return { uSeg: 18, vSeg: 9, tube: 14, radial: 48, dpr: Math.min(1.15, native), glow: false, host: 4, extra: 0, eyeSeg: 16 };
 }
 
 /** Place an eye on a torus, facing along the surface normal. */
@@ -156,9 +157,9 @@ function torusPoint(R, r, u, v, target, normal) {
   normal.set(cv * cu, cv * su, sv).normalize();
 }
 
-function makeEyeField(R, r, uSeg, vSeg, eyeSize) {
+function makeEyeField(R, r, uSeg, vSeg, eyeSize, eyeSeg = 16) {
   const count = uSeg * vSeg * 2;
-  const geom = new THREE.CircleGeometry(eyeSize * 0.5, 28);
+  const geom = new THREE.CircleGeometry(eyeSize * 0.5, eyeSeg);
   const mat = new THREE.ShaderMaterial({
     uniforms: {
       uTime: { value: 0 },
@@ -229,7 +230,11 @@ export function createEyeWheel(root) {
   const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 90);
   camera.position.set(0, 0.35, 7.6);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: cfg.dpr > 1, alpha: true, powerPreference: "high-performance" });
+  const renderer = new THREE.WebGLRenderer({
+    antialias: throne.quality === "high" && cfg.dpr <= 1.05,
+    alpha: true,
+    powerPreference: throne.quality === "low" ? "low-power" : "high-performance",
+  });
   renderer.setPixelRatio(cfg.dpr);
   renderer.setClearColor(0x0c0912, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -637,14 +642,15 @@ export function createEyeWheel(root) {
   }
   scene.add(faces);
 
-  const outerEyes = makeEyeField(outerR, outerTube, cfg.uSeg, cfg.vSeg, 0.34);
-  const innerEyes = makeEyeField(innerR, innerTube, Math.max(12, cfg.uSeg - 2), Math.max(8, cfg.vSeg - 1), 0.32);
-  const thirdEyes = makeEyeField(thirdR, thirdTube, Math.max(10, cfg.uSeg - 4), Math.max(7, cfg.vSeg - 2), 0.28);
-  const fourthEyes = makeEyeField(fourthR, fourthTube, Math.max(10, cfg.uSeg - 6), Math.max(6, cfg.vSeg - 3), 0.2);
-  const fifthEyes = makeEyeField(fifthR, fifthTube, Math.max(8, cfg.uSeg - 8), Math.max(6, cfg.vSeg - 4), 0.22);
-  const sixthEyes = makeEyeField(sixthR, sixthTube, Math.max(8, cfg.uSeg - 8), Math.max(5, cfg.vSeg - 5), 0.16);
-  const seventhEyes = makeEyeField(seventhR, seventhTube, Math.max(6, cfg.uSeg - 10), Math.max(5, cfg.vSeg - 5), 0.2);
-  const eighthEyes = makeEyeField(eighthR, eighthTube, Math.max(6, cfg.uSeg - 10), Math.max(4, cfg.vSeg - 6), 0.12);
+  const es = cfg.eyeSeg;
+  const outerEyes = makeEyeField(outerR, outerTube, cfg.uSeg, cfg.vSeg, 0.34, es);
+  const innerEyes = makeEyeField(innerR, innerTube, Math.max(8, cfg.uSeg - 2), Math.max(5, cfg.vSeg - 1), 0.32, es);
+  const thirdEyes = makeEyeField(thirdR, thirdTube, Math.max(7, cfg.uSeg - 4), Math.max(4, cfg.vSeg - 2), 0.28, es);
+  const fourthEyes = makeEyeField(fourthR, fourthTube, Math.max(6, cfg.uSeg - 6), Math.max(4, cfg.vSeg - 3), 0.2, es);
+  const fifthEyes = makeEyeField(fifthR, fifthTube, Math.max(6, cfg.uSeg - 8), Math.max(4, cfg.vSeg - 4), 0.22, es);
+  const sixthEyes = makeEyeField(sixthR, sixthTube, Math.max(5, cfg.uSeg - 8), Math.max(3, cfg.vSeg - 5), 0.16, es);
+  const seventhEyes = makeEyeField(seventhR, seventhTube, Math.max(5, cfg.uSeg - 10), Math.max(3, cfg.vSeg - 5), 0.2, es);
+  const eighthEyes = makeEyeField(eighthR, eighthTube, Math.max(4, cfg.uSeg - 10), Math.max(3, cfg.vSeg - 6), 0.12, es);
   outerGroup.add(outerEyes.mesh);
   innerGroup.add(innerEyes.mesh);
   thirdGroup.add(thirdEyes.mesh);
@@ -656,16 +662,16 @@ export function createEyeWheel(root) {
 
   const eyeFields = [outerEyes, innerEyes, thirdEyes, fourthEyes, fifthEyes, sixthEyes, seventhEyes, eighthEyes];
   if (cfg.extra >= 1) {
-    const ninthEyes = makeEyeField(ninthR, ninthTube, Math.max(8, cfg.uSeg - 8), Math.max(5, cfg.vSeg - 5), 0.14);
+    const ninthEyes = makeEyeField(ninthR, ninthTube, Math.max(6, cfg.uSeg - 8), Math.max(3, cfg.vSeg - 5), 0.14, es);
     ninthGroup.add(ninthEyes.mesh);
     eyeFields.push(ninthEyes);
   }
   if (cfg.extra >= 2) {
-    const tenthEyes = makeEyeField(tenthR, tenthTube, Math.max(6, cfg.uSeg - 10), Math.max(4, cfg.vSeg - 6), 0.16);
+    const tenthEyes = makeEyeField(tenthR, tenthTube, Math.max(5, cfg.uSeg - 10), Math.max(3, cfg.vSeg - 6), 0.16, es);
     tenthGroup.add(tenthEyes.mesh);
     eyeFields.push(tenthEyes);
     if (gyros[0]) {
-      const gyroEyes = makeEyeField(outerR * 0.9, outerTube * 0.42, Math.max(8, cfg.uSeg - 8), Math.max(5, cfg.vSeg - 5), 0.18);
+      const gyroEyes = makeEyeField(outerR * 0.9, outerTube * 0.42, Math.max(6, cfg.uSeg - 8), Math.max(3, cfg.vSeg - 5), 0.18, es);
       gyros[0].add(gyroEyes.mesh);
       eyeFields.push(gyroEyes);
     }
@@ -804,9 +810,12 @@ export function createEyeWheel(root) {
   };
   let spinBoost = 1;
   let zNudge = 0;
+  let viewRadius = 7.6;
   let pulseScale = 1;
   let yaw = 0.22;
   let pitch = 0.1;
+  let adaptDpr = cfg.dpr;
+  let slowStreak = 0;
   let offerAge = 0;
   let offering = false;
   let wounding = false;
@@ -826,6 +835,21 @@ export function createEyeWheel(root) {
   let ascended = false;
   let ascendAge = 0;
 
+  function placeOrbitCamera(radius, shakeAmt) {
+    const cp = Math.cos(pitch);
+    const tx = Math.sin(yaw) * cp * radius;
+    const ty = Math.sin(pitch) * radius * 0.7;
+    const tz = Math.cos(yaw) * cp * radius;
+    const dist = Math.hypot(tx, ty, tz) || 1;
+    const s = radius / dist;
+    camera.position.set(
+      tx * s + Math.sin(throne.time * 0.07) * shakeAmt,
+      ty * s + Math.sin(throne.time * 0.05) * shakeAmt * 0.5,
+      tz * s
+    );
+    camera.lookAt(0, 0, 0);
+  }
+
   function resize() {
     const w = root.clientWidth || window.innerWidth;
     const h = root.clientHeight || window.innerHeight;
@@ -834,6 +858,7 @@ export function createEyeWheel(root) {
     renderer.setSize(w, h);
   }
   resize();
+  placeOrbitCamera(viewRadius, 0);
   window.addEventListener("resize", resize);
 
   function applyPalette(index, dt) {
@@ -1055,7 +1080,9 @@ export function createEyeWheel(root) {
     if (!slain) {
       spinBoost += (1 - spinBoost) * Math.min(1, dt * 0.5);
     }
-    zNudge *= ascended ? 0.82 : 0.97;
+    if (!document.body.classList.contains("gazing")) {
+      zNudge *= ascended ? 0.82 : 0.97;
+    }
     if (likeness > 0.01 && !ascended) {
       zNudge += (-1.05 * likeness - zNudge) * Math.min(1, dt * 0.4);
       yaw += (0.015 - yaw) * Math.min(1, dt * 0.28 * likeness);
@@ -1223,25 +1250,20 @@ export function createEyeWheel(root) {
       const rimZ = 3.05 + rim * 11.6;
       const rimBlend = (slain || offering || throne.lore.offered || falling || throne.raptured) ? 0 : 0.82;
       const baseZ = throne.raptured ? 0.78 : (aspect.camZ * (1 - rimBlend) + rimZ * rimBlend);
-      const radius = falling
+      const targetRadius = falling
         ? Math.max(0.06, (aspect.camZ + zNudge) * (1 - throne.fall) * 0.42)
         : baseZ + zNudge;
+      const gazing = document.body.classList.contains("gazing");
+      if (!gazing || falling) {
+        viewRadius += (targetRadius - viewRadius) * (falling ? 0.12 : 0.08);
+      }
       const fovTarget = falling ? 32 + throne.fall * 86 : (throne.raptured ? 88 : (48 - likeness * 7));
-      camera.fov += (fovTarget - camera.fov) * (falling ? 0.12 : 0.05);
-      camera.updateProjectionMatrix();
-      const cp = Math.cos(pitch);
-      const tx = Math.sin(yaw) * cp * radius;
-      const ty = Math.sin(pitch) * radius * 0.7;
-      const tz = Math.cos(yaw) * cp * radius;
-      const shake = throne.calm ? 0 : (throne.raptured ? 0.01 : 0.014);
-      const lx = tx + Math.sin(t * 0.07) * shake;
-      const ly = ty + Math.sin(t * 0.05) * shake * 0.5;
-      const lz = tz;
-      const ease = 0.1;
-      camera.position.x += (lx - camera.position.x) * ease;
-      camera.position.y += (ly - camera.position.y) * ease;
-      camera.position.z += (lz - camera.position.z) * ease;
-      camera.lookAt(0, 0, 0);
+      if (!gazing || falling) {
+        camera.fov += (fovTarget - camera.fov) * (falling ? 0.12 : 0.05);
+        camera.updateProjectionMatrix();
+      }
+      const shake = (gazing || throne.calm) ? 0 : (throne.raptured ? 0.01 : 0.014);
+      placeOrbitCamera(viewRadius, shake);
     }
 
     const mouse = new THREE.Vector2(throne.mouse.ndcX, throne.mouse.ndcY);
@@ -1290,6 +1312,16 @@ export function createEyeWheel(root) {
 
     key.position.set(Math.sin(t * 0.12) * 0.22, Math.cos(t * 0.09) * 0.16, 0.2);
     renderer.render(scene, camera);
+    if (!falling && t > 2 && dt > 0.033) {
+      slowStreak++;
+      if (slowStreak > 24 && adaptDpr > 0.7) {
+        adaptDpr = Math.max(0.7, Math.round(adaptDpr * 0.88 * 100) / 100);
+        renderer.setPixelRatio(adaptDpr);
+        slowStreak = 0;
+      }
+    } else {
+      slowStreak = Math.max(0, slowStreak - 2);
+    }
     requestAnimationFrame(tick);
   }
 

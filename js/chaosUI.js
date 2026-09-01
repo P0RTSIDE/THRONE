@@ -258,7 +258,7 @@ export function createChaosUI({ audio, wheel }) {
     throne.mouse.ndcX = (e.clientX / window.innerWidth) * 2 - 1;
     throne.mouse.ndcY = -(e.clientY / window.innerHeight) * 2 + 1;
     if (throne.calm || coarse || !throne.entered) return;
-    if (particles.length < (throne.quality === "low" ? 12 : 22)) {
+    if (particles.length < (throne.quality === "low" ? 0 : throne.quality === "high" ? 18 : 10)) {
       particles.push({
         x: e.clientX,
         y: e.clientY,
@@ -1561,7 +1561,7 @@ export function createChaosUI({ audio, wheel }) {
         const chars = el.querySelectorAll(".ch");
         const orig = el.dataset.original || "";
         if (!chars.length) return;
-        if (throne.rng() < 0.014) {
+        if (throne.rng() < (throne.quality === "low" ? 0.004 : 0.014)) {
           const i = randInt(0, chars.length - 1);
           chars[i].textContent = SIGILS[randInt(0, SIGILS.length - 1)];
         }
@@ -1629,7 +1629,7 @@ export function createChaosUI({ audio, wheel }) {
     }
 
     // Occasional ambient strobe (still 420ms gated).
-    if (!throne.calm && throne.rng() < 0.003) maybeStrobe(false);
+    if (!throne.calm && throne.quality !== "low" && throne.rng() < 0.003) maybeStrobe(false);
 
     if (!throne.calm && throne.entered) {
       if (!nextBlurbAt) nextBlurbAt = t + 4000;
@@ -1640,7 +1640,7 @@ export function createChaosUI({ audio, wheel }) {
     }
 
     // Cursor trail.
-    if (ctx2d && trail && !throne.calm && !coarse) {
+    if (ctx2d && trail && !throne.calm && !coarse && throne.quality !== "low") {
       ctx2d.clearRect(0, 0, trail.width, trail.height);
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
