@@ -3,8 +3,8 @@
  *
  * What this file does:
  *   1. Many interlocking eyed wheels in three.js: gyros inside rims, gear teeth, sinews, a cage, coals, four living faces, spokes, axles, loose eyes, a hearth, and wings.
- *   2. Instanced almond-eyes covering each rim. Each eye blinks on its own phase, dilates slowly,
- *      and the pupil tracks the cursor via a cheap NDC offset in the vertex shader.
+ *   2. Instanced almond-eyes set into each rim, not hovering over the metal. Each eye blinks on its
+ *      own phase, dilates slowly, and the pupil tracks the cursor via a cheap NDC offset.
  *   3. Attendant aspects rewrite spin, fog, fire, wings, blink, and rim scale so the change is visible.
  *   4. A distant eye can be opened (rim slider release) by boosting one instance's scale.
  *   5. Dispatches `throne:cycle` when the outer wheel wraps 2π so audio can swell (volume-capped).
@@ -54,7 +54,13 @@ const EYE_VERT = /* glsl */ `
     vec2 ndc = clipCenter.xy / max(abs(clipCenter.w), 0.0001);
     vLook = (uMouse - ndc) * (1.0 - uCalm * 0.7) * uLookGain;
 
-    vec3 pos = position * mix(0.15, 1.0, aAlive);
+    vec2 xy = uv * 2.0 - 1.0;
+    float rad2 = clamp(dot(xy, xy), 0.0, 1.0);
+    float eyeR = 1.0;
+    if (length(xy) > 0.06) eyeR = length(position.xy) / length(xy);
+    vec3 pos = position;
+    pos.z -= (1.0 - rad2) * eyeR * 0.55;
+    pos *= mix(0.18, 1.0, aAlive);
     gl_Position = projectionMatrix * modelViewMatrix * im * vec4(pos, 1.0);
   }
 `;
@@ -87,31 +93,51 @@ const EYE_FRAG = /* glsl */ `
     float yScale = mix(1.0, 10.0, blink);
     vec2 e = vec2(uv.x, uv.y * yScale);
 
-    float almondY = mix(1.72, 1.38, uWeep * step(0.0, e.y));
-    float almond = length(vec2(e.x * 1.02, e.y * almondY));
+    float almondY = mix(1.78, 1.4, uWeep * step(0.0, e.y));
+    float almond = length(vec2(e.x * 1.06, e.y * almondY));
     if (almond > 1.0) discard;
-    float edge = smoothstep(1.0, 0.78, almond);
+    float socket = smoothstep(0.58, 1.0, almond);
+    float edge = smoothstep(1.0, 0.8, almond);
 
-    vec3 sclera = mix(uSclera, vec3(0.93, 0.86, 0.68), 0.35);
+    vec3 bronze = vec3(0.24, 0.14, 0.05);
+    vec3 sclera = mix(uSclera, vec3(0.93, 0.86, 0.68), 0.28);
     sclera = mix(sclera, vec3(0.42, 0.12, 0.12), uWeep * 0.55);
-    vec2 look = clamp(vLook * 0.18, vec2(-0.22), vec2(0.22));
-    look.y *= 0.6;
+    float veinA = sin((e.x * 9.4 + e.y * 2.2 + vPhase) * 11.0);
+    float veinB = sin((e.x * 4.0 - e.y * 7.1 + vPhase * 3.0) * 8.0);
+    float veins = pow(max(0.0, veinA * 0.55 + veinB * 0.45), 10.0) * 0.18;
+    sclera = mix(sclera, vec3(0.58, 0.16, 0.14), veins * (1.0 - uCalm * 0.45));
+
+    vec2 look = clamp(vLook * 0.16, vec2(-0.2), vec2(0.2));
+    look.y *= 0.55;
     vec2 irisUv = e - look;
     float ir = length(irisUv);
+    float ang = atan(irisUv.y, irisUv.x);
 
-    vec3 iris = mix(uIrisA, uIrisB, 0.45 + 0.2 * sin(vPhase * 6.0));
-    float irisMask = smoothstep(0.52, 0.42, ir);
+    float fibers = 0.52
+      + 0.28 * sin(ang * 32.0 + vPhase * 7.0)
+      + 0.16 * sin(ang * 17.0 - vPhase * 5.0 + ir * 8.0)
+      + 0.1 * sin(ir * 46.0 + ang * 5.0);
+    vec3 iris = mix(uIrisA, uIrisB, clamp(0.3 + 0.42 * fibers, 0.0, 1.0));
+    iris *= 0.74 + 0.26 * fibers;
+    float irisMask = smoothstep(0.5, 0.34, ir);
+    float limbus = smoothstep(0.32, 0.45, ir) * smoothstep(0.54, 0.4, ir);
+    iris = mix(iris, bronze * 0.5, limbus * 0.9);
+
     vec3 col = mix(sclera, iris, irisMask);
 
-    float hatch = sin(ir * 18.0 + vPhase) * 0.06;
-    col += iris * hatch * irisMask;
-
-    float pupilR = 0.16 * vDilate;
+    float pupilR = 0.15 * vDilate;
     float pupil = smoothstep(pupilR + 0.02, pupilR - 0.01, ir);
-    col = mix(col, vec3(0.07, 0.03, 0.02), pupil);
+    float collarette = smoothstep(pupilR + 0.068, pupilR + 0.018, ir) * (1.0 - pupil);
+    col = mix(col, vec3(0.035, 0.012, 0.008), pupil);
+    col += iris * collarette * 0.2;
 
-    float spec = smoothstep(0.08, 0.0, length(irisUv - vec2(-0.1, 0.12)));
-    col += vec3(0.85, 0.75, 0.4) * spec * 0.45 * (1.0 - blink);
+    float spec = smoothstep(0.065, 0.0, length(irisUv - vec2(-0.11, 0.13)));
+    spec += smoothstep(0.032, 0.0, length(irisUv - vec2(0.08, 0.05))) * 0.42;
+    col += vec3(0.92, 0.82, 0.48) * spec * 0.55 * (1.0 - blink);
+
+    float crease = smoothstep(0.06, 0.52, e.y) * smoothstep(0.94, 0.5, almond) * (1.0 - irisMask * 0.4);
+    col = mix(col, bronze * 1.2, crease * 0.48);
+    col = mix(col, bronze, socket * 0.95);
 
     float well = smoothstep(0.12, 0.62, e.y) * smoothstep(0.98, 0.52, almond);
     col = mix(col, vec3(0.38, 0.07, 0.09), well * uWeep * 0.72);
@@ -127,12 +153,11 @@ const EYE_FRAG = /* glsl */ `
     drop *= cry * uWeep * step(0.02, dropY) * (1.0 - blink);
     col += vec3(0.55, 0.12, 0.1) * drop;
 
-    vec3 rim = mix(vec3(0.55, 0.38, 0.1), iris, 0.3);
-    col = mix(rim, col, edge);
+    col += vec3(0.32, 0.2, 0.07) * pow(1.0 - socket, 2.2) * 0.14;
     col *= 1.0 - blink * 0.7;
     col += vec3(0.4, 0.12, 0.1) * spec * uWeep * 0.5;
 
-    gl_FragColor = vec4(col, edge);
+    gl_FragColor = vec4(col, 1.0);
   }
 `;
 
@@ -156,9 +181,9 @@ function torusPoint(R, r, u, v, target, normal) {
   normal.set(cv * cu, cv * su, sv).normalize();
 }
 
-function makeEyeField(R, r, uSeg, vSeg, eyeSize) {
+function makeEyeField(R, r, uSeg, vSeg, sizeMul = 1) {
   const count = uSeg * vSeg * 2;
-  const geom = new THREE.CircleGeometry(eyeSize * 0.5, 20);
+  const geom = new THREE.CircleGeometry(1, 40);
   const mat = new THREE.ShaderMaterial({
     uniforms: {
       uTime: { value: 0 },
@@ -174,9 +199,12 @@ function makeEyeField(R, r, uSeg, vSeg, eyeSize) {
     },
     vertexShader: EYE_VERT,
     fragmentShader: EYE_FRAG,
-    alphaTest: 0.14,
-    transparent: true,
-    depthWrite: false,
+    alphaTest: 0.52,
+    transparent: false,
+    depthWrite: true,
+    polygonOffset: true,
+    polygonOffsetFactor: 1,
+    polygonOffsetUnits: 1,
     side: THREE.DoubleSide,
   });
 
@@ -192,18 +220,18 @@ function makeEyeField(R, r, uSeg, vSeg, eyeSize) {
 
   let i = 0;
   for (let side = 0; side < 2; side++) {
-    const inward = side === 1;
+    const faceV = side === 0 ? Math.PI * 0.5 : Math.PI * 1.5;
     for (let iu = 0; iu < uSeg; iu++) {
       for (let iv = 0; iv < vSeg; iv++) {
-        const u = ((iu + (inward ? 0.35 : 0)) / uSeg) * Math.PI * 2;
-        const v = ((iv + (inward ? 0.2 : 0)) / vSeg) * Math.PI * 2;
+        const u = ((iu + side * 0.35 + (iv % 2) * 0.18) / uSeg) * Math.PI * 2;
+        const v = faceV + ((iv / Math.max(vSeg, 1)) - 0.45) * 0.5;
         torusPoint(R, r, u, v, pos, nrm);
-        const face = inward ? nrm.clone().negate() : nrm;
-        dummy.position.copy(pos).addScaledVector(face, r * 0.2);
+        dummy.position.copy(pos).addScaledVector(nrm, -r * 0.18);
         dummy.up.copy(up);
-        dummy.lookAt(pos.clone().add(face));
-        dummy.rotateZ((throne.rng() - 0.5) * 0.8);
-        dummy.scale.set(0.45 + throne.rng() * 0.95, 0.28 + throne.rng() * 0.55, 1);
+        dummy.lookAt(pos.clone().add(nrm));
+        dummy.rotateZ((throne.rng() - 0.5) * 0.12);
+        const span = r * (0.9 + throne.rng() * 0.12) * sizeMul;
+        dummy.scale.set(span, span * 0.54, 1);
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
         phases[i] = throne.rng();
@@ -637,14 +665,14 @@ export function createEyeWheel(root) {
   }
   scene.add(faces);
 
-  const outerEyes = makeEyeField(outerR, outerTube, cfg.uSeg, cfg.vSeg, 0.34);
-  const innerEyes = makeEyeField(innerR, innerTube, Math.max(12, cfg.uSeg - 2), Math.max(8, cfg.vSeg - 1), 0.32);
-  const thirdEyes = makeEyeField(thirdR, thirdTube, Math.max(10, cfg.uSeg - 4), Math.max(7, cfg.vSeg - 2), 0.28);
-  const fourthEyes = makeEyeField(fourthR, fourthTube, Math.max(10, cfg.uSeg - 6), Math.max(6, cfg.vSeg - 3), 0.2);
-  const fifthEyes = makeEyeField(fifthR, fifthTube, Math.max(8, cfg.uSeg - 8), Math.max(6, cfg.vSeg - 4), 0.22);
-  const sixthEyes = makeEyeField(sixthR, sixthTube, Math.max(8, cfg.uSeg - 8), Math.max(5, cfg.vSeg - 5), 0.16);
-  const seventhEyes = makeEyeField(seventhR, seventhTube, Math.max(6, cfg.uSeg - 10), Math.max(5, cfg.vSeg - 5), 0.2);
-  const eighthEyes = makeEyeField(eighthR, eighthTube, Math.max(6, cfg.uSeg - 10), Math.max(4, cfg.vSeg - 6), 0.12);
+  const outerEyes = makeEyeField(outerR, outerTube, cfg.uSeg, cfg.vSeg, 1.08);
+  const innerEyes = makeEyeField(innerR, innerTube, Math.max(12, cfg.uSeg - 2), Math.max(8, cfg.vSeg - 1), 1.04);
+  const thirdEyes = makeEyeField(thirdR, thirdTube, Math.max(10, cfg.uSeg - 4), Math.max(7, cfg.vSeg - 2), 1.08);
+  const fourthEyes = makeEyeField(fourthR, fourthTube, Math.max(10, cfg.uSeg - 6), Math.max(6, cfg.vSeg - 3), 1.12);
+  const fifthEyes = makeEyeField(fifthR, fifthTube, Math.max(8, cfg.uSeg - 8), Math.max(6, cfg.vSeg - 4), 1.1);
+  const sixthEyes = makeEyeField(sixthR, sixthTube, Math.max(8, cfg.uSeg - 8), Math.max(5, cfg.vSeg - 5), 1.18);
+  const seventhEyes = makeEyeField(seventhR, seventhTube, Math.max(6, cfg.uSeg - 10), Math.max(5, cfg.vSeg - 5), 1.14);
+  const eighthEyes = makeEyeField(eighthR, eighthTube, Math.max(6, cfg.uSeg - 10), Math.max(4, cfg.vSeg - 6), 1.22);
   outerGroup.add(outerEyes.mesh);
   innerGroup.add(innerEyes.mesh);
   thirdGroup.add(thirdEyes.mesh);
@@ -656,38 +684,21 @@ export function createEyeWheel(root) {
 
   const eyeFields = [outerEyes, innerEyes, thirdEyes, fourthEyes, fifthEyes, sixthEyes, seventhEyes, eighthEyes];
   if (cfg.extra >= 1) {
-    const ninthEyes = makeEyeField(ninthR, ninthTube, Math.max(8, cfg.uSeg - 8), Math.max(5, cfg.vSeg - 5), 0.14);
+    const ninthEyes = makeEyeField(ninthR, ninthTube, Math.max(8, cfg.uSeg - 8), Math.max(5, cfg.vSeg - 5), 1.16);
     ninthGroup.add(ninthEyes.mesh);
     eyeFields.push(ninthEyes);
   }
   if (cfg.extra >= 2) {
-    const tenthEyes = makeEyeField(tenthR, tenthTube, Math.max(6, cfg.uSeg - 10), Math.max(4, cfg.vSeg - 6), 0.16);
+    const tenthEyes = makeEyeField(tenthR, tenthTube, Math.max(6, cfg.uSeg - 10), Math.max(4, cfg.vSeg - 6), 1.12);
     tenthGroup.add(tenthEyes.mesh);
     eyeFields.push(tenthEyes);
     if (gyros[0]) {
-      const gyroEyes = makeEyeField(outerR * 0.9, outerTube * 0.42, Math.max(8, cfg.uSeg - 8), Math.max(5, cfg.vSeg - 5), 0.18);
+      const gyroEyes = makeEyeField(outerR * 0.9, outerTube * 0.42, Math.max(8, cfg.uSeg - 8), Math.max(5, cfg.vSeg - 5), 1.1);
       gyros[0].add(gyroEyes.mesh);
       eyeFields.push(gyroEyes);
     }
   }
 
-  const looseCount = cfg.host + 14 + (cfg.extra >= 1 ? 8 : 0);
-  for (let i = 0; i < looseCount; i++) {
-    const eye = new THREE.Mesh(
-      new THREE.CircleGeometry(0.11 + throne.rng() * 0.26, 16),
-      outerEyes.mat
-    );
-    const a = throne.rng() * Math.PI * 2;
-    const b = throne.rng() * Math.PI;
-    const rad = 1.1 + throne.rng() * 2.4;
-    eye.position.set(Math.cos(a) * Math.sin(b) * rad, Math.cos(b) * rad * 0.7, Math.sin(a) * Math.sin(b) * rad);
-    eye.lookAt(0, 0, 0);
-    eye.scale.y = 0.5 + throne.rng() * 0.2;
-    if (throne.rng() > 0.5) eye.rotateZ(throne.rng() * 6);
-    looseGroup.add(eye);
-  }
-
-  // Six light-wings: hidden unless the fire attendant is called.
   const wingMat = new THREE.MeshBasicMaterial({
     color: 0xf0d078,
     transparent: true,
@@ -709,11 +720,11 @@ export function createEyeWheel(root) {
   }
 
   // One hub eye for the "true name" aspect.
-  const hubGeom = new THREE.CircleGeometry(1.18, 28);
+  const hubGeom = new THREE.CircleGeometry(1, 48);
   const hubMat = outerEyes.mat.clone();
   hubMat.uniforms = THREE.UniformsUtils.clone(outerEyes.mat.uniforms);
   const hubEye = new THREE.Mesh(hubGeom, hubMat);
-  hubEye.scale.set(1, 0.62, 1);
+  hubEye.scale.set(1.18, 0.73, 1);
   hubEye.visible = false;
   scene.add(hubEye);
 
@@ -739,10 +750,10 @@ export function createEyeWheel(root) {
   brow.rotation.x = Math.PI;
   brow.position.set(0, 0.22, 0.42);
   brow.scale.set(1.05, 0.55, 0.8);
-  const boyEyeL = new THREE.Mesh(new THREE.CircleGeometry(0.3, 18), boyEyeMat);
-  const boyEyeR = new THREE.Mesh(new THREE.CircleGeometry(0.3, 18), boyEyeMat);
-  boyEyeL.scale.set(1, 0.58, 1);
-  boyEyeR.scale.set(1, 0.58, 1);
+  const boyEyeL = new THREE.Mesh(new THREE.CircleGeometry(1, 32), boyEyeMat);
+  const boyEyeR = new THREE.Mesh(new THREE.CircleGeometry(1, 32), boyEyeMat);
+  boyEyeL.scale.set(0.3, 0.174, 1);
+  boyEyeR.scale.set(0.3, 0.174, 1);
   boyEyeL.position.set(-0.26, 0.12, 0.62);
   boyEyeR.position.set(0.26, 0.12, 0.62);
   const nose = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.16, 7), likenessSkin);
