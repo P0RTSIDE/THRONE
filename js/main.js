@@ -58,7 +58,7 @@ import { createAbyss } from "./abyss.js";
     } catch (err) {
       console.warn("[THRONE] audio could not start", err);
     }
-    showCaption("Fear Not is at the bottom. Carry the knife to the fire. Write Isaac in Petition if you want his face.", 10000);
+    showCaption("you came to bring him back. the hill is still in your hands.", 8000);
     arg.onEntered();
     setTimeout(() => {
       veil?.setAttribute("hidden", "true");
