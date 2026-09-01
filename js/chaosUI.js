@@ -203,35 +203,21 @@ export function createChaosUI({ audio, wheel }) {
   wirePlaneDrag();
   wireCarry(audio, wheel);
 
+  let fallStart = 0;
+  let fallReload = false;
+
   function overwhelm() {
-    if (throne.lore.offered || document.documentElement.classList.contains("overwhelmed")) return;
-    document.documentElement.classList.add("overwhelmed");
-    const death = document.getElementById("death");
-    if (death) death.hidden = false;
+    if (throne.lore.offered || document.documentElement.classList.contains("falling")) return;
+    document.documentElement.classList.add("falling");
+    throne.lore.lock = true;
+    throne.fall = 0.001;
+    fallStart = performance.now();
+    fallReload = false;
     audio.scream?.();
-    wheel.setAspect?.("unblinking");
-    wheel.setSpinBoost?.(3.4);
+    wheel.fallIn?.();
     comprehension = 99;
-    showCaption("too long. it poured the count into you.", 4200);
-    maybeStrobe(true);
+    showCaption("it took you inward", 2800);
   }
-
-  function wakeFromDeath() {
-    document.documentElement.classList.remove("overwhelmed");
-    const death = document.getElementById("death");
-    if (death) death.hidden = true;
-    stareMs = 0;
-    stareWarned = false;
-    stareCool = performance.now() + 8000;
-    wheel.setSpinBoost?.(1);
-    wheel.setAspect?.("witness");
-    showCaption("look away sooner. the wheels keep what they take.", 4200);
-  }
-
-  document.getElementById("death-wake")?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    wakeFromDeath();
-  });
 
   // ----- Cursor + particles -----
   window.addEventListener("pointermove", (e) => {
@@ -722,9 +708,9 @@ export function createChaosUI({ audio, wheel }) {
     });
 
     window.addEventListener("pointerdown", (e) => {
-      if (!throne.entered || e.button !== 0) return;
+      if (!throne.entered || e.button !== 0 || document.documentElement.classList.contains("falling")) return;
       const el = e.target instanceof Element ? e.target : null;
-      if (el?.closest(".hud-safe, .veil, .mouth, .fear-not, .plane, .witness, .dock, .world-relic, .self-hand, .carrying, .death, button, input, textarea, label, a")) return;
+      if (el?.closest(".hud-safe, .veil, .mouth, .fear-not, .plane, .witness, .dock, .world-relic, .self-hand, .carrying, .fall-white, button, input, textarea, label, a")) return;
       down = true;
       lastX = e.clientX;
       lastY = e.clientY;
@@ -753,7 +739,7 @@ export function createChaosUI({ audio, wheel }) {
     window.addEventListener("pointercancel", endGaze);
 
     window.addEventListener("wheel", (e) => {
-      if (!throne.entered || throne.calm) return;
+      if (!throne.entered || throne.calm || document.documentElement.classList.contains("falling")) return;
       if (e.target.closest(".hud-safe")) return;
       e.preventDefault();
       wheel.nudgeZ(e.deltaY * 0.007);
@@ -1142,7 +1128,19 @@ export function createChaosUI({ audio, wheel }) {
   }
 
   function tickChaos(t) {
-    if (throne.entered && !throne.lore.offered && !document.documentElement.classList.contains("overwhelmed")) {
+    if (document.documentElement.classList.contains("falling") && fallStart) {
+      const u = (t - fallStart) / 7800;
+      throne.fall = Math.max(0.001, Math.min(1, u));
+      if (throne.fall > 0.58) document.documentElement.classList.add("falling-white");
+      if (throne.fall >= 1 && !fallReload) {
+        fallReload = true;
+        window.setTimeout(() => {
+          window.location.reload();
+        }, 700);
+      }
+    }
+
+    if (throne.entered && !throne.lore.offered && !document.documentElement.classList.contains("falling")) {
       const cx = window.innerWidth * 0.5;
       const cy = window.innerHeight * 0.48;
       const reach = Math.min(window.innerWidth, window.innerHeight) * 0.2;
