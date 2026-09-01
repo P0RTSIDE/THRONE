@@ -20,33 +20,36 @@ uniform vec2 uLook;
 uniform float uCalm;
 uniform float uIters;
 uniform float uMood;
+uniform float uFall;
 
 vec2 square(vec2 z) {
   return vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y);
 }
 
 void main() {
+  float clock = uTime * (1.0 + uFall * uFall * 42.0);
   vec2 uv = (gl_FragCoord.xy - 0.5 * uRes) / min(uRes.x, uRes.y);
-  uv += uLook * 0.035;
+  uv += uLook * 0.035 * (1.0 - uFall);
 
-  float turn = uTime * 0.011;
+  float turn = clock * 0.011;
   float ca = cos(turn);
   float sa = sin(turn);
   uv = vec2(ca * uv.x - sa * uv.y, sa * uv.x + ca * uv.y);
 
-  vec2 drift = vec2(sin(uTime * 0.0073), cos(uTime * 0.0058)) * 0.16;
-  float sc = 1.22 + 0.1 * sin(uTime * 0.009);
-  if (uCalm > 0.5) {
+  vec2 drift = vec2(sin(clock * 0.0073), cos(clock * 0.0058)) * 0.16 * (1.0 - uFall * 0.85);
+  float sc = 1.22 + 0.1 * sin(clock * 0.009);
+  sc /= exp(uFall * uFall * 5.8);
+  if (uCalm > 0.5 && uFall < 0.01) {
     sc = 1.22;
     drift *= 0.15;
   }
 
-  float path = uTime * 0.0054;
+  float path = clock * 0.0054;
   float th = 2.15 + path + 0.55 * sin(path * 0.41);
   vec2 cWalk = 0.28 * vec2(cos(th), sin(th)) + vec2(-0.76, 0.09);
   vec2 cPretty = vec2(-0.745429, 0.113008);
   vec2 cShip = vec2(-1.25, 0.045);
-  float pick = 0.5 + 0.5 * sin(uTime * 0.0047);
+  float pick = 0.5 + 0.5 * sin(clock * 0.0047);
   vec2 c = mix(mix(cPretty, cWalk, 0.62), cShip, pick * 0.18);
 
   vec2 z = (uv + drift) * sc;
@@ -89,7 +92,7 @@ void main() {
   float ring = 1.0 - smoothstep(0.0, 0.18, trapC);
   float vein = 1.0 - smoothstep(0.0, 0.1, mTrap);
   float interior = 1.0 - smoothstep(0.0, 0.45, minR);
-  float stripes = 0.5 + 0.5 * sin(atan(last.y, last.x) * 7.0 + uTime * 0.16);
+  float stripes = 0.5 + 0.5 * sin(atan(last.y, last.x) * 7.0 + clock * 0.16);
   float edge = pow(max(t, mt * 0.85), 0.38);
 
   vec3 voidc = vec3(0.028, 0.016, 0.04);
@@ -113,6 +116,7 @@ void main() {
   col += accent * (fil * 0.2 + vein * 0.12);
   col = mix(col, voidc, smoothstep(0.92, 1.0, t) * 0.15 * (1.0 - fil));
   col *= mix(1.0, 0.7, uCalm);
+  col = mix(col, vec3(1.0), smoothstep(0.38, 0.98, uFall));
   gl_FragColor = vec4(col, 1.0);
 }
 `;
@@ -165,6 +169,7 @@ export function createAbyss(canvas) {
   const uCalm = gl.getUniformLocation(prog, "uCalm");
   const uIters = gl.getUniformLocation(prog, "uIters");
   const uMood = gl.getUniformLocation(prog, "uMood");
+  const uFall = gl.getUniformLocation(prog, "uFall");
 
   const iters = throne.quality === "low" ? 48 : throne.quality === "high" ? 88 : 68;
   let mood = 0;
@@ -214,6 +219,7 @@ export function createAbyss(canvas) {
       const targetMood = moodId[throne.aspect] == null ? 0 : moodId[throne.aspect];
       mood += (targetMood - mood) * 0.012;
       gl.uniform1f(uMood, mood);
+      gl.uniform1f(uFall, throne.fall || 0);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     },
     dispose() {
