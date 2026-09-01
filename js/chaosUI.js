@@ -364,13 +364,17 @@ export function createChaosUI({ audio, wheel }) {
         return;
       }
       if (dragging) {
-        const nest = home.parent || document.getElementById("firmament");
-        if (nest && btn.parentElement !== nest) nest.appendChild(btn);
-        btn.style.position = "";
-        btn.style.left = home.left;
-        btn.style.top = home.top;
-        btn.style.bottom = home.bottom;
-        btn.style.transform = home.transform;
+        if (btn.parentElement !== document.body) document.body.appendChild(btn);
+        btn.style.position = "fixed";
+        btn.style.bottom = "auto";
+        btn.style.left = `${e.clientX}px`;
+        btn.style.top = `${e.clientY}px`;
+        btn.style.transform = "translate(-50%, -50%)";
+        home.parent = document.body;
+        home.left = btn.style.left;
+        home.top = btn.style.top;
+        home.bottom = "auto";
+        home.transform = "translate(-50%, -50%)";
         dragging = false;
         return;
       }
@@ -591,6 +595,21 @@ export function createChaosUI({ audio, wheel }) {
     return [a, b].filter(Boolean).sort().join("|");
   }
 
+  function parkInField(el, clientX, clientY) {
+    const field = document.getElementById("relic-field");
+    if (!field) return;
+    el.classList.remove("carrying");
+    if (el.parentElement !== field) field.appendChild(el);
+    const box = field.getBoundingClientRect();
+    const leftPct = ((clientX - box.left) / Math.max(box.width, 1)) * 100;
+    const topPct = ((clientY - box.top) / Math.max(box.height, 1)) * 100;
+    el.style.position = "";
+    el.style.left = `${Math.max(1.5, Math.min(98.5, leftPct)).toFixed(2)}%`;
+    el.style.top = `${Math.max(1.5, Math.min(98.5, topPct)).toFixed(2)}%`;
+    el.style.transform = "";
+    el.style.margin = "";
+  }
+
   function spawnCrafted(id, label, x, y, extraClass) {
     const field = document.getElementById("relic-field");
     if (!field) return null;
@@ -660,8 +679,10 @@ export function createChaosUI({ audio, wheel }) {
       let dragging = false;
       let grabX = 0;
       let grabY = 0;
-      const homeLeft = btn.style.left;
-      const homeTop = btn.style.top;
+      let lastX = 0;
+      let lastY = 0;
+      let homeLeft = btn.style.left;
+      let homeTop = btn.style.top;
       const homeParent = btn.parentElement;
 
       function restore() {
@@ -674,11 +695,19 @@ export function createChaosUI({ audio, wheel }) {
         btn.style.margin = "";
       }
 
+      function park(x, y) {
+        parkInField(btn, x, y);
+        homeLeft = btn.style.left;
+        homeTop = btn.style.top;
+      }
+
       function beginCarry(e) {
         e.stopPropagation();
         downAt = performance.now();
         startX = e.clientX;
         startY = e.clientY;
+        lastX = e.clientX;
+        lastY = e.clientY;
         const box = btn.getBoundingClientRect();
         grabX = e.clientX - (box.left + box.width * 0.5);
         grabY = e.clientY - (box.top + box.height * 0.5);
@@ -690,6 +719,8 @@ export function createChaosUI({ audio, wheel }) {
 
       function moveCarry(e) {
         if (!downAt) return;
+        lastX = e.clientX;
+        lastY = e.clientY;
         if (Math.hypot(e.clientX - startX, e.clientY - startY) > 10) {
           dragging = true;
           if (btn.parentElement !== document.body) document.body.appendChild(btn);
@@ -736,7 +767,7 @@ export function createChaosUI({ audio, wheel }) {
           if (nearEl(mouth, e.clientX, e.clientY, 1.6)) target = "angel";
           else if (nearEl(hand, e.clientX, e.clientY, 1.6)) target = "self";
           else if (id === "wood" && nearEl(fire, e.clientX, e.clientY, 1.4)) target = "fire";
-          restore();
+          park(e.clientX, e.clientY);
           dragging = false;
           if (target) {
             window.dispatchEvent(new CustomEvent("throne:use", { detail: { id, target } }));
@@ -762,8 +793,9 @@ export function createChaosUI({ audio, wheel }) {
       btn.addEventListener("pointerup", endCarry);
       btn.addEventListener("pointercancel", () => {
         downAt = 0;
+        if (dragging && lastX) park(lastX, lastY);
+        else restore();
         dragging = false;
-        restore();
       });
       btn.addEventListener("mousedown", beginCarry);
       btn.addEventListener("mouseup", endCarry);
