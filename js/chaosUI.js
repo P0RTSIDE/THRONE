@@ -3,9 +3,8 @@
  *
  * Map of effects:
  *   glitchText     — invented glyphs, tremble, brief mirror/invert; restored in Calm Mode
- *   layoutSwap     — unobserved panels trade places on a seeded interval
- *   nav            — every item scrolls to a random section
- *   fearNot        — shudder + spawn three smaller copies (capped)
+ *   nav            — each item opens the named window
+ *   fearNot        — shudder + one smaller copy (capped)
  *   petition       — modal "witnessed" then immediately closes
  *   rimSlider      — no live change; on release, a distant eye opens / palette snaps
  *   comprehension  — fills, resets, never reaches 100
@@ -14,7 +13,7 @@
  *   days counter   — absurd ticking number
  *   cursor trail   — decaying eye/sparks (skipped on coarse pointers)
  *   sacred geometry— Metatron-ish linework + vesica, counter-rotating
- *   strobe         — single-frame black/white, NEVER more than ~2.5 flashes/sec
+ *   strobe         — single-frame black/white, NEVER more than ~2.4 flashes/sec
  *   wing pulse     — slow radial wash from center
  */
 
@@ -269,6 +268,13 @@ export function createChaosUI({ audio, wheel }) {
     let startY = 0;
     let dragging = false;
     let holdTimer = 0;
+    const home = {
+      parent: btn.parentElement,
+      left: btn.style.left || "50%",
+      top: btn.style.top || "auto",
+      bottom: btn.style.bottom || (btn.classList.contains("spawned") ? "auto" : "16px"),
+      transform: btn.style.transform || (btn.classList.contains("spawned") ? "" : "translateX(-50%)"),
+    };
 
     btn.addEventListener("pointerdown", (e) => {
       e.stopPropagation();
@@ -287,10 +293,12 @@ export function createChaosUI({ audio, wheel }) {
       if (dist > 14) {
         dragging = true;
         clearTimeout(holdTimer);
+        if (btn.parentElement !== document.body) document.body.appendChild(btn);
         btn.classList.add("dragging");
+        btn.style.position = "fixed";
+        btn.style.bottom = "auto";
         btn.style.left = `${e.clientX}px`;
         btn.style.top = `${e.clientY}px`;
-        btn.style.position = "fixed";
         btn.style.transform = "translate(-50%, -50%)";
       }
     });
@@ -302,6 +310,17 @@ export function createChaosUI({ audio, wheel }) {
       if (btn.classList.contains("unmaking")) return;
       if (dragging && nearMouth(e.clientX, e.clientY)) {
         consumeFear(btn);
+        dragging = false;
+        return;
+      }
+      if (dragging) {
+        const nest = home.parent || document.getElementById("firmament");
+        if (nest && btn.parentElement !== nest) nest.appendChild(btn);
+        btn.style.position = "";
+        btn.style.left = home.left;
+        btn.style.top = home.top;
+        btn.style.bottom = home.bottom;
+        btn.style.transform = home.transform;
         dragging = false;
         return;
       }
@@ -450,15 +469,20 @@ export function createChaosUI({ audio, wheel }) {
       let startX = 0;
       let startY = 0;
       let dragging = false;
+      let grabX = 0;
+      let grabY = 0;
       const homeLeft = btn.style.left;
       const homeTop = btn.style.top;
+      const homeParent = btn.parentElement;
 
       function restore() {
         btn.classList.remove("carrying");
+        if (homeParent && btn.parentElement !== homeParent) homeParent.appendChild(btn);
         btn.style.position = "";
         btn.style.left = homeLeft;
         btn.style.top = homeTop;
         btn.style.transform = "";
+        btn.style.margin = "";
       }
 
       function beginCarry(e) {
@@ -466,6 +490,9 @@ export function createChaosUI({ audio, wheel }) {
         downAt = performance.now();
         startX = e.clientX;
         startY = e.clientY;
+        const box = btn.getBoundingClientRect();
+        grabX = e.clientX - (box.left + box.width * 0.5);
+        grabY = e.clientY - (box.top + box.height * 0.5);
         dragging = false;
         if (e.pointerId != null) {
           try { btn.setPointerCapture(e.pointerId); } catch { /* already captured */ }
@@ -476,11 +503,13 @@ export function createChaosUI({ audio, wheel }) {
         if (!downAt) return;
         if (Math.hypot(e.clientX - startX, e.clientY - startY) > 10) {
           dragging = true;
+          if (btn.parentElement !== document.body) document.body.appendChild(btn);
           btn.classList.add("carrying");
           btn.style.position = "fixed";
-          btn.style.left = `${e.clientX}px`;
-          btn.style.top = `${e.clientY}px`;
-          btn.style.transform = "translate(-50%, -50%) rotate(-18deg)";
+          btn.style.left = `${e.clientX - grabX}px`;
+          btn.style.top = `${e.clientY - grabY}px`;
+          btn.style.transform = "translate(-50%, -50%)";
+          btn.style.margin = "0";
         }
       }
 
@@ -722,7 +751,7 @@ export function createChaosUI({ audio, wheel }) {
         document.querySelector("#petition-form input")?.focus();
         showCaption("say it. it will not keep the name.", 2600);
       } else if (id === "attendants") {
-        showCaption("they will not introduce themselves", 2400);
+        showCaption("call one. the wheels will change speed, fire, and whether they close.", 3600);
       } else if (id === "approach") {
         showCaption("looking away was always the door", 2400);
       } else if (id === "boy") {
