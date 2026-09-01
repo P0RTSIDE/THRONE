@@ -389,7 +389,7 @@ html.entered .veil {
   background: radial-gradient(circle at 50% 50%, rgba(240, 208, 120, 0.16), transparent 68%);
   cursor: none;
   z-index: 4;
-  animation: mouth-breathe 5.5s ease-in-out infinite;
+  animation: mouth-breathe 8.5s ease-in-out infinite;
 }
 
 .mouth::before {
@@ -719,7 +719,7 @@ html.charging .orbit-ghost {
 }
 
 .mouth {
-  animation: mouth-breathe 5.5s ease-in-out infinite;
+  animation: mouth-breathe 8.5s ease-in-out infinite;
 }
 
 .relic.seal {
@@ -731,15 +731,15 @@ html.charging .orbit-ghost {
 }
 
 .relic.vesica {
-  animation: vesica-throb 4s ease-in-out infinite;
+  animation: vesica-throb 7.5s ease-in-out infinite;
 }
 
 .relic.shard-hit {
-  animation: shard-twitch 3.2s ease-in-out infinite;
+  animation: shard-twitch 9s ease-in-out infinite;
 }
 
 .fear-not:not(.dragging):not(.unmaking) {
-  animation: fear-glow 3.6s ease-in-out infinite;
+  animation: fear-glow 6.4s ease-in-out infinite;
 }
 
 .fear-not.orbiting:not(.dragging):not(.unmaking) {
@@ -752,12 +752,12 @@ html.charging .orbit-ghost {
 }
 
 body.cycle-kick .wheel-root {
-  animation: kick 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: kick 2.4s ease-in-out;
 }
 
 body.shock .chromatic {
   opacity: 1;
-  animation: shock-chroma 0.8s ease-out;
+  animation: shock-chroma 2.2s ease-out;
 }
 
 body.shock .vignette {
@@ -765,8 +765,8 @@ body.shock .vignette {
 }
 
 body.reversed .wheel-root {
-  animation: reverse-spin 1.6s ease-in-out;
-  filter: hue-rotate(160deg) saturate(1.35);
+  animation: reverse-spin 4.2s ease-in-out;
+  filter: hue-rotate(28deg) saturate(1.08);
 }
 
 body.reversed .orbit-ghost-a,
@@ -775,24 +775,24 @@ body.reversed .orbit-ghost-b {
 }
 
 body.seal-wake .relic.seal {
-  animation: seal-flare 0.7s ease-out;
+  animation: seal-flare 2s ease-out;
 }
 
 body.aspect-wake .firmament {
-  animation: aspect-spin 0.9s ease-out;
+  animation: aspect-spin 2.8s ease-in-out;
 }
 
 body.aspect-wake .sacred-geo {
-  animation: geo-spin 2.4s linear infinite;
+  animation: geo-spin 64s linear infinite;
 }
 
 body.frenzy .wheel-root,
 body.frenzy .firmament {
-  animation: frenzy 1.2s ease-in-out;
+  animation: frenzy 3.6s ease-in-out;
 }
 
 body.jitter .firmament {
-  animation: jitter 0.28s steps(3);
+  animation: jitter 2.8s ease-in-out;
 }
 
 body.rim-live .orbit-ghost {
@@ -929,7 +929,7 @@ body.aspect-hush .chromatic {
 }
 
 body.pulse-on .pulse {
-  animation: wing-pulse 2.4s ease-out;
+  animation: wing-pulse 4.2s ease-out;
 }
 
 .strobe {
@@ -1118,6 +1118,119 @@ html.knife-found .self-hand,
 
 .boy-face-mark::after {
   right: 4px;
+}
+
+.goat-relic {
+  border-color: #9a7a38;
+  letter-spacing: 0.12em;
+}
+
+.goat-relic::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border: 1px solid var(--gold-hot);
+  border-radius: 40% 40% 30% 30%;
+  box-shadow: -5px -4px 0 -3px var(--gold-hot), 5px -4px 0 -3px var(--gold-hot);
+  vertical-align: middle;
+}
+
+.slain-goat {
+  border-color: #7a1824;
+  color: #e8b070;
+  box-shadow: 0 0 14px rgba(140, 20, 30, 0.4);
+}
+
+.pentagram-relic {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-color: #8b1c2c;
+  color: #e8c070;
+  box-shadow: 0 0 18px rgba(160, 20, 40, 0.45);
+}
+
+.pentagram-mark {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  background: var(--gold-hot);
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+.star-knife {
+  border-color: #8b1c2c;
+  box-shadow: 0 0 14px rgba(201, 162, 39, 0.35);
+}
+
+.isaac-devil {
+  border-color: #8b1c2c;
+  color: #f0c8a0;
+  background: rgba(28, 6, 10, 0.82);
+  box-shadow: 0 0 20px rgba(140, 16, 28, 0.5);
+}
+
+.isaac-devil .boy-face-mark {
+  border-color: #c04048;
+  filter: invert(0.15) hue-rotate(320deg);
+}
+
+html.rim-close .vignette {
+  box-shadow: inset 0 0 80px 20px rgba(12, 8, 6, 0.35);
+}
+
+html.rim-far .vignette {
+  box-shadow: inset 0 0 220px 90px rgba(6, 4, 10, 0.82);
+}
+
+html.rim-far .chromatic {
+  opacity: 0.55;
+}
+
+html.judged .vignette {
+  box-shadow: inset 0 0 180px 70px rgba(90, 10, 24, 0.55);
+}
+
+html.praised .inside {
+  background: radial-gradient(circle at 50% 48%, rgba(240, 200, 110, 0.16), transparent 52%);
+}
+
+html.devil-risen .vignette {
+  box-shadow: inset 0 0 160px 50px rgba(80, 8, 18, 0.5);
+}
+
+html.wearing-face .vignette {
+  box-shadow: inset 0 0 150px 55px rgba(28, 16, 8, 0.5);
+}
+
+html.wearing-face .chromatic {
+  opacity: 0.7;
+}
+
+html.forgot-face .boy-face-mark {
+  border-color: #4a4030;
+  filter: blur(1.2px);
+  box-shadow: none;
+}
+
+html.forgot-face .boy-face-mark::before,
+html.forgot-face .boy-face-mark::after {
+  opacity: 0;
+}
+
+html.angel-slain .mouth {
+  pointer-events: none;
+  opacity: 0.15;
+}
+
+html.angel-slain .wheel-root {
+  filter: grayscale(0.45) brightness(0.55);
+}
+
+html.angel-slain .inside {
+  background: radial-gradient(circle at 50% 48%, rgba(40, 8, 12, 0.45), transparent 55%);
 }
 
 html.blade-angel .wheel-root {
@@ -1452,6 +1565,163 @@ html.calm.blade-self .wheel-root {
   color: rgba(232, 220, 184, 0.5);
 }
 
+.approach-field {
+  position: relative;
+  min-height: 92px;
+  margin: 8px 0 10px;
+  padding: 8px 4px 10px;
+  overflow: visible;
+}
+
+.approach-door {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: 54px;
+  height: 36px;
+  transform: translate(-50%, -50%) scaleY(0.08);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s ease, transform 0.8s ease;
+}
+
+.approach-door::before,
+.approach-door::after {
+  content: "";
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--gold-hot);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(201, 162, 39, 0.25);
+}
+
+.approach-door::before {
+  left: 0;
+}
+
+.approach-door::after {
+  right: 0;
+}
+
+html.approached .approach-door {
+  opacity: 0.8;
+  transform: translate(-50%, -50%) scaleY(1);
+  animation: approach-door-breathe 6s ease-in-out infinite;
+}
+
+#approach {
+  --orbit: 0;
+}
+
+#approach::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  width: 78px;
+  height: 78px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  pointer-events: none;
+  background: conic-gradient(from 180deg, var(--gold-hot) calc(var(--orbit) * 1%), transparent 0);
+  mask: radial-gradient(farthest-side, transparent 64%, #000 66%);
+  opacity: 0.28;
+}
+
+#approach.near-hand {
+  box-shadow: 0 0 0 1px rgba(201, 162, 39, 0.55), 4px 6px 0 rgba(40, 20, 8, 0.4);
+  filter: hue-rotate(calc(var(--reach, 0) * 12deg));
+}
+
+#approach .inscription.flee {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  margin: 4px 0;
+  color: var(--gold-hot);
+  cursor: pointer;
+  transition: color 0.2s ease;
+  will-change: transform;
+}
+
+#approach .inscription.flee:hover {
+  color: #fff4d4;
+}
+
+#approach .inscription.flee.caught {
+  animation: flee-caught 1.6s ease-in-out;
+}
+
+.flee-ghost {
+  position: fixed;
+  z-index: 21;
+  margin: 0;
+  pointer-events: none;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-style: italic;
+  color: rgba(240, 208, 120, 0.45);
+  transform: translate(-50%, -50%);
+  animation: flee-ghost 1.4s ease-out forwards;
+}
+
+.averted {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  transition: transform 0.45s ease-out, background 0.4s ease, box-shadow 0.4s ease;
+}
+
+.averted.dodging {
+  transition: transform 0.4s ease-out;
+}
+
+.averted[aria-pressed="true"] {
+  background: var(--gold);
+  color: var(--void);
+  box-shadow: 0 0 16px rgba(201, 162, 39, 0.45);
+  animation: avert-armed 3.4s ease-in-out infinite;
+}
+
+.averted[aria-pressed="true"] .averted-hint {
+  color: rgba(18, 10, 6, 0.65);
+}
+
+html.approach-bloom .vignette {
+  box-shadow: inset 0 0 140px 50px rgba(201, 162, 39, 0.28);
+}
+
+html.approach-bloom .inside {
+  opacity: 0.7;
+  background: radial-gradient(circle at 50% 48%, rgba(240, 208, 120, 0.22), transparent 48%);
+}
+
+html.approach-bloom .wheel-root {
+  animation: shudder 2.6s ease-in-out;
+}
+
+@keyframes approach-door-breathe {
+  0%, 100% { transform: translate(-50%, -50%) scaleY(1) scaleX(1); opacity: 0.72; }
+  50% { transform: translate(-50%, -50%) scaleY(1.08) scaleX(0.94); opacity: 0.95; }
+}
+
+@keyframes flee-caught {
+  0% { opacity: 1; }
+  40% { opacity: 0.45; }
+  100% { opacity: 1; }
+}
+
+@keyframes flee-ghost {
+  0% { opacity: 0.4; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -58%) scale(1.04); }
+}
+
+@keyframes avert-armed {
+  0%, 100% { box-shadow: 0 0 10px rgba(201, 162, 39, 0.22); }
+  50% { box-shadow: 0 0 18px rgba(240, 208, 120, 0.32); }
+}
+
 html.offered .plane {
   opacity: 0.28;
   pointer-events: none;
@@ -1488,7 +1758,7 @@ html.calm .plane {
 
 body.shudder .wheel-root,
 body.shudder .firmament {
-  animation: shudder 0.9s ease-in-out;
+  animation: shudder 2.8s ease-in-out;
 }
 
 /* ----- Calm Mode kill-switch ----- */
@@ -1560,17 +1830,14 @@ html.calm .mouth::before {
 }
 
 @keyframes wing-pulse {
-  0% { opacity: 0; transform: scale(0.7); }
-  25% { opacity: 0.55; }
-  100% { opacity: 0; transform: scale(1.55); }
+  0% { opacity: 0; transform: scale(0.92); }
+  30% { opacity: 0.4; }
+  100% { opacity: 0; transform: scale(1.18); }
 }
 
 @keyframes shudder {
-  0%, 100% { transform: scale(1) translate(0, 0); }
-  18% { transform: scale(1.07) translate(-10px, 6px); }
-  36% { transform: scale(1.11) translate(8px, -8px); }
-  54% { transform: scale(1.04) translate(-5px, -3px); }
-  72% { transform: scale(1.08) translate(4px, 7px); }
+  0%, 100% { transform: scale(1); }
+  45% { transform: scale(1.028); }
 }
 
 @keyframes kaleido {
@@ -1594,17 +1861,17 @@ html.calm .mouth::before {
 
 @keyframes mouth-breathe {
   0%, 100% { transform: translate(-50%, -50%) scale(1); }
-  50% { transform: translate(-50%, -50%) scale(1.12); }
+  50% { transform: translate(-50%, -50%) scale(1.05); }
 }
 
 @keyframes mouth-open {
-  0%, 100% { transform: translate(-50%, -50%) scale(1.15); }
-  50% { transform: translate(-50%, -50%) scale(1.42); }
+  0%, 100% { transform: translate(-50%, -50%) scale(1.1); }
+  50% { transform: translate(-50%, -50%) scale(1.2); }
 }
 
 @keyframes seal-idle {
   0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(12deg); }
+  50% { transform: rotate(4deg); }
 }
 
 @keyframes vesica-throb {
@@ -1613,21 +1880,20 @@ html.calm .mouth::before {
 }
 
 @keyframes shard-twitch {
-  0%, 100% { rotate: 18deg; }
-  40% { rotate: 38deg; }
-  70% { rotate: 8deg; }
+  0%, 100% { rotate: 16deg; }
+  50% { rotate: 20deg; }
 }
 
 @keyframes fear-glow {
   0%, 100% { box-shadow: 0 0 0 rgba(201, 162, 39, 0); }
-  50% { box-shadow: 0 0 22px rgba(240, 208, 120, 0.45); }
+  50% { box-shadow: 0 0 16px rgba(240, 208, 120, 0.28); }
 }
 
 @keyframes fear-orbit {
   0% { translate: 0 0; rotate: 0deg; }
-  25% { translate: 36px -18px; rotate: 8deg; }
-  50% { translate: 0 -36px; rotate: 0deg; }
-  75% { translate: -36px -18px; rotate: -8deg; }
+  25% { translate: 14px -8px; rotate: 2deg; }
+  50% { translate: 0 -16px; rotate: 0deg; }
+  75% { translate: -14px -8px; rotate: -2deg; }
   100% { translate: 0 0; rotate: 0deg; }
 }
 
@@ -1637,43 +1903,39 @@ html.calm .mouth::before {
 }
 
 @keyframes kick {
-  0% { transform: scale(1) rotate(0deg); }
-  18% { transform: scale(1.08) rotate(-2deg); }
-  40% { transform: scale(0.97) rotate(1.4deg); }
-  100% { transform: scale(1) rotate(0deg); }
+  0% { transform: scale(1); }
+  40% { transform: scale(1.02); }
+  100% { transform: scale(1); }
 }
 
 @keyframes shock-chroma {
-  0% { transform: scale(1.04); filter: hue-rotate(80deg); }
+  0% { transform: scale(1.01); filter: hue-rotate(12deg); }
   100% { transform: scale(1); filter: none; }
 }
 
 @keyframes reverse-spin {
   0%, 100% { transform: rotate(0deg) scale(1); }
-  40% { transform: rotate(-18deg) scale(1.06); }
+  50% { transform: rotate(-6deg) scale(1.015); }
 }
 
 @keyframes seal-flare {
-  0% { transform: scale(1.4); box-shadow: 0 0 40px var(--gold-hot); }
+  0% { transform: scale(1.08); box-shadow: 0 0 24px var(--gold-hot); }
   100% { transform: scale(1); }
 }
 
 @keyframes aspect-spin {
-  0% { filter: contrast(1.4) saturate(1.6); transform: scale(1.04); }
+  0% { filter: contrast(1.12) saturate(1.15); transform: scale(1.015); }
   100% { filter: none; transform: none; }
 }
 
 @keyframes frenzy {
-  0%, 100% { transform: scale(1) rotate(0deg); filter: saturate(1); }
-  20% { transform: scale(1.12) rotate(3deg); filter: saturate(1.8) contrast(1.2); }
-  45% { transform: scale(0.94) rotate(-4deg); }
-  70% { transform: scale(1.06) rotate(2deg); }
+  0%, 100% { transform: scale(1); filter: saturate(1); }
+  50% { transform: scale(1.02); filter: saturate(1.12); }
 }
 
 @keyframes jitter {
   0%, 100% { transform: translate(0, 0); }
-  33% { transform: translate(-6px, 4px); }
-  66% { transform: translate(5px, -3px); }
+  50% { transform: translate(0, -2px); }
 }
 
 @media (max-width: 720px) {

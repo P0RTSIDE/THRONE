@@ -6,10 +6,10 @@
  *   nav            — each item opens the named window
  *   fearNot        — shudder + one smaller copy (capped)
  *   petition       — modal "witnessed" then immediately closes
- *   rimSlider      — no live change; on release, a distant eye opens / palette snaps
+ *   rimSlider      — live distance drives the wheels; extremes unlock the thicket / the far name
  *   comprehension  — fills, resets, never reaches 100
- *   flee           — one inscription runs from the cursor
- *   averted click  — Approach only registers when the cursor is NOT on it
+ *   flee           — inscriptions run from the cursor, split, leave ghosts
+ *   averted click  — Approach dodges, charges if circled, completes when you look away
  *   days counter   — absurd ticking number
  *   cursor trail   — decaying eye/sparks (skipped on coarse pointers)
  *   sacred geometry— Metatron-ish linework + vesica, counter-rotating
@@ -83,11 +83,41 @@ const BLURBS = {
     "he is looking at you",
     "you are the rest of the eyes",
   ],
+  judged: [
+    "it was not asked of you this way",
+    "the ordinary blade wasted the substitute",
+    "the living thing will not forget the cheap death",
+  ],
+  praised: [
+    "the count accepts the substitute",
+    "a mark is left where the goat was",
+    "the star remembers who finished it correctly",
+  ],
+  isaac: [
+    "he is not the offering now",
+    "the boy came back wearing another hill",
+    "he came back for the living thing",
+  ],
+  forgot: [
+    "you have the name. you do not have the face.",
+    "the look went into the wheels and stayed gone.",
+    "he is still the boy. you are the one who cannot see him.",
+  ],
+  slain: [
+    "the wheels have no one left to turn them",
+    "he finished the count that finished him",
+    "the living thing is quiet",
+  ],
 };
 
 function blurbPool() {
   const lore = throne.lore;
+  if (lore.angelSlain) return BLURBS.slain;
   if (lore.offered) return BLURBS.offered;
+  if (lore.isaac) return BLURBS.isaac;
+  if (lore.judged) return BLURBS.judged;
+  if (lore.praised) return BLURBS.praised;
+  if (lore.forgotFace) return BLURBS.forgot;
   if (lore.confessed) return BLURBS.confessed;
   if (lore.named) return BLURBS.named;
   if (lore.raptured >= 1 && throne.raptured) return BLURBS.inside;
@@ -136,12 +166,6 @@ export function createChaosUI({ audio, wheel }) {
   const barVal = document.getElementById("comprehension-value");
   const witness = document.getElementById("witness");
   const averted = document.getElementById("averted");
-  const fleeEls = [...document.querySelectorAll("[data-flee]")];
-  fleeEls.forEach((el) => {
-    el.addEventListener("click", () => {
-      window.dispatchEvent(new CustomEvent("throne:flee"));
-    });
-  });
   const driftEls = [...document.querySelectorAll("[data-drift]")];
   const glitchEls = [...document.querySelectorAll("[data-glitch]")].filter((el) => !el.closest("#veil"));
 
@@ -357,7 +381,7 @@ export function createChaosUI({ audio, wheel }) {
       if (!throne.calm) {
         document.body.classList.add("shudder");
         wheel.shudder();
-        setTimeout(() => document.body.classList.remove("shudder"), 900);
+        setTimeout(() => document.body.classList.remove("shudder"), 2800);
       }
       window.dispatchEvent(new CustomEvent("throne:fearnot", { detail: { muted: throne.muted } }));
       if (throne.calm) return;
@@ -368,7 +392,7 @@ export function createChaosUI({ audio, wheel }) {
         n.classList.add("spawned");
         n.style.left = `${randRange(18, 82)}%`;
         n.style.top = `${randRange(22, 78)}%`;
-        n.style.transform = `rotate(${randRange(-12, 12)}deg) scale(${randRange(0.7, 0.9)})`;
+        n.style.transform = `rotate(${randRange(-3, 3)}deg) scale(${randRange(0.82, 0.94)})`;
         document.body.appendChild(n);
         n.style.position = "fixed";
         fearCount++;
@@ -501,6 +525,31 @@ export function createChaosUI({ audio, wheel }) {
     "altar|knife": { id: "offering-blade", label: "the offering blade", line: "the place is ready. the blade finishes the count." },
     "knife|pyre": { id: "offering-blade", label: "the offering blade", line: "the pyre and the knife have done this before" },
     "ritual|wood": { id: "offering-blade", label: "the offering blade", line: "your hands itch for the last step" },
+    "lamb|ram": { id: "goat", label: "the goat", reveal: "the-goat", unique: true, line: "you answered him with what the thicket never gave" },
+    "cord|ram": { id: "goat", label: "the goat", reveal: "the-goat", unique: true, line: "you invent what the thicket withheld" },
+    "goat|knife": { id: "slain-goat", label: "the slain goat", consume: ["goat"], line: "an ordinary blade wasted the substitute" },
+    "bound-knife|goat": { id: "slain-goat", label: "the slain goat", consume: ["goat"], line: "the cord and the cheap blade finish the wrong death" },
+    "goat|ritual": { id: "pentagram", label: "the pentagram", consume: ["goat"], line: "the count accepts the substitute. a mark is left." },
+    "goat|offering-blade": { id: "pentagram", label: "the pentagram", consume: ["goat"], line: "the last blade finds the right throat" },
+    "goat|cord": { id: "bound-goat", label: "the bound goat", consume: ["goat"], line: "the cord finds another body that will lie still" },
+    "altar|goat": { id: "bound-goat", label: "the bound goat", consume: ["goat"], line: "the empty place takes a substitute" },
+    "bound-goat|knife": { id: "slain-goat", label: "the slain goat", consume: ["bound-goat"], line: "bound or not, the ordinary blade wastes it" },
+    "bound-goat|ritual": { id: "pentagram", label: "the pentagram", consume: ["bound-goat"], line: "bound and counted. the mark is given." },
+    "bound-goat|offering-blade": { id: "pentagram", label: "the pentagram", consume: ["bound-goat"], line: "the place and the blade agree" },
+    "goat|pyre": { id: "wrong-smoke", label: "the wrong smoke", consume: ["goat"], line: "you burned it without the count" },
+    "fire|goat": { id: "wrong-smoke", label: "the wrong smoke", consume: ["goat"], line: "heat without the ritual is only waste" },
+    "fire|slain-goat": { id: "wrong-smoke", label: "the wrong smoke", consume: ["slain-goat"], line: "the cheap death still smokes" },
+    "goat|brand": { id: "marked-goat", label: "the marked goat", consume: ["goat"], line: "the mark is on the substitute now" },
+    "brand|marked-goat": { id: "pentagram", label: "the pentagram", consume: ["marked-goat"], line: "the marked death finishes the count" },
+    "knife|marked-goat": { id: "slain-goat", label: "the slain goat", consume: ["marked-goat"], line: "the mark does not save an ordinary cut" },
+    "marked-goat|ritual": { id: "pentagram", label: "the pentagram", consume: ["marked-goat"], line: "the marked substitute is accepted" },
+    "face|pentagram": { id: "isaac", label: "isaac", reveal: "isaac-devil", unique: true, line: "the boy comes back wearing another hill" },
+    "name|pentagram": { id: "isaac", label: "isaac", reveal: "isaac-devil", unique: true, line: "the morning's name fits the mark" },
+    "pentagram|ritual": { id: "star-knife", label: "the starred knife", line: "the blade takes the mark and keeps it" },
+    "knife|pentagram": { id: "star-knife", label: "the starred knife", line: "the ordinary blade learns a worse job" },
+    "fire|pentagram": { id: "other-hill", label: "the other hill", line: "the star remembers a hill that was not this one" },
+    "pentagram|wood": { id: "other-hill", label: "the other hill", line: "wood and the mark invent another place" },
+    "brand|pentagram": { id: "devil-mark", label: "the devil mark", line: "the wrist and the star agree on a name" },
   };
 
   const itchOnce = new Set();
@@ -521,13 +570,28 @@ export function createChaosUI({ audio, wheel }) {
     "face|knife": "your hands itch and will not keep both",
     "ritual|self": "your hands itch for the ritual knife",
     "knife|self": "the old instruction is still in the palm",
+    "goat|knife": "an ordinary blade would waste it",
+    "knife|goat": "an ordinary blade would waste it",
+    "goat|ritual": "the count would accept this death",
+    "ritual|goat": "the count would accept this death",
+    "bound-goat|ritual": "bound and waiting for the right blade",
+    "goat|fire": "heat without the ritual is only waste",
+    "fire|goat": "heat without the ritual is only waste",
+    "face|pentagram": "the mark wants the morning's name",
+    "pentagram|face": "the mark wants the morning's name",
+    "name|pentagram": "the mark wants the morning's name",
+    "isaac|pentagram": "the mark wants the living thing",
+    "pentagram|isaac": "the mark wants the living thing",
+    "isaac|self": "you cannot hold him. he is already holding you.",
+    "goat|self": "a substitute is not a son. it can still die.",
+    "pentagram|self": "the mark would like a throat that answers",
   };
 
   function pairKey(a, b) {
     return [a, b].filter(Boolean).sort().join("|");
   }
 
-  function spawnCrafted(id, label, x, y) {
+  function spawnCrafted(id, label, x, y, extraClass) {
     const field = document.getElementById("relic-field");
     if (!field) return null;
     const btn = document.createElement("button");
@@ -535,7 +599,19 @@ export function createChaosUI({ audio, wheel }) {
     btn.className = "world-relic crafted";
     btn.setAttribute("data-relic", id);
     btn.setAttribute("data-carry", id);
-    btn.textContent = label;
+    if (id === "pentagram") {
+      btn.classList.add("pentagram-relic");
+      btn.innerHTML = `<span class="pentagram-mark" aria-hidden="true"></span>${label}`;
+    } else if (id === "slain-goat") {
+      btn.classList.add("slain-goat");
+      btn.textContent = label;
+    } else if (id === "star-knife") {
+      btn.classList.add("star-knife");
+      btn.textContent = label;
+    } else {
+      btn.textContent = label;
+    }
+    if (extraClass) extraClass.split(/\s+/).forEach((c) => c && btn.classList.add(c));
     const box = field.getBoundingClientRect();
     const leftPct = ((x - box.left) / Math.max(box.width, 1)) * 100;
     const topPct = ((y - box.top) / Math.max(box.height, 1)) * 100;
@@ -544,6 +620,36 @@ export function createChaosUI({ audio, wheel }) {
     field.appendChild(btn);
     bindCarry(btn);
     return btn;
+  }
+
+  function alreadyHere(combo) {
+    if (combo.reveal) {
+      const el = document.getElementById(combo.reveal);
+      return !!(el && !el.hidden);
+    }
+    if (forged.has(combo.id)) return true;
+    return !!document.querySelector(`[data-relic="${combo.id}"]:not([hidden])`);
+  }
+
+  function applyCombo(combo, x, y) {
+    if (alreadyHere(combo)) {
+      showCaption("it is already finished. it wants a throat or a hand.", 3200);
+      return;
+    }
+    forged.add(combo.id);
+    (combo.consume || []).forEach((rid) => {
+      document.querySelectorAll(`[data-relic="${rid}"]`).forEach((el) => {
+        el.hidden = true;
+      });
+    });
+    if (combo.reveal) {
+      const el = document.getElementById(combo.reveal);
+      if (el) el.hidden = false;
+    } else {
+      spawnCrafted(combo.id, combo.label, x, y, combo.class);
+    }
+    showCaption(combo.line || "they remember each other", 4200);
+    window.dispatchEvent(new CustomEvent("throne:relic", { detail: { id: combo.id } }));
   }
 
   function wireCarry(audio) {
@@ -620,14 +726,7 @@ export function createChaosUI({ audio, wheel }) {
             if (!combo) continue;
             restore();
             dragging = false;
-            if (forged.has(combo.id)) {
-              showCaption("it is already finished. it wants a throat or a hand.", 3200);
-              return;
-            }
-            forged.add(combo.id);
-            spawnCrafted(combo.id, combo.label, e.clientX, e.clientY);
-            showCaption(combo.line || "they remember each other", 4200);
-            window.dispatchEvent(new CustomEvent("throne:relic", { detail: { id: combo.id } }));
+            applyCombo(combo, e.clientX, e.clientY);
             return;
           }
           const mouth = document.getElementById("mouth");
@@ -646,6 +745,9 @@ export function createChaosUI({ audio, wheel }) {
           if (id === "knife") itch("knife-loose", "the knife looks flammable");
           else if (id === "ritual") itch("ritual-loose", "your hands itch for the ritual knife");
           else if (id === "offering-blade") itch("offblade-loose", "the last step is still a hand");
+          else if (id === "goat") itch("goat-loose", "an ordinary blade would waste it");
+          else if (id === "pentagram") itch("star-loose", "the mark wants a name, or a throat");
+          else if (id === "isaac") itch("isaac-loose", "he came back for the living thing");
           return;
         }
         dragging = false;
@@ -671,6 +773,13 @@ export function createChaosUI({ audio, wheel }) {
     }
 
     document.querySelectorAll("[data-carry]").forEach(bindCarry);
+
+    window.addEventListener("throne:spawn", (e) => {
+      const { id, label, x, y, className } = e.detail || {};
+      if (!id || forged.has(id)) return;
+      forged.add(id);
+      spawnCrafted(id, label || id, x ?? window.innerWidth * 0.55, y ?? window.innerHeight * 0.55, className);
+    });
   }
 
   function wireGaze(audio, wheel) {
@@ -842,6 +951,209 @@ export function createChaosUI({ audio, wheel }) {
     }, 1400);
   }
 
+  function wireApproach(audio, wheel) {
+    const plane = document.getElementById("approach");
+    const hint = averted?.querySelector(".averted-hint");
+    if (!plane || !averted) return;
+
+    let armed = false;
+    let completed = 0;
+    let reachCount = 0;
+    let recoils = 0;
+    let stillUntil = 0;
+    let lastOrbitAng = null;
+    let orbitAcc = 0;
+    let lastGhostAt = 0;
+    const fleeCaptions = [
+      "it runs because you reached",
+      "the line will not be held",
+      "you cannot keep the approach in your hand",
+    ];
+    const avertCaptions = [
+      "looking away was the approach",
+      "the door was never in front of you",
+      "you walked up by turning your face",
+      "the long way around opens.",
+    ];
+
+    function liveFlee() {
+      return [...plane.querySelectorAll("[data-flee]")].filter((el) => !el.hidden);
+    }
+
+    function setHint(text) {
+      if (hint) hint.textContent = text;
+    }
+
+    function spawnGhost(el) {
+      const now = performance.now();
+      if (now - lastGhostAt < 180) return;
+      lastGhostAt = now;
+      const r = el.getBoundingClientRect();
+      const ghost = document.createElement("p");
+      ghost.className = "flee-ghost";
+      ghost.textContent = el.textContent;
+      ghost.style.left = `${r.left + r.width * 0.5}px`;
+      ghost.style.top = `${r.top + r.height * 0.5}px`;
+      document.body.appendChild(ghost);
+      window.setTimeout(() => ghost.remove(), 1500);
+      if (document.querySelectorAll(".flee-ghost").length > 8) {
+        document.querySelector(".flee-ghost")?.remove();
+      }
+    }
+
+    function revealNextFlee() {
+      const next = plane.querySelector("[data-flee][hidden]");
+      if (!next) return;
+      next.hidden = false;
+      next.removeAttribute("aria-hidden");
+      showCaption("another line leaves the door", 2600);
+    }
+
+    function completeApproach(kind) {
+      completed += 1;
+      armed = false;
+      averted.setAttribute("aria-pressed", "false");
+      setHint(completed > 1 ? "it will open again if you look away" : "it will not be touched directly");
+      document.documentElement.classList.add("approached", "approach-bloom");
+      window.setTimeout(() => document.documentElement.classList.remove("approach-bloom"), 2200);
+      audio.ping("click");
+      triggerPulse();
+      wheel.openDistantEye();
+      wheel.shudder();
+      wheel.pulse();
+      if (completed === 2) wheel.tilt?.(0.4, -0.15);
+      showCaption(avertCaptions[(completed - 1) % avertCaptions.length], 3400);
+      window.dispatchEvent(new CustomEvent("throne:approach", { detail: { count: completed, kind } }));
+    }
+
+    averted.addEventListener("pointermove", (e) => {
+      if (!throne.entered || plane.classList.contains("folded")) return;
+      if (armed || performance.now() < stillUntil) return;
+      const r = averted.getBoundingClientRect();
+      const cx = r.left + r.width * 0.5;
+      const cy = r.top + r.height * 0.5;
+      const dx = e.clientX - cx;
+      const dy = e.clientY - cy;
+      const dist = Math.hypot(dx, dy) || 1;
+      if (dist > 80) return;
+      const push = ((80 - dist) / 80) * 12;
+      averted.classList.add("dodging");
+      averted.style.transform = `translate(${(-(dx / dist) * push).toFixed(1)}px, ${(-(dy / dist) * push).toFixed(1)}px)`;
+      recoils += 1;
+      if (recoils === 8) {
+        stillUntil = performance.now() + 2200;
+        averted.style.transform = "";
+        averted.classList.remove("dodging");
+        setHint("it holds still, for a breath");
+      }
+    });
+    averted.addEventListener("pointerleave", () => {
+      averted.style.transform = "";
+      averted.classList.remove("dodging");
+    });
+
+    averted.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      armed = true;
+      averted.setAttribute("aria-pressed", "true");
+      averted.style.transform = "";
+      setHint("now look away");
+      audio.ping("click");
+      wheel.shudder();
+      showCaption("it will not be touched directly", 2600);
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!armed || !throne.entered) return;
+      if (e.target.closest(".hud-safe, .averted, .plane, .fear-not, .world-relic, .mouth")) return;
+      completeApproach("avert");
+    });
+
+    plane.addEventListener("pointermove", (e) => {
+      if (!throne.entered || plane.classList.contains("folded")) return;
+      const box = averted.getBoundingClientRect();
+      const cx = box.left + box.width * 0.5;
+      const cy = box.top + box.height * 0.5;
+      const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+      const reach = Math.max(0, Math.min(1, 1 - dist / 160));
+      plane.style.setProperty("--reach", reach.toFixed(2));
+      plane.classList.toggle("near-hand", reach > 0.35);
+      if (dist < 36 || dist > 130) {
+        lastOrbitAng = null;
+        return;
+      }
+      const ang = Math.atan2(e.clientY - cy, e.clientX - cx);
+      if (lastOrbitAng != null) {
+        let step = ang - lastOrbitAng;
+        if (step > Math.PI) step -= Math.PI * 2;
+        if (step < -Math.PI) step += Math.PI * 2;
+        orbitAcc += Math.abs(step);
+        plane.style.setProperty("--orbit", String(Math.min(100, (orbitAcc / (Math.PI * 2)) * 100)));
+        if (orbitAcc >= Math.PI * 2) {
+          orbitAcc = 0;
+          plane.style.setProperty("--orbit", "100");
+          armed = true;
+          averted.setAttribute("aria-pressed", "true");
+          setHint("the long way around. now look away");
+          audio.ping("click");
+          wheel.pulse();
+          window.dispatchEvent(new CustomEvent("throne:circuit"));
+          window.setTimeout(() => plane.style.setProperty("--orbit", "0"), 900);
+        }
+      }
+      lastOrbitAng = ang;
+    });
+    plane.addEventListener("pointerleave", () => {
+      plane.classList.remove("near-hand");
+      lastOrbitAng = null;
+    });
+
+    plane.addEventListener("click", (e) => {
+      const line = e.target.closest("[data-flee]");
+      if (!line || line.hidden) return;
+      e.stopPropagation();
+      reachCount += 1;
+      line.classList.remove("caught");
+      void line.offsetWidth;
+      line.classList.add("caught");
+      spawnGhost(line);
+      audio.ping("click");
+      wheel.shudder();
+      showCaption(fleeCaptions[(reachCount - 1) % fleeCaptions.length], 2600);
+      window.dispatchEvent(new CustomEvent("throne:flee", { detail: { count: reachCount } }));
+      if (reachCount === 2 || reachCount === 4) revealNextFlee();
+      if (reachCount >= 3 && reachCount % 3 === 0) {
+        window.dispatchEvent(new CustomEvent("throne:caught", { detail: { count: reachCount } }));
+      }
+    });
+
+    window.addEventListener("throne:approach-tick", () => {
+      if (plane.classList.contains("folded") || throne.calm) {
+        liveFlee().forEach((el) => {
+          el.style.transform = "";
+        });
+        return;
+      }
+      liveFlee().forEach((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.width < 2) return;
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height / 2;
+        const dx = cx - throne.mouse.x;
+        const dy = cy - throne.mouse.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        if (dist < 160) {
+          const push = ((160 - dist) / 160) * 22;
+          el.style.transform = `translate(${(dx / dist) * push}px, ${(dy / dist) * push}px)`;
+          if (dist < 72) spawnGhost(el);
+        } else if (!el.classList.contains("caught")) {
+          el.style.transform = "";
+        }
+      });
+    });
+  }
+
   function wireWindows(audio, wheel) {
     document.getElementById("liturgy-nav")?.addEventListener("click", (e) => {
       const a = e.target.closest("[data-nav]");
@@ -867,7 +1179,7 @@ export function createChaosUI({ audio, wheel }) {
       } else if (id === "attendants") {
         showCaption("they will not introduce themselves", 2400);
       } else if (id === "approach") {
-        showCaption("looking away was always the door", 2400);
+        showCaption("the line runs. the door is not in the button.", 2600);
       } else if (id === "boy") {
         showCaption("he asked where the lamb was", 2600);
       } else if (id === "litany") {
@@ -876,14 +1188,45 @@ export function createChaosUI({ audio, wheel }) {
     });
 
     const rim = document.getElementById("rim-slider");
+    let rimCloseSaid = false;
+    let rimFarSaid = false;
+    function applyRim(v) {
+      const n = Number(v);
+      throne.rim = Math.max(0, Math.min(1, n / 100));
+      audio.setDepth(0.12 + throne.rim * 0.88);
+      document.documentElement.classList.toggle("rim-close", n <= 12);
+      document.documentElement.classList.toggle("rim-far", n >= 88);
+      if (!throne.entered) return;
+      if (n <= 12 && !rimCloseSaid) {
+        rimCloseSaid = true;
+        showCaption("the thicket is close enough to lie", 3200);
+      }
+      if (n >= 88 && !rimFarSaid) {
+        rimFarSaid = true;
+        showCaption("the boy is that far. something else keeps the distance.", 3400);
+      }
+    }
+    if (rim) applyRim(Number(rim.value));
+    rim?.addEventListener("input", () => {
+      applyRim(Number(rim.value));
+    });
     rim?.addEventListener("pointerup", () => {
       if (!throne.entered) return;
+      const value = Number(rim.value);
+      applyRim(value);
       audio.ping("click");
-      wheel.openDistantEye();
-      wheel.pulse();
-      triggerPulse();
-      showCaption("something distant has opened", 2800);
-      window.dispatchEvent(new CustomEvent("throne:rim", { detail: { value: Number(rim.value) } }));
+      if (value >= 88) {
+        wheel.openDistantEye();
+        wheel.pulse();
+        triggerPulse();
+        showCaption("something distant has opened", 2800);
+      } else if (value <= 12) {
+        wheel.pulse();
+        showCaption("you are against the wheels", 2400);
+      } else {
+        wheel.pulse();
+      }
+      window.dispatchEvent(new CustomEvent("throne:rim", { detail: { value } }));
     });
 
     const depth = document.getElementById("depth-slider");
@@ -951,34 +1294,7 @@ export function createChaosUI({ audio, wheel }) {
       triggerPulse();
     });
 
-    let avertedArmed = false;
-    averted?.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      avertedArmed = true;
-      averted.setAttribute("aria-pressed", "true");
-      audio.ping("click");
-      showCaption("it will not be touched directly", 2800);
-    });
-    document.addEventListener("click", (e) => {
-      if (!avertedArmed || !throne.entered) return;
-      if (e.target.closest(".hud-safe, .averted, .plane, .fear-not, .world-relic, .mouth")) return;
-      avertedArmed = false;
-      averted?.setAttribute("aria-pressed", "false");
-      audio.ping("click");
-      triggerPulse();
-      wheel.openDistantEye();
-      wheel.shudder();
-      showCaption("looking away was the approach", 3200);
-    });
-
-    fleeEls.forEach((el) => {
-      el.addEventListener("click", () => {
-        audio.ping("click");
-        wheel.shudder();
-        showCaption("it runs because you reached", 2400);
-      });
-    });
+    wireApproach(audio, wheel);
 
     document.getElementById("self-hand")?.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -1182,19 +1498,19 @@ export function createChaosUI({ audio, wheel }) {
           chars[i].textContent = origChars[i] ?? chars[i].textContent;
           chars[i].style.transform = "";
         }
-        if (throne.rng() < 0.03) {
+        if (throne.rng() < 0.012) {
           const i = randInt(0, chars.length - 1);
-          chars[i].style.transform = `translate(${randRange(-1.5, 1.5)}px, ${randRange(-2, 2)}px)`;
+          chars[i].style.transform = `translate(${randRange(-0.4, 0.4)}px, ${randRange(-0.5, 0.5)}px)`;
         }
       });
     }
-    if (!throne.calm && t > invertUntil && throne.rng() < 0.002) {
+    if (!throne.calm && t > invertUntil && throne.rng() < 0.0006) {
       const el = glitchEls[randInt(0, Math.max(0, glitchEls.length - 1))];
-      if (el) el.style.transform = throne.rng() > 0.5 ? "scaleX(-1)" : "rotate(180deg)";
-      invertUntil = t + 400;
+      if (el) el.style.opacity = "0.55";
+      invertUntil = t + 1800;
       setTimeout(() => {
-        el.style.transform = "";
-      }, 380);
+        if (el) el.style.opacity = "";
+      }, 1600);
     }
     if (throne.calm) glitchEls.forEach(restoreGlyphs);
 
@@ -1209,23 +1525,7 @@ export function createChaosUI({ audio, wheel }) {
       }
     }
 
-    // Fleeing inscription.
-    if (!throne.calm) {
-      fleeEls.forEach((el) => {
-        const r = el.getBoundingClientRect();
-        const cx = r.left + r.width / 2;
-        const cy = r.top + r.height / 2;
-        const dx = cx - throne.mouse.x;
-        const dy = cy - throne.mouse.y;
-        const dist = Math.hypot(dx, dy) || 1;
-        if (dist < 140) {
-          const push = ((140 - dist) / 140) * 28;
-          el.style.transform = `translate(${(dx / dist) * push}px, ${(dy / dist) * push}px)`;
-        } else {
-          el.style.transform = "";
-        }
-      });
-    }
+    window.dispatchEvent(new CustomEvent("throne:approach-tick"));
 
     // Parallax: debris leans away from the gaze.
     if (!throne.calm && throne.entered) {
@@ -1289,8 +1589,8 @@ export function createChaosUI({ audio, wheel }) {
         const y = throne.mouse.y;
         ctx2d.save();
         ctx2d.translate(x, y);
-        const spinMul = document.body.classList.contains("gazing") ? 2.2 : 1;
-        ctx2d.rotate((t * 0.0018) * spinMul);
+        const spinMul = document.body.classList.contains("gazing") ? 1.15 : 1;
+        ctx2d.rotate((t * 0.00055) * spinMul);
         ctx2d.strokeStyle = "#f0d078";
         ctx2d.lineWidth = 1.2;
         ctx2d.beginPath();

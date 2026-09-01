@@ -18,6 +18,7 @@ export const throne = {
   choir: false,
   raptured: false,
   fall: 0,
+  rim: 0.37,
   lore: {
     feared: 0,
     fed: 0,
@@ -31,6 +32,14 @@ export const throne = {
     face: false,
     bladeAngel: false,
     bladeSelf: false,
+    goat: false,
+    pentagram: false,
+    judged: false,
+    praised: false,
+    isaac: false,
+    angelSlain: false,
+    forgotFace: false,
+    petitions: 0,
   },
 };
 
