@@ -21,6 +21,12 @@
   --vignette: 0.55;
 }
 
+@property --vignette {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0.55;
+}
+
 *,
 *::before,
 *::after {
@@ -505,8 +511,9 @@ body.aspect-ascended {
 }
 
 @keyframes offer-bloom {
-  0% { filter: brightness(2.2) saturate(0.35); }
-  100% { filter: brightness(1.12) saturate(0.88); }
+  0% { filter: brightness(1.15) saturate(0.7); transform: scale(1); }
+  38% { filter: brightness(1.55) saturate(0.82); transform: scale(1.04); }
+  100% { filter: brightness(1.12) saturate(0.88); transform: scale(1); }
 }
 
 @keyframes charge-grow {
@@ -630,9 +637,9 @@ body.aspect-ascended {
 
 @keyframes unmake {
   to {
-    transform: scale(0.1) rotate(40deg);
+    transform: scale(0.42);
     opacity: 0;
-    filter: blur(8px);
+    filter: blur(12px);
   }
 }
 
@@ -825,10 +832,6 @@ body.aspect-wake .firmament {
   animation: aspect-spin 2.8s ease-in-out;
 }
 
-body.aspect-wake .sacred-geo {
-  animation: geo-spin 64s linear infinite;
-}
-
 body.frenzy .wheel-root,
 body.frenzy .firmament {
   animation: frenzy 3.6s ease-in-out;
@@ -934,7 +937,20 @@ body.aspect-hush .chromatic {
   z-index: 1;
   opacity: 0.28;
   mix-blend-mode: screen;
+}
+
+.sacred-geo .geo-net,
+.sacred-geo .geo-rims {
+  transform-origin: 50px 50px;
+  transform-box: fill-box;
+}
+
+.sacred-geo .geo-net {
   animation: geo-spin 80s linear infinite;
+}
+
+.sacred-geo .geo-rims {
+  animation: geo-spin-rev 110s linear infinite;
 }
 
 .scanlines {
@@ -1056,9 +1072,9 @@ html.falling .mouth {
 }
 
 @keyframes fall-through {
-  0% { transform: scale(1); opacity: 1; }
-  55% { transform: scale(7); opacity: 0.4; }
-  100% { transform: scale(16); opacity: 0; }
+  0% { transform: scale(1) translateY(0); opacity: 1; }
+  55% { transform: scale(7) translateY(10vh); opacity: 0.4; }
+  100% { transform: scale(16) translateY(22vh); opacity: 0; }
 }
 
 /* ----- Floating liturgy windows ----- */
@@ -1317,17 +1333,16 @@ html.calm.blade-self .wheel-root {
 
 @keyframes blade-angel {
   0% { filter: brightness(1) saturate(1); }
-  18% { filter: brightness(2.1) saturate(0.25) hue-rotate(-24deg); }
-  42% { filter: brightness(0.55) saturate(1.7) hue-rotate(150deg); }
-  70% { filter: brightness(1.4) saturate(1.2); }
+  22% { filter: brightness(1.28) saturate(0.85); }
+  48% { filter: brightness(0.58) saturate(1.2); }
   100% { filter: brightness(1) saturate(1); }
 }
 
 @keyframes blade-self {
   0% { filter: brightness(1); }
-  22% { filter: brightness(0.35) saturate(1.4); }
-  48% { filter: brightness(1.8) saturate(0.4); }
-  100% { filter: brightness(1.08) saturate(0.9); }
+  30% { filter: brightness(0.42) saturate(1.25); }
+  62% { filter: brightness(1.22) saturate(0.7); }
+  100% { filter: brightness(1.06) saturate(0.92); }
 }
 
 .dock {
@@ -1753,14 +1768,14 @@ html.approach-bloom .wheel-root {
 }
 
 @keyframes approach-door-breathe {
-  0%, 100% { transform: translate(-50%, -50%) scaleY(1) scaleX(1); opacity: 0.72; }
-  50% { transform: translate(-50%, -50%) scaleY(1.08) scaleX(0.94); opacity: 0.95; }
+  0%, 100% { transform: translate(-50%, -50%) scaleY(1); opacity: 0.72; }
+  50% { transform: translate(-50%, -50%) scaleY(1.05); opacity: 0.95; }
 }
 
 @keyframes flee-caught {
-  0% { opacity: 1; }
-  40% { opacity: 0.45; }
-  100% { opacity: 1; }
+  0% { opacity: 1; transform: scale(1); }
+  32% { opacity: 1; transform: scale(1.045); }
+  100% { opacity: 1; transform: scale(1); }
 }
 
 @keyframes flee-ghost {
@@ -1802,9 +1817,19 @@ html.calm .plane {
   display: none;
 }
 
-/* Glitch character jitter (JS toggles .tremor on wraps). */
+/* Glitch character tremble (JS toggles .tremor, .mirror, .invert-flash). */
 [data-glitch] .ch {
   display: inline-block;
+}
+
+[data-glitch].mirror {
+  transform: scaleX(-1);
+  transition: transform 0.55s ease;
+}
+
+[data-glitch].invert-flash {
+  filter: invert(0.82);
+  transition: filter 0.55s ease;
 }
 
 body.shudder .wheel-root,
@@ -1814,6 +1839,8 @@ body.shudder .firmament {
 
 /* ----- Calm Mode kill-switch ----- */
 html.calm .sacred-geo,
+html.calm .sacred-geo .geo-net,
+html.calm .sacred-geo .geo-rims,
 html.calm .scanlines,
 html.calm .chromatic,
 html.calm .pulse,
@@ -1870,6 +1897,11 @@ html.calm .mouth::before {
   to { transform: rotate(-360deg) scale(1.05); }
 }
 
+@keyframes geo-spin-rev {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 @keyframes scan-drift {
   from { background-position: 0 0; }
   to { background-position: 0 12px; }
@@ -1882,13 +1914,14 @@ html.calm .mouth::before {
 
 @keyframes wing-pulse {
   0% { opacity: 0; transform: scale(0.92); }
-  30% { opacity: 0.4; }
-  100% { opacity: 0; transform: scale(1.18); }
+  28% { opacity: 0.38; }
+  100% { opacity: 0; transform: scale(1.22); }
 }
 
 @keyframes shudder {
-  0%, 100% { transform: scale(1); }
-  45% { transform: scale(1.028); }
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  42% { transform: translateY(7px) rotate(-0.4deg); }
+  72% { transform: translateY(2px) rotate(0.15deg); }
 }
 
 @keyframes kaleido {
@@ -1917,7 +1950,7 @@ html.calm .mouth::before {
 
 @keyframes mouth-open {
   0%, 100% { transform: translate(-50%, -50%) scale(1.1); }
-  50% { transform: translate(-50%, -50%) scale(1.2); }
+  50% { transform: translate(-50%, -50%) scaleX(1.32) scaleY(1.48); }
 }
 
 @keyframes seal-idle {
@@ -1927,12 +1960,13 @@ html.calm .mouth::before {
 
 @keyframes vesica-throb {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.08); }
+  50% { transform: scale(1.04); }
 }
 
 @keyframes shard-twitch {
-  0%, 100% { rotate: 16deg; }
-  50% { rotate: 20deg; }
+  0%, 76%, 100% { rotate: 16deg; }
+  82% { rotate: 23deg; }
+  88% { rotate: 15deg; }
 }
 
 @keyframes fear-glow {
@@ -1942,10 +1976,10 @@ html.calm .mouth::before {
 
 @keyframes fear-orbit {
   0% { translate: 0 0; rotate: 0deg; }
-  25% { translate: 14px -8px; rotate: 2deg; }
-  50% { translate: 0 -16px; rotate: 0deg; }
-  75% { translate: -14px -8px; rotate: -2deg; }
-  100% { translate: 0 0; rotate: 0deg; }
+  25% { translate: 28px -12px; rotate: 90deg; }
+  50% { translate: 0 -36px; rotate: 180deg; }
+  75% { translate: -28px -12px; rotate: 270deg; }
+  100% { translate: 0 0; rotate: 360deg; }
 }
 
 @keyframes burst-fly {
@@ -1954,9 +1988,9 @@ html.calm .mouth::before {
 }
 
 @keyframes kick {
-  0% { transform: scale(1); }
-  40% { transform: scale(1.02); }
-  100% { transform: scale(1); }
+  0% { transform: translateY(0) scale(1); }
+  26% { transform: translateY(6px) scale(1.012); }
+  100% { transform: translateY(0) scale(1); }
 }
 
 @keyframes shock-chroma {
@@ -1965,8 +1999,9 @@ html.calm .mouth::before {
 }
 
 @keyframes reverse-spin {
-  0%, 100% { transform: rotate(0deg) scale(1); }
-  50% { transform: rotate(-6deg) scale(1.015); }
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(-14deg) scale(1.01); }
+  100% { transform: rotate(0deg) scale(1); }
 }
 
 @keyframes seal-flare {
@@ -1975,8 +2010,9 @@ html.calm .mouth::before {
 }
 
 @keyframes aspect-spin {
-  0% { filter: contrast(1.12) saturate(1.15); transform: scale(1.015); }
-  100% { filter: none; transform: none; }
+  0% { filter: contrast(1.12) saturate(1.15); transform: rotate(0deg) scale(1.01); }
+  48% { filter: contrast(1.06) saturate(1.08); transform: rotate(9deg) scale(1.02); }
+  100% { filter: none; transform: rotate(0deg) scale(1); }
 }
 
 @keyframes frenzy {
@@ -2014,6 +2050,8 @@ html.calm .mouth::before {
 
 @media (prefers-reduced-motion: reduce) {
   .sacred-geo,
+  .sacred-geo .geo-net,
+  .sacred-geo .geo-rims,
   .scanlines,
   .chromatic,
   .pulse,
