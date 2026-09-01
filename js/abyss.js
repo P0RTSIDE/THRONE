@@ -215,6 +215,10 @@ export function createAbyss(canvas) {
         name: 0.4,
         hush: 2.1,
         offered: 0.2,
+        judged: 5,
+        praised: 3,
+        slain: 2.4,
+        adversary: 5,
       };
       const targetMood = moodId[throne.aspect] == null ? 0 : moodId[throne.aspect];
       mood += (targetMood - mood) * 0.012;
