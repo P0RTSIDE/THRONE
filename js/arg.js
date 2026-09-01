@@ -50,7 +50,7 @@ export function createArg({ audio, wheel }) {
     if (lore.canOffer && !state.offerHinted) {
       state.offerHinted = true;
       window.setTimeout(() => {
-        showCaption("hold the light in the center. it will take you in his place.", 5600);
+        showCaption("the light in the center is still taking. it will take a father if a father stays.", 5600);
         audio.utter();
       }, 1800);
     }
@@ -70,7 +70,7 @@ export function createArg({ audio, wheel }) {
         audio.utter();
       }
       if (throne.lore.fed < 1) {
-        window.setTimeout(() => once("needfeed", "Fear Not still waits below. carry it into the light.", 4200), 2200);
+        window.setTimeout(() => once("needfeed", "Fear Not is still in your mouth. the light has not had it.", 4200), 2200);
       }
       refreshOffer();
     } else {
@@ -237,7 +237,7 @@ export function createArg({ audio, wheel }) {
   window.addEventListener("throne:fed", (e) => {
     if (throne.lore.offered) return;
     throne.lore.fed = e.detail?.fed ?? throne.lore.fed + 1;
-    if (throne.lore.fed === 1) once("fed1", "you are trying to buy him back. hold the center.", 4000);
+    if (throne.lore.fed === 1) once("fed1", "you are trying to buy him back. the light is still empty of a father.", 4000);
     else if (throne.lore.fed === 3) once("fed3", "the mouth wants the hand, not the word", 3400);
     if (e.detail?.fed >= 7) rapture(true);
     refreshOffer();
@@ -270,9 +270,9 @@ export function createArg({ audio, wheel }) {
       throne.lore.confessed = true;
       refreshOffer();
       if (throne.raptured || throne.lore.raptured >= 1) offer();
-      else once("takewait", "hold the center first. then write take me again, or hold the center from inside.", 4800);
+      else once("takewait", "the light has not had you yet.", 3600);
     } else {
-      once("petition", "write Isaac, boy, knife, take me, or talk. it will not guess.", 4200);
+      once("petition", "it keeps the asking and drops the name", 3200);
     }
   });
 
@@ -286,10 +286,10 @@ export function createArg({ audio, wheel }) {
     if (id === "knife") {
       throne.lore.knife = true;
       document.documentElement.classList.add("knife-found");
-      once("knife", "you bound him. the knife did not stay in the bag. it will go where you take it.", 4800);
+      once("knife", "you bound him. the knife looks flammable.", 4800);
       confess("", true);
     } else if (id === "cord") {
-      once("cord", "the cord still remembers his wrists.", 4200);
+      once("cord", "the cord still remembers his wrists. it wants the blade back.", 4200);
       confess("", true);
     } else if (id === "ram") {
       once("ram", "nothing caught in the thicket.", 4200);
@@ -301,29 +301,29 @@ export function createArg({ audio, wheel }) {
     } else if (id === "morning") {
       once("morning", "you told him it was only a walk. you were already lying.", 4200);
     } else if (id === "wood") {
-      once("wood", "he carried the wood. you carried the fire and the knife.", 4200);
+      once("wood", "he carried the wood. it still wants the heat you carried.", 4200);
     } else if (id === "lamb") {
       once("lamb", "he asked where the lamb was. you said the Lord would see to it.", 4600);
     } else if (id === "fire") {
-      once("fire", "you stacked the wood. you reached for him.", 4200);
+      once("fire", "the blade would take this heat and keep it.", 4200);
       confess("", true);
     } else if (id === "face") {
       nameTheBoy();
-      once("face", "carry his face to the light if you can still look at it.", 4200);
+      once("face", "you will have to look at him now.", 4200);
     } else if (id === "ritual") {
-      once("ritual", "a knife that has already known fire. the light or your hand will finish it.", 4800);
+      once("ritual", "your hands itch for the ritual knife.", 4200);
     } else if (id === "pyre") {
-      once("pyre", "the wood takes. carry the pyre to the light if you still mean the hill.", 4200);
+      once("pyre", "the wood takes. the boy is not on it this time.", 4200);
     } else if (id === "bound-knife") {
-      once("boundknife", "cord and blade together. that is how you held him.", 4200);
+      once("boundknife", "that is how you held him.", 3600);
     } else if (id === "altar") {
-      once("altarmade", "wood and cord make a place. it is still empty of a boy.", 4200);
+      once("altarmade", "the place is ready. it is still empty of a boy.", 4200);
     } else if (id === "brand") {
-      once("brand", "the mark remembers a wrist. carry it to the hand or the light.", 4200);
+      once("brand", "the mark remembers a wrist.", 3600);
     } else if (id === "portion") {
-      once("portion", "you made a portion of him. the light will take it.", 4200);
+      once("portion", "you made a portion of him. you cannot keep it.", 4200);
     } else if (id === "offering-blade") {
-      once("offblade", "this blade is finished. your hand is the last step.", 4200);
+      once("offblade", "this blade is finished. a hand is the last step.", 4200);
     }
   });
 
@@ -363,7 +363,7 @@ export function createArg({ audio, wheel }) {
       if (throne.lore.canOffer || throne.lore.raptured >= 1 || throne.lore.fed >= 1) {
         window.setTimeout(() => offer(), 900);
       } else {
-        once("bladeneed", "hold the center once, or carry Fear Not into the light. then the hand will finish it.", 4800);
+        once("bladeneed", "the light has not had you yet. the hand can wait.", 4200);
       }
       return;
     }
@@ -447,7 +447,7 @@ export function createArg({ audio, wheel }) {
       confess("", true);
       wheel.pulse();
       audio.strike();
-      showCaption("the place is ready. Fear Not and the center will finish the trade.", 4200);
+      showCaption("the place is ready. it is still empty of a boy.", 4200);
       refreshOffer();
       return;
     }
@@ -476,7 +476,7 @@ export function createArg({ audio, wheel }) {
       audio.strike();
       refreshOffer();
       if (throne.lore.raptured >= 1 || throne.raptured) window.setTimeout(() => offer(), 700);
-      else once("offneed", "hold the center, then bring the offering blade back to your hand.", 4200);
+      else once("offneed", "the light has not had you yet.", 3600);
       return;
     }
     if (target === "angel") {
@@ -529,7 +529,7 @@ export function createArg({ audio, wheel }) {
         refreshOffer();
         offer();
       } else {
-        once("takewait", "hold the center first. then take me will finish it.", 4200);
+        once("takewait", "the light has not had you yet.", 3600);
       }
     }
     if (t.includes("BENOTAFRAID")) {

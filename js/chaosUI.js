@@ -281,7 +281,7 @@ export function createChaosUI({ audio, wheel }) {
         n.textContent = "Fear Not";
         const hint = document.createElement("span");
         hint.className = "fear-not-hint";
-        hint.textContent = "click it, hold it, or carry it to the light. it is already yours.";
+        hint.textContent = "you said it once. it is still in your mouth.";
         n.appendChild(hint);
         n.style.left = "50%";
         n.style.top = "auto";
@@ -505,16 +505,36 @@ export function createChaosUI({ audio, wheel }) {
   }
 
   const COMBOS = {
-    "fire|knife": { id: "ritual", label: "the ritual knife" },
-    "fire|wood": { id: "pyre", label: "the pyre" },
-    "cord|knife": { id: "bound-knife", label: "the bound knife" },
-    "cord|wood": { id: "altar", label: "the altar" },
-    "cord|fire": { id: "brand", label: "the brand" },
-    "face|knife": { id: "portion", label: "his portion" },
-    "face|ritual": { id: "portion", label: "his portion" },
-    "altar|knife": { id: "offering-blade", label: "the offering blade" },
-    "knife|pyre": { id: "offering-blade", label: "the offering blade" },
-    "ritual|wood": { id: "offering-blade", label: "the offering blade" },
+    "fire|knife": { id: "ritual", label: "the ritual knife", line: "your hands itch for the ritual knife" },
+    "fire|wood": { id: "pyre", label: "the pyre", line: "the wood takes. it has been waiting for this heat." },
+    "cord|knife": { id: "bound-knife", label: "the bound knife", line: "the cord finds the blade the way a knot finds a throat" },
+    "cord|wood": { id: "altar", label: "the altar", line: "wood and cord remember a place. it is still empty." },
+    "cord|fire": { id: "brand", label: "the brand", line: "the mark remembers a wrist" },
+    "face|knife": { id: "portion", label: "his portion", line: "you cannot keep his face and the knife in the same hand" },
+    "face|ritual": { id: "portion", label: "his portion", line: "the ritual knife already knew which face this was" },
+    "altar|knife": { id: "offering-blade", label: "the offering blade", line: "the place is ready. the blade finishes the count." },
+    "knife|pyre": { id: "offering-blade", label: "the offering blade", line: "the pyre and the knife have done this before" },
+    "ritual|wood": { id: "offering-blade", label: "the offering blade", line: "your hands itch for the last step" },
+  };
+
+  const itchOnce = new Set();
+  function itch(id, text) {
+    if (itchOnce.has(id) || !text) return;
+    itchOnce.add(id);
+    showCaption(text, 3400);
+  }
+
+  const NEAR_ITCH = {
+    "knife|fire": "the knife looks flammable",
+    "fire|knife": "the knife looks flammable",
+    "wood|fire": "the wood still wants the heat you carried",
+    "fire|wood": "the wood still wants the heat you carried",
+    "cord|knife": "the cord wants the blade back",
+    "knife|cord": "the cord wants the blade back",
+    "knife|face": "your hands itch and will not keep both",
+    "face|knife": "your hands itch and will not keep both",
+    "ritual|self": "your hands itch for the ritual knife",
+    "knife|self": "the old instruction is still in the palm",
   };
 
   function pairKey(a, b) {
@@ -587,6 +607,17 @@ export function createChaosUI({ audio, wheel }) {
           btn.style.top = `${e.clientY - grabY}px`;
           btn.style.transform = "translate(-50%, -50%)";
           btn.style.margin = "0";
+          const id = btn.getAttribute("data-carry") || btn.getAttribute("data-relic");
+          const hand = document.getElementById("self-hand");
+          if (nearEl(hand, e.clientX, e.clientY, 1.8)) {
+            itch(`${id}|self`, NEAR_ITCH[`${id}|self`]);
+          }
+          for (const other of document.querySelectorAll("[data-carry], [data-relic]")) {
+            if (other === btn || other.hidden) continue;
+            if (!nearEl(other, e.clientX, e.clientY, 1.8)) continue;
+            const otherId = other.getAttribute("data-carry") || other.getAttribute("data-relic");
+            itch(pairKey(id, otherId), NEAR_ITCH[pairKey(id, otherId)] || NEAR_ITCH[`${id}|${otherId}`]);
+          }
         }
       }
 
@@ -604,12 +635,12 @@ export function createChaosUI({ audio, wheel }) {
             restore();
             dragging = false;
             if (forged.has(combo.id)) {
-              showCaption("you already made that. carry it to the light or your hand.", 3200);
+              showCaption("it is already finished. it wants a throat or a hand.", 3200);
               return;
             }
             forged.add(combo.id);
             spawnCrafted(combo.id, combo.label, e.clientX, e.clientY);
-            showCaption(`${combo.label} is made. carry it to the light or to your hand.`, 4200);
+            showCaption(combo.line || "they remember each other", 4200);
             window.dispatchEvent(new CustomEvent("throne:relic", { detail: { id: combo.id } }));
             return;
           }
@@ -626,9 +657,9 @@ export function createChaosUI({ audio, wheel }) {
             window.dispatchEvent(new CustomEvent("throne:use", { detail: { id, target } }));
             return;
           }
-          if (id === "knife" || id === "ritual" || id === "offering-blade") {
-            showCaption("the wheels, or the hand that raised it", 2800);
-          }
+          if (id === "knife") itch("knife-loose", "the knife looks flammable");
+          else if (id === "ritual") itch("ritual-loose", "your hands itch for the ritual knife");
+          else if (id === "offering-blade") itch("offblade-loose", "the last step is still a hand");
           return;
         }
         dragging = false;
@@ -846,9 +877,9 @@ export function createChaosUI({ audio, wheel }) {
         showCaption("the rim is farther than the hand", 2400);
       } else if (id === "petition") {
         document.querySelector("#petition-form input")?.focus();
-        showCaption("say it. it will not keep the name.", 2600);
+        showCaption("ask for him back. it will not keep the name unless the name was his.", 3200);
       } else if (id === "attendants") {
-        showCaption("call one. the wheels will change speed, fire, and whether they close.", 3600);
+        showCaption("they will not introduce themselves", 2400);
       } else if (id === "approach") {
         showCaption("looking away was always the door", 2400);
       } else if (id === "boy") {
@@ -941,7 +972,7 @@ export function createChaosUI({ audio, wheel }) {
       avertedArmed = true;
       averted.setAttribute("aria-pressed", "true");
       audio.ping("click");
-      showCaption("now click the empty dark. not this button. looking away is the approach.", 4800);
+      showCaption("it will not be touched directly", 2800);
     });
     document.addEventListener("click", (e) => {
       if (!avertedArmed || !throne.entered) return;
@@ -952,7 +983,7 @@ export function createChaosUI({ audio, wheel }) {
       triggerPulse();
       wheel.openDistantEye();
       wheel.shudder();
-      showCaption("looking away was the approach. a far lid lifts.", 4200);
+      showCaption("looking away was the approach", 3200);
     });
 
     fleeEls.forEach((el) => {
