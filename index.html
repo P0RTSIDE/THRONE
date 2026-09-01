@@ -28,14 +28,8 @@
       the hill still has a name.
       the ram did not come.
     -->
-    <aside id="hud" class="hud-safe" aria-label="Safety controls">
-      <button id="calm-toggle" type="button" aria-pressed="false" title="Stop strobing, freeze motion, quiet the sound">
-        Calm Mode
-      </button>
+    <aside id="hud" class="hud-safe" aria-label="Volume and days">
       <div class="volume-cluster">
-        <button id="mute-toggle" type="button" aria-pressed="false" title="Mute all sound">
-          Mute
-        </button>
         <label class="volume-label" for="volume">
           <span class="sr-only">Volume</span>
           <input id="volume" type="range" min="0" max="1" step="0.01" value="0.62" />
@@ -52,7 +46,7 @@
         <h1 id="veil-title" class="veil-title">THRONE</h1>
         <button id="enter" type="button" class="veil-enter">look upon it</button>
         <p class="veil-hint">You came about a boy.</p>
-        <p class="veil-warn">You came about a boy. Drag toward what waits in the dark. Fold a window if it covers the wheels. Calm Mode and mute stay in the corner.</p>
+        <p class="veil-warn">You came about a boy. Drag toward what waits in the dark. Fold a window if it covers the wheels. Fear Not waits at the bottom. Volume stays in the corner.</p>
       </div>
     </div>
 
@@ -85,16 +79,24 @@
           <button id="mouth" class="mouth" type="button" aria-label="hold the center"></button>
           <div id="charge" class="charge" aria-hidden="true"></div>
           <button id="self-hand" class="self-hand" type="button">your hand</button>
-          <button id="fear-not" class="fear-not relic" type="button">Fear Not</button>
         </div>
       </div>
     </div>
+
+    <button id="fear-not" class="fear-not relic" type="button">
+      Fear Not
+      <span class="fear-not-hint">click it, hold it, or carry it to the light. it is already yours.</span>
+    </button>
 
     <canvas id="cursor-trail" class="overlay-canvas" aria-hidden="true"></canvas>
     <svg id="sacred-geo" class="sacred-geo" viewBox="0 0 100 100" aria-hidden="true"></svg>
     <div class="scanlines" aria-hidden="true"></div>
     <div class="chromatic" aria-hidden="true"></div>
     <div class="grain" aria-hidden="true"></div>
+    <div id="death" class="death" hidden>
+      <p class="death-line">It looked back. The count poured in until there was no room left for a father.</p>
+      <button id="death-wake" type="button">look away</button>
+    </div>
     <div id="caption" class="caption" role="status" aria-live="polite"></div>
     <div id="witness" class="witness" role="status" aria-live="assertive" hidden>Your petition has been witnessed</div>
     <div id="dock" class="dock" aria-label="folded windows"></div>
@@ -108,7 +110,8 @@
         <p class="inscription">You came as a father. The boy is not in the wheels. You told him Fear Not and you bound him anyway.</p>
         <p class="inscription">Three days up. He asked where the lamb was. You said someone else would see to it. No ram in the thicket.</p>
         <p class="inscription">You stacked the wood. You reached for him. No voice arrived in time.</p>
-        <p class="inscription small">The knife can still change hands. Carry it to the wheels, or turn it on the hand that raised it. His face waits if you say the name the hill used. Carry Fear Not into the light. The four attendants rewrite the shape if you call them.</p>
+        <p class="inscription small">Fear Not sits at the bottom of the page. Click it, hold it, or carry it into the light. Stack what you carry: knife on fire makes a ritual knife, wood on fire makes the pyre, cord on knife makes the bound knife. Carry those to the light or to your hand.</p>
+        <p class="inscription small">In Petition, write Isaac, boy, or son to see his face. Write knife, bound, ram, or Abraham to confess. Write take me to put yourself in his place. Write talk or speak if you want to hear him.</p>
       </div>
     </section>
 
@@ -138,15 +141,15 @@
         <button type="button" class="plane-min" aria-label="fold">fold</button>
       </div>
       <div class="plane-body">
-        <p class="inscription small">Ask for him back. It keeps the asking and drops the name unless you say the boy.</p>
+        <p class="inscription small">Write one of these and offer it. Isaac, boy, or son shows his face. Knife, bound, ram, or Abraham confesses what you finished. Take me or instead puts you in his place. Talk or speak asks him to answer. He will not use words.</p>
         <form id="petition-form" class="petition-form" autocomplete="off">
           <label>
             Name (as it will be forgotten)
-            <input name="forgotten" type="text" maxlength="80" placeholder="the boy" />
+            <input name="forgotten" type="text" maxlength="80" placeholder="Isaac" />
           </label>
           <label>
             Enter your Petition
-            <textarea name="petition" rows="2" maxlength="400" placeholder="take me instead"></textarea>
+            <textarea name="petition" rows="3" maxlength="400" placeholder="Isaac. take me instead. let him speak."></textarea>
           </label>
           <button type="submit">Offer</button>
         </form>
@@ -180,7 +183,7 @@
       <div class="plane-body">
         <p class="inscription">He walked beside you. He carried the wood because you asked. He believed Fear Not because it came from your mouth.</p>
         <p class="inscription">He asked where the lamb was. You did not say the true answer. The hill already knew.</p>
-        <p class="inscription small">Say the name the morning knew. Then look above the wheels for his face. You can carry that face to the light, the same way you carry the knife.</p>
+        <p class="inscription small">Write Isaac, boy, or son in Petition. His face appears above the wheels. Carry that face to the light. If you write talk or speak, you will only hear him scream.</p>
       </div>
     </section>
 
@@ -190,10 +193,11 @@
         <button type="button" class="plane-min" aria-label="fold">fold</button>
       </div>
       <div class="plane-body">
-        <p class="inscription flee" data-flee>do not reach for this line</p>
+        <p class="inscription small">Press Approach. Then click the empty dark, not the button. The running line is the door. Looking away is how you get closer.</p>
+        <p class="inscription flee" data-flee>do not reach for this line. press Approach, then click the dark.</p>
         <button id="averted" class="averted" type="button">
           Approach
-          <span class="averted-hint">it will not be touched directly</span>
+          <span class="averted-hint">press this, then click the empty dark</span>
         </button>
       </div>
     </section>
