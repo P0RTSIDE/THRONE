@@ -91,6 +91,10 @@
     </div>
 
     <canvas id="cursor-trail" class="overlay-canvas" aria-hidden="true"></canvas>
+    <svg id="sacred-geo" class="sacred-geo" viewBox="0 0 100 100" aria-hidden="true"></svg>
+    <div class="scanlines" aria-hidden="true"></div>
+    <div class="chromatic" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
     <div id="caption" class="caption" role="status" aria-live="polite"></div>
     <div id="witness" class="witness" role="status" aria-live="assertive" hidden>Your petition has been witnessed</div>
     <div id="dock" class="dock" aria-label="folded windows"></div>
@@ -104,7 +108,7 @@
         <p class="inscription">You came as a father. The boy is not in the wheels. You told him Fear Not and you bound him anyway.</p>
         <p class="inscription">Three days up. He asked where the lamb was. You said someone else would see to it. No ram in the thicket.</p>
         <p class="inscription">You stacked the wood. You reached for him. No voice arrived in time.</p>
-        <p class="inscription small">The knife can still change hands. Carry it to the wheels, or turn it on the hand that raised it. His face waits if you say the name the hill used. Carry Fear Not into the light.</p>
+        <p class="inscription small">The knife can still change hands. Carry it to the wheels, or turn it on the hand that raised it. His face waits if you say the name the hill used. Carry Fear Not into the light. The four attendants rewrite the shape if you call them.</p>
       </div>
     </section>
 
@@ -200,12 +204,25 @@
         <button type="button" class="plane-min" aria-label="fold">fold</button>
       </div>
       <div class="plane-body">
-        <p class="inscription small">fourfold and also one. they will not introduce themselves.</p>
+        <p class="inscription small">Call one. The wheels change shape, speed, fire, and whether they will close. You will see it.</p>
+        <p id="shape-now" class="inscription small shape-now">the shape you first survived</p>
         <div class="seals" aria-label="Four attending seals">
-          <button type="button" data-seal="merkavah" aria-pressed="false">Rim that counts</button>
-          <button type="button" data-seal="waters" aria-pressed="false">Voice of the deep</button>
-          <button type="button" data-seal="seraph" aria-pressed="false">Fire that attends</button>
-          <button type="button" data-seal="unblinking" aria-pressed="false">Gate that is not a door</button>
+          <button type="button" data-seal="merkavah" aria-pressed="false">
+            The chariot
+            <span>another rim wakes. the count speeds.</span>
+          </button>
+          <button type="button" data-seal="waters" aria-pressed="false">
+            The deep
+            <span>the rims wade. the throat fills.</span>
+          </button>
+          <button type="button" data-seal="seraph" aria-pressed="false">
+            The fire
+            <span>the wings stand. the hub burns.</span>
+          </button>
+          <button type="button" data-seal="unblinking" aria-pressed="false">
+            The gate
+            <span>no lid will close.</span>
+          </button>
         </div>
         <label class="slider-wrap" for="depth-slider">
           <span>Depth of the waters</span>
@@ -225,11 +242,11 @@
         <button type="button" class="plane-min" aria-label="fold">fold</button>
       </div>
       <div class="plane-body">
-        <p class="inscription">a voice like many waters, and none of them yours</p>
-        <p class="inscription">be not afraid is an instruction, not a comfort</p>
-        <p class="inscription">the wheels moved when the living creatures moved</p>
-        <p class="inscription">their rims were full of eyes, all around, and within</p>
-        <p class="inscription">the appearance of the wheels was like burnished bronze</p>
+        <p class="inscription" data-glitch>a voice like many waters, and none of them yours</p>
+        <p class="inscription" data-glitch>be not afraid is an instruction, not a comfort</p>
+        <p class="inscription" data-glitch>the wheels moved when the living creatures moved</p>
+        <p class="inscription" data-glitch>their rims were full of eyes, all around, and within</p>
+        <p class="inscription" data-glitch>the appearance of the wheels was like burnished bronze</p>
         <p class="inscription small">the knife remembers two throats. a father came about a boy. the count kept the father.</p>
       </div>
     </section>

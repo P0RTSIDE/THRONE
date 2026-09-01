@@ -2,11 +2,11 @@
  * eyeWheel.js — Ophanim Rendering Engine
  *
  * What this file does:
- *   1. Two intersecting tori (wheel within a wheel) in three.js, spinning on independent axes.
+ *   1. Six interlocking eyed wheels in three.js, plus spokes, loose eyes, a hearth, and wings the fire attendant can raise.
  *   2. Instanced almond-eyes covering each rim. Each eye blinks on its own phase, dilates slowly,
  *      and the pupil tracks the cursor via a cheap NDC offset in the vertex shader.
- *   3. Palette cycling: burnished gold, searing white, UV-violet.
- *   4. A "distant eye" can be opened (rim slider release) by boosting one instance's scale.
+ *   3. Attendant aspects rewrite spin, fog, fire, wings, blink, and rim scale so the change is visible.
+ *   4. A distant eye can be opened (rim slider release) by boosting one instance's scale.
  *   5. Dispatches `throne:cycle` when the outer wheel wraps 2π so audio can swell (volume-capped).
  *
  * Calm Mode: rotations slow to a crawl, blinks freeze open, camera wobble dies.
@@ -403,7 +403,7 @@ export function createEyeWheel(root) {
     looseGroup.add(eye);
   }
 
-  // Six light-wings: only shown for the seraph aspect.
+  // Six light-wings: hidden unless the fire attendant is called.
   const wingMat = new THREE.MeshBasicMaterial({
     color: 0xf0d078,
     transparent: true,
@@ -445,9 +445,15 @@ export function createEyeWheel(root) {
     spin: 1,
     camZ: 7.6,
     third: 1,
+    fifth: 1,
+    sixth: 1,
     wings: 0,
     hub: 0,
+    fog: 0.01,
+    fire: 1,
+    host: 1,
     presence: 1,
+    fogCol: new THREE.Color("#0c0912"),
     sclera: new THREE.Color("#f3ebd6"),
     palLock: -1,
   };
@@ -531,12 +537,19 @@ export function createEyeWheel(root) {
     sixthGroup.rotation.z += dt * 0.11 * spin;
     fire.rotation.y += dt * 0.8 * spin;
     fire.rotation.x = Math.sin(t * 0.6) * 0.4;
-    hearth.scale.setScalar(0.85 + Math.sin(t * 1.6) * 0.12);
-    hearth.material.opacity = 0.14 + Math.abs(Math.sin(t * 2.1)) * 0.12;
+    const fireMul = aspect.fire || 1;
+    hearth.scale.setScalar((0.85 + Math.sin(t * 1.6) * 0.12) * Math.max(0.4, fireMul));
+    hearth.material.opacity = (0.14 + Math.abs(Math.sin(t * 2.1)) * 0.12) * fireMul;
+    fire.material.opacity = 0.22 * fireMul;
+    fire.scale.setScalar(0.75 + fireMul * 0.45);
     faces.rotation.y += dt * 0.16 * spin;
     looseGroup.rotation.y += dt * 0.12 * spin;
     looseGroup.rotation.x = Math.sin(t * 0.21) * 0.35;
     host.rotation.y += dt * 0.018 * Math.abs(spin);
+    const hostTarget = aspect.host || 1;
+    host.scale.setScalar(host.scale.x + (hostTarget - host.scale.x) * Math.min(1, dt * 2));
+    const hostOp = 0.05 + Math.min(0.28, hostTarget * 0.08);
+    hostMat.opacity += (hostOp - hostMat.opacity) * Math.min(1, dt * 2);
     kernel.visible = !throne.lore.offered;
     kernel.rotation.y += dt * 0.08;
     kernel.position.y = Math.sin(t * 0.7) * 0.04;
@@ -582,10 +595,19 @@ export function createEyeWheel(root) {
     const s = thirdGroup.scale.x;
     const next = s + (thirdTarget - s) * Math.min(1, dt * 3);
     thirdGroup.scale.setScalar(Math.max(0.001, next));
+    if (!offering) {
+      const e5 = fifthGroup.scale.x + ((aspect.fifth || 1) - fifthGroup.scale.x) * Math.min(1, dt * 2.2);
+      const e6 = sixthGroup.scale.x + ((aspect.sixth || 1) - sixthGroup.scale.x) * Math.min(1, dt * 2.2);
+      fifthGroup.scale.setScalar(Math.max(0.05, e5));
+      sixthGroup.scale.setScalar(Math.max(0.05, e6));
+      const fogTarget = aspect.fog == null ? 0.01 : aspect.fog;
+      scene.fog.density += (fogTarget - scene.fog.density) * Math.min(1, dt * 1.3);
+      if (aspect.fogCol) scene.fog.color.lerp(aspect.fogCol, Math.min(1, dt * 1.4));
+    }
 
-    wingGroup.visible = !throne.calm;
-    wingGroup.scale.setScalar(aspect.wings > 0.5 ? 1 : 0.68);
-    const wingOp = aspect.wings > 0.5 ? 0.28 : 0.1;
+    wingGroup.visible = !throne.calm && aspect.wings > 0.5;
+    wingGroup.scale.setScalar(aspect.wings > 0.5 ? 1.55 : 0.2);
+    const wingOp = aspect.wings > 0.5 ? 0.55 : 0;
     wingGroup.children.forEach((w) => {
       if (w.material) w.material.opacity = wingOp;
     });
@@ -733,19 +755,19 @@ export function createEyeWheel(root) {
       pulseScale = 1.3;
     },
     /**
-     * Rewrite the angel. Aspects change blink, gaze, extra rims, wings, hub eye, and spin.
+     * Rewrite the angel. Aspects change blink, gaze, extra rims, wings, hub eye, fog, fire, and spin.
      */
     setAspect(id) {
       const table = {
-        witness: { blink: 1, look: 1.15, pupil: 1.1, spin: 1, camZ: 7.6, third: 1, wings: 0, hub: 0, presence: 1, palLock: -1, sclera: "#f3ebd6" },
-        unblinking: { blink: 0, look: 2.8, pupil: 1.55, spin: 0.55, camZ: 6.4, third: 1, wings: 0, hub: 0, presence: 1, palLock: 1, sclera: "#ffffff" },
-        merkavah: { blink: 1, look: 1.4, pupil: 1.15, spin: 1.2, camZ: 8.2, third: 1, wings: 0, hub: 0, presence: 1, palLock: 0, sclera: "#f0d078" },
-        waters: { blink: 0.35, look: 0.7, pupil: 0.82, spin: 0.32, camZ: 8.8, third: 1, wings: 0, hub: 0, presence: 1, palLock: 1, sclera: "#ead9a8" },
-        seraph: { blink: 1, look: 1.8, pupil: 1.2, spin: 1.85, camZ: 6.8, third: 1, wings: 1, hub: 0, presence: 1, palLock: 1, sclera: "#fff6d8" },
-        inverted: { blink: 1, look: 2.1, pupil: 1.7, spin: -1.15, camZ: 6.2, third: 1, wings: 0, hub: 0, presence: 1, palLock: 0, sclera: "#2a1014" },
-        name: { blink: 0, look: 3.2, pupil: 1.7, spin: 0.22, camZ: 5.8, third: 0.55, wings: 0, hub: 1, presence: 0.12, palLock: 0, sclera: "#f4f1e8" },
-        hush: { blink: 1, look: 0.2, pupil: 0.55, spin: 0.1, camZ: 9.8, third: 0.7, wings: 0, hub: 0, presence: 0.08, palLock: 0, sclera: "#6a6048" },
-        offered: { blink: 1, look: 0.45, pupil: 0.82, spin: 0.05, camZ: 5.4, third: 0.2, wings: 0, hub: 1, presence: 0.1, palLock: 1, sclera: "#fff8ea" },
+        witness: { blink: 1, look: 1.15, pupil: 1.1, spin: 1, camZ: 7.6, third: 1, fifth: 1, sixth: 1, wings: 0, hub: 0, presence: 1, fog: 0.01, fire: 1, host: 1, palLock: -1, sclera: "#f3ebd6", fogCol: "#0c0912" },
+        unblinking: { blink: 0, look: 4.2, pupil: 2.2, spin: 0.18, camZ: 4.6, third: 1.25, fifth: 1.2, sixth: 0.7, wings: 0, hub: 0, presence: 1, fog: 0.002, fire: 0.2, host: 0.55, palLock: 1, sclera: "#ffffff", fogCol: "#1a1610" },
+        merkavah: { blink: 1, look: 1.7, pupil: 1.25, spin: 2.35, camZ: 9.4, third: 1.35, fifth: 1.55, sixth: 2.05, wings: 0, hub: 0, presence: 1, fog: 0.004, fire: 1.7, host: 3.2, palLock: 0, sclera: "#f0d078", fogCol: "#1a0c04" },
+        waters: { blink: 0.12, look: 0.35, pupil: 0.5, spin: 0.08, camZ: 10.4, third: 0.7, fifth: 1.85, sixth: 0.4, wings: 0, hub: 0, presence: 1, fog: 0.058, fire: 0.12, host: 0.25, palLock: 1, sclera: "#c8b8e0", fogCol: "#12081f" },
+        seraph: { blink: 1, look: 2.4, pupil: 1.35, spin: 2.5, camZ: 5.7, third: 1.2, fifth: 1.2, sixth: 1.15, wings: 1, hub: 0, presence: 1, fog: 0.005, fire: 3.4, host: 1.6, palLock: 1, sclera: "#fff6d8", fogCol: "#2a1008" },
+        inverted: { blink: 1, look: 2.4, pupil: 1.85, spin: -1.7, camZ: 5.8, third: 1, fifth: 1, sixth: 1.15, wings: 0, hub: 0, presence: 1, fog: 0.028, fire: 1.9, host: 0.7, palLock: 0, sclera: "#2a1014", fogCol: "#1a0608" },
+        name: { blink: 0, look: 3.4, pupil: 1.85, spin: 0.18, camZ: 5.6, third: 0.45, fifth: 0.4, sixth: 0.35, wings: 0, hub: 1, presence: 0.12, fog: 0.012, fire: 0.5, host: 0.3, palLock: 0, sclera: "#f4f1e8", fogCol: "#100c08" },
+        hush: { blink: 1, look: 0.15, pupil: 0.45, spin: 0.07, camZ: 10.2, third: 0.55, fifth: 0.5, sixth: 0.45, wings: 0, hub: 0, presence: 0.08, fog: 0.036, fire: 0.18, host: 0.22, palLock: 0, sclera: "#6a6048", fogCol: "#0a0808" },
+        offered: { blink: 1, look: 0.4, pupil: 0.75, spin: 0.04, camZ: 5.2, third: 0.16, fifth: 0.16, sixth: 0.16, wings: 0, hub: 1, presence: 0.1, fog: 0.02, fire: 0.22, host: 0.15, palLock: 1, sclera: "#fff8ea", fogCol: "#f3e6c4" },
       };
       const next = table[id] || table.witness;
       aspect = {
@@ -756,11 +778,17 @@ export function createEyeWheel(root) {
         spin: next.spin,
         camZ: next.camZ,
         third: next.third,
+        fifth: next.fifth,
+        sixth: next.sixth,
         wings: next.wings,
         hub: next.hub,
+        fog: next.fog,
+        fire: next.fire,
+        host: next.host,
         presence: next.presence,
         palLock: next.palLock,
         sclera: new THREE.Color(next.sclera),
+        fogCol: new THREE.Color(next.fogCol || "#0c0912"),
       };
       throne.aspect = aspect.id;
       if (next.palLock >= 0) {

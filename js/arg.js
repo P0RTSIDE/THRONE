@@ -8,10 +8,10 @@ import { throne, showCaption } from "./throne.js";
 
 const ASPECT_CAPTIONS = {
   witness: "it returns to the shape you first survived",
-  unblinking: "it declines to close",
-  merkavah: "another rim remembers itself",
-  waters: "the voice is not one voice",
-  seraph: "the instruction is taken literally",
+  unblinking: "the eyes lock. nothing in it will close.",
+  merkavah: "another rim wakes. the whole count speeds.",
+  waters: "the rims wade. a voice like many fills the throat.",
+  seraph: "the fire stands up. the wings remember themselves.",
   inverted: "it heard the quiet as an answer",
   name: "one eye is enough, if it is the right one",
   hush: "the wheels still turn. they do not comment.",
@@ -84,7 +84,12 @@ export function createArg({ audio, wheel }) {
     wheel.setAspect(id);
     audio.setAspect(id);
     audio.utter();
-    showCaption(caption || ASPECT_CAPTIONS[id] || "", 3200);
+    wheel.pulse();
+    const now = document.getElementById("shape-now");
+    if (now) now.textContent = caption || ASPECT_CAPTIONS[id] || "";
+    document.body.classList.add("aspect-wake");
+    window.setTimeout(() => document.body.classList.remove("aspect-wake"), 1000);
+    showCaption(caption || ASPECT_CAPTIONS[id] || "", 3600);
     window.dispatchEvent(new CustomEvent("throne:aspect", { detail: { id } }));
   }
 
