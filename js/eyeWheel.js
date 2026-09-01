@@ -227,8 +227,8 @@ export function createEyeWheel(root) {
   scene.fog = new THREE.FogExp2(0x0c0912, 0.01);
   scene.background = null;
 
-  const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 90);
-  camera.position.set(0, 0.35, 7.6);
+  const camera = new THREE.PerspectiveCamera(44, 1, 0.1, 90);
+  camera.position.set(0, 0.35, 5.5);
 
   const renderer = new THREE.WebGLRenderer({
     antialias: throne.quality === "high" && cfg.dpr <= 1.05,
@@ -792,7 +792,7 @@ export function createEyeWheel(root) {
     look: 1,
     pupil: 1,
     spin: 1,
-    camZ: 7.6,
+    camZ: 5.4,
     third: 1,
     fifth: 1,
     sixth: 1,
@@ -810,7 +810,7 @@ export function createEyeWheel(root) {
   };
   let spinBoost = 1;
   let zNudge = 0;
-  let viewRadius = 7.6;
+  let viewRadius = 5.5;
   let pulseScale = 1;
   let yaw = 0.22;
   let pitch = 0.1;
@@ -835,18 +835,23 @@ export function createEyeWheel(root) {
   let ascended = false;
   let ascendAge = 0;
 
-  function placeOrbitCamera(radius, shakeAmt) {
+  function orbitTarget(radius, shakeAmt) {
     const cp = Math.cos(pitch);
     const tx = Math.sin(yaw) * cp * radius;
     const ty = Math.sin(pitch) * radius * 0.7;
     const tz = Math.cos(yaw) * cp * radius;
     const dist = Math.hypot(tx, ty, tz) || 1;
     const s = radius / dist;
-    camera.position.set(
-      tx * s + Math.sin(throne.time * 0.07) * shakeAmt,
-      ty * s + Math.sin(throne.time * 0.05) * shakeAmt * 0.5,
-      tz * s
-    );
+    return {
+      x: tx * s + Math.sin(throne.time * 0.07) * shakeAmt,
+      y: ty * s + Math.sin(throne.time * 0.05) * shakeAmt * 0.5,
+      z: tz * s,
+    };
+  }
+
+  function placeOrbitCamera(radius, shakeAmt) {
+    const p = orbitTarget(radius, shakeAmt);
+    camera.position.set(p.x, p.y, p.z);
     camera.lookAt(0, 0, 0);
   }
 
@@ -1247,23 +1252,32 @@ export function createEyeWheel(root) {
       scene.fog.color.lerp(new THREE.Color("#1a0e08"), Math.min(1, dt * 0.38));
       key.intensity += (1.15 - key.intensity) * Math.min(1, dt * 0.2);
     } else {
-      const rimZ = 3.05 + rim * 11.6;
+      const rimZ = 2.7 + rim * 8.0;
       const rimBlend = (slain || offering || throne.lore.offered || falling || throne.raptured) ? 0 : 0.82;
       const baseZ = throne.raptured ? 0.78 : (aspect.camZ * (1 - rimBlend) + rimZ * rimBlend);
       const targetRadius = falling
         ? Math.max(0.06, (aspect.camZ + zNudge) * (1 - throne.fall) * 0.42)
         : baseZ + zNudge;
       const gazing = document.body.classList.contains("gazing");
-      if (!gazing || falling) {
-        viewRadius += (targetRadius - viewRadius) * (falling ? 0.12 : 0.08);
-      }
-      const fovTarget = falling ? 32 + throne.fall * 86 : (throne.raptured ? 88 : (48 - likeness * 7));
-      if (!gazing || falling) {
-        camera.fov += (fovTarget - camera.fov) * (falling ? 0.12 : 0.05);
-        camera.updateProjectionMatrix();
-      }
+      viewRadius += (targetRadius - viewRadius) * (falling ? 0.12 : 0.08);
+      const fovBase = falling ? 32 + throne.fall * 86 : (throne.raptured ? 88 : (44 - likeness * 7));
+      const fovTarget = (gazing && !falling && !throne.raptured) ? fovBase - 1.5 : fovBase;
+      camera.fov += (fovTarget - camera.fov) * (falling ? 0.12 : 0.06);
+      camera.updateProjectionMatrix();
       const shake = (gazing || throne.calm) ? 0 : (throne.raptured ? 0.01 : 0.014);
-      placeOrbitCamera(viewRadius, shake);
+      const want = orbitTarget(viewRadius, shake);
+      const ease = falling ? 0.18 : (gazing ? 0.072 : 0.11);
+      camera.position.x += (want.x - camera.position.x) * ease;
+      camera.position.y += (want.y - camera.position.y) * ease;
+      camera.position.z += (want.z - camera.position.z) * ease;
+      if (!falling) {
+        const d = Math.hypot(camera.position.x, camera.position.y, camera.position.z) || 1;
+        const minD = viewRadius * 0.94;
+        const maxD = viewRadius * 1.03;
+        if (d < minD) camera.position.multiplyScalar(minD / d);
+        else if (d > maxD) camera.position.multiplyScalar(maxD / d);
+      }
+      camera.lookAt(0, 0, 0);
     }
 
     const mouse = new THREE.Vector2(throne.mouse.ndcX, throne.mouse.ndcY);
@@ -1347,8 +1361,8 @@ export function createEyeWheel(root) {
     },
     orbit(dx, dy) {
       if (ascended) return;
-      yaw -= dx * 0.007;
-      pitch = Math.max(-0.62, Math.min(0.62, pitch + dy * 0.0055));
+      yaw -= dx * 0.0026;
+      pitch = Math.max(-0.58, Math.min(0.58, pitch + dy * 0.002));
     },
     getOrbit() {
       return { yaw, pitch };
@@ -1465,7 +1479,7 @@ export function createEyeWheel(root) {
      */
     setAspect(id) {
       const table = {
-        witness: { blink: 1, look: 1.15, pupil: 1.1, spin: 1, camZ: 7.6, third: 1, fifth: 1, sixth: 1, ninth: 1, tenth: 1, wings: 0, hub: 0, presence: 1, fog: 0.01, fire: 1, host: 1, palLock: -1, sclera: "#f3ebd6", fogCol: "#0c0912" },
+        witness: { blink: 1, look: 1.15, pupil: 1.1, spin: 1, camZ: 5.4, third: 1, fifth: 1, sixth: 1, ninth: 1, tenth: 1, wings: 0, hub: 0, presence: 1, fog: 0.01, fire: 1, host: 1, palLock: -1, sclera: "#f3ebd6", fogCol: "#0c0912" },
         unblinking: { blink: 0, look: 4.2, pupil: 2.2, spin: 0.18, camZ: 4.6, third: 1.25, fifth: 1.2, sixth: 0.7, ninth: 1.15, tenth: 0.8, wings: 0, hub: 0, presence: 1, fog: 0.002, fire: 0.2, host: 0.55, palLock: 1, sclera: "#ffffff", fogCol: "#1a1610" },
         merkavah: { blink: 1, look: 1.7, pupil: 1.25, spin: 2.35, camZ: 9.4, third: 1.35, fifth: 1.55, sixth: 2.05, ninth: 1.55, tenth: 1.7, wings: 0, hub: 0, presence: 1, fog: 0.004, fire: 1.7, host: 3.2, palLock: 0, sclera: "#f0d078", fogCol: "#1a0c04" },
         waters: { blink: 0.12, look: 0.35, pupil: 0.5, spin: 0.08, camZ: 10.4, third: 0.7, fifth: 1.85, sixth: 0.4, ninth: 0.45, tenth: 0.35, wings: 0, hub: 0, presence: 1, fog: 0.058, fire: 0.12, host: 0.25, palLock: 1, sclera: "#c8b8e0", fogCol: "#12081f" },
