@@ -2,7 +2,7 @@
  * eyeWheel.js — Ophanim Rendering Engine
  *
  * What this file does:
- *   1. Six interlocking eyed wheels in three.js, plus spokes, loose eyes, a hearth, and wings the fire attendant can raise.
+ *   1. Eight interlocking eyed wheels in three.js, plus spokes, axles, loose eyes, a hearth, and wings the fire attendant can raise.
  *   2. Instanced almond-eyes covering each rim. Each eye blinks on its own phase, dilates slowly,
  *      and the pupil tracks the cursor via a cheap NDC offset in the vertex shader.
  *   3. Attendant aspects rewrite spin, fog, fire, wings, blink, and rim scale so the change is visible.
@@ -253,6 +253,8 @@ export function createEyeWheel(root) {
   const fourthGroup = new THREE.Group();
   const fifthGroup = new THREE.Group();
   const sixthGroup = new THREE.Group();
+  const seventhGroup = new THREE.Group();
+  const eighthGroup = new THREE.Group();
   const wingGroup = new THREE.Group();
   const looseGroup = new THREE.Group();
   innerGroup.rotation.x = Math.PI * 0.5;
@@ -265,7 +267,11 @@ export function createEyeWheel(root) {
   fifthGroup.rotation.z = 1.15;
   sixthGroup.rotation.y = 0.88;
   sixthGroup.rotation.x = 0.95;
-  scene.add(outerGroup, innerGroup, thirdGroup, fourthGroup, fifthGroup, sixthGroup, wingGroup, looseGroup);
+  seventhGroup.rotation.x = 1.35;
+  seventhGroup.rotation.z = 0.4;
+  eighthGroup.rotation.y = 1.25;
+  eighthGroup.rotation.x = 0.22;
+  scene.add(outerGroup, innerGroup, thirdGroup, fourthGroup, fifthGroup, sixthGroup, seventhGroup, eighthGroup, wingGroup, looseGroup);
 
   const kernelMat = new THREE.MeshStandardMaterial({ color: 0x090704, roughness: 0.96, metalness: 0.02 });
   const kernel = new THREE.Group();
@@ -287,6 +293,10 @@ export function createEyeWheel(root) {
   const fifthTube = 0.2;
   const sixthR = 2.95;
   const sixthTube = 0.1;
+  const seventhR = 0.78;
+  const seventhTube = 0.14;
+  const eighthR = 3.35;
+  const eighthTube = 0.07;
 
   function metalMat(color, emit) {
     return new THREE.MeshStandardMaterial({
@@ -323,27 +333,44 @@ export function createEyeWheel(root) {
     new THREE.TorusGeometry(sixthR, sixthTube, Math.max(8, cfg.tube - 8), Math.max(36, cfg.radial - 28)),
     metalMat(pal0.metal, pal0.emit)
   );
+  const seventhMesh = new THREE.Mesh(
+    new THREE.TorusGeometry(seventhR, seventhTube, Math.max(8, cfg.tube - 8), Math.max(32, cfg.radial - 32)),
+    metalMat(pal0.metal, pal0.emit)
+  );
+  const eighthMesh = new THREE.Mesh(
+    new THREE.TorusGeometry(eighthR, eighthTube, Math.max(8, cfg.tube - 10), Math.max(32, cfg.radial - 34)),
+    metalMat(pal0.metal, pal0.emit)
+  );
   outerGroup.add(outerMesh);
   innerGroup.add(innerMesh);
   thirdGroup.add(thirdMesh);
   fourthGroup.add(fourthMesh);
   fifthGroup.add(fifthMesh);
   sixthGroup.add(sixthMesh);
+  seventhGroup.add(seventhMesh);
+  eighthGroup.add(eighthMesh);
 
   const spokeMat = metalMat(pal0.metal, pal0.emit);
   const spokes = [];
-  for (let i = 0; i < 10; i++) {
-    const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.02, outerR * 2.05, 6), spokeMat);
-    spoke.rotation.z = (i / 10) * Math.PI;
+  for (let i = 0; i < 16; i++) {
+    const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.016, outerR * 2.05, 6), spokeMat);
+    spoke.rotation.z = (i / 16) * Math.PI;
     outerGroup.add(spoke);
     spokes.push(spoke);
   }
-  for (let i = 0; i < 6; i++) {
-    const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.016, innerR * 2.02, 6), spokeMat);
+  for (let i = 0; i < 10; i++) {
+    const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.014, innerR * 2.02, 6), spokeMat);
     spoke.rotation.x = Math.PI * 0.5;
-    spoke.rotation.z = (i / 6) * Math.PI;
+    spoke.rotation.z = (i / 10) * Math.PI;
     innerGroup.add(spoke);
     spokes.push(spoke);
+  }
+  for (let i = 0; i < 6; i++) {
+    const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 6.2, 8), spokeMat);
+    axle.rotation.z = (i / 6) * Math.PI;
+    axle.rotation.x = (i % 2) * 0.7;
+    scene.add(axle);
+    spokes.push(axle);
   }
 
   const fire = new THREE.Mesh(
@@ -364,10 +391,10 @@ export function createEyeWheel(root) {
     side: THREE.DoubleSide,
     depthWrite: false,
   });
-  for (let i = 0; i < 4; i++) {
-    const face = new THREE.Mesh(new THREE.CircleGeometry(0.55, 16), faceMat);
-    const a = (i / 4) * Math.PI * 2;
-    face.position.set(Math.cos(a) * 1.05, Math.sin(a) * 0.35, Math.sin(a) * 1.05);
+  for (let i = 0; i < 8; i++) {
+    const face = new THREE.Mesh(new THREE.CircleGeometry(0.42, 16), faceMat);
+    const a = (i / 8) * Math.PI * 2;
+    face.position.set(Math.cos(a) * 1.15, Math.sin(a * 2) * 0.4, Math.sin(a) * 1.15);
     face.lookAt(0, 0, 0);
     faces.add(face);
   }
@@ -379,16 +406,20 @@ export function createEyeWheel(root) {
   const fourthEyes = makeEyeField(fourthR, fourthTube, Math.max(10, cfg.uSeg - 6), Math.max(6, cfg.vSeg - 3), 0.2);
   const fifthEyes = makeEyeField(fifthR, fifthTube, Math.max(8, cfg.uSeg - 8), Math.max(6, cfg.vSeg - 4), 0.22);
   const sixthEyes = makeEyeField(sixthR, sixthTube, Math.max(8, cfg.uSeg - 8), Math.max(5, cfg.vSeg - 5), 0.16);
+  const seventhEyes = makeEyeField(seventhR, seventhTube, Math.max(6, cfg.uSeg - 10), Math.max(5, cfg.vSeg - 5), 0.2);
+  const eighthEyes = makeEyeField(eighthR, eighthTube, Math.max(6, cfg.uSeg - 10), Math.max(4, cfg.vSeg - 6), 0.12);
   outerGroup.add(outerEyes.mesh);
   innerGroup.add(innerEyes.mesh);
   thirdGroup.add(thirdEyes.mesh);
   fourthGroup.add(fourthEyes.mesh);
   fifthGroup.add(fifthEyes.mesh);
   sixthGroup.add(sixthEyes.mesh);
+  seventhGroup.add(seventhEyes.mesh);
+  eighthGroup.add(eighthEyes.mesh);
 
-  const eyeFields = [outerEyes, innerEyes, thirdEyes, fourthEyes, fifthEyes, sixthEyes];
+  const eyeFields = [outerEyes, innerEyes, thirdEyes, fourthEyes, fifthEyes, sixthEyes, seventhEyes, eighthEyes];
 
-  const looseCount = cfg.host + 8;
+  const looseCount = cfg.host + 14;
   for (let i = 0; i < looseCount; i++) {
     const eye = new THREE.Mesh(
       new THREE.PlaneGeometry(0.28 + throne.rng() * 0.85, 0.14 + throne.rng() * 0.48),
@@ -486,7 +517,7 @@ export function createEyeWheel(root) {
       m.uniforms.uIrisA.value.lerp(pal.irisA, Math.min(1, dt * 1.8));
       m.uniforms.uIrisB.value.lerp(pal.irisB, Math.min(1, dt * 1.8));
     }
-    for (const mesh of [outerMesh, innerMesh, thirdMesh, fourthMesh, fifthMesh, sixthMesh, ...spokes]) {
+    for (const mesh of [outerMesh, innerMesh, thirdMesh, fourthMesh, fifthMesh, sixthMesh, seventhMesh, eighthMesh, ...spokes]) {
       mesh.material.color.lerp(new THREE.Color(pal.metal), Math.min(1, dt * 1.2));
       mesh.material.emissive.lerp(new THREE.Color(pal.emit), Math.min(1, dt * 1.2));
     }
@@ -535,6 +566,10 @@ export function createEyeWheel(root) {
     fifthGroup.rotation.y += dt * 0.14 * spin;
     sixthGroup.rotation.x += dt * -0.22 * spin;
     sixthGroup.rotation.z += dt * 0.11 * spin;
+    seventhGroup.rotation.y += dt * 0.62 * spin;
+    seventhGroup.rotation.x += dt * 0.2 * spin;
+    eighthGroup.rotation.z += dt * -0.16 * spin;
+    eighthGroup.rotation.y += dt * 0.09 * spin;
     fire.rotation.y += dt * 0.8 * spin;
     fire.rotation.x = Math.sin(t * 0.6) * 0.4;
     const fireMul = aspect.fire || 1;
@@ -722,7 +757,7 @@ export function createEyeWheel(root) {
       pulseScale = 1.22;
     },
     nudgeZ(delta) {
-      zNudge = Math.max(-2.2, Math.min(2.4, zNudge + delta));
+      zNudge = Math.max(-3.2, Math.min(7.4, zNudge + delta));
     },
     setSpinBoost(n) {
       spinBoost = n;

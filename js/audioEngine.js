@@ -433,6 +433,25 @@ export function createAudioEngine() {
       if (droneGain) droneGain.gain.setTargetAtTime(0.3 * droneMul * (on ? 1.55 : 1), t, 0.3);
       if (hallIn) hallIn.gain.setTargetAtTime(on ? 0.85 : 0.55, t, 0.25);
     },
+    scream() {
+      if (!started || !ctx || throne.muted) return;
+      const hits = [48, 62, 41, 77, 33, 54, 90];
+      hits.forEach((f, i) => {
+        dreadHit(ctx, bellGain, {
+          f,
+          g: 0.28,
+          d: 3.4,
+          drop: 0.22,
+          stagger: i * 0.07,
+          type: i % 2 ? "square" : "sawtooth",
+        });
+      });
+      if (noiseG) {
+        const t = ctx.currentTime;
+        noiseG.gain.setTargetAtTime(0.7, t, 0.04);
+        noiseG.gain.setTargetAtTime(0.22, t + 1.8, 0.35);
+      }
+    },
     strike() {
       if (!started || !ctx || throne.muted) return;
       [16, 22, 16 * 1.414, 27].forEach((f, i) => {
