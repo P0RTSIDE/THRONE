@@ -423,7 +423,7 @@ html.charging .mouth {
 
 html.charging .charge {
   opacity: 0.85;
-  animation: charge-grow 1.35s linear forwards;
+  animation: charge-grow 0.9s linear forwards;
 }
 
 html.offering .mouth {
@@ -432,7 +432,7 @@ html.offering .mouth {
 
 html.offering .charge {
   opacity: 0.95;
-  animation: charge-grow 2.6s linear forwards;
+  animation: charge-grow 1.4s linear forwards;
 }
 
 html.offered .mouth,
@@ -535,21 +535,34 @@ body.aspect-offered {
 }
 
 .fear-not {
+  position: fixed;
   left: 50%;
   top: auto;
-  bottom: 16px;
+  bottom: 18px;
   transform: translateX(-50%);
   font-family: var(--font-hud);
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  background: rgba(28, 16, 8, 0.72);
+  background: rgba(28, 16, 8, 0.92);
   color: var(--gold-hot);
   border: 1px solid var(--gold);
   border-radius: 2px;
   padding: 10px 16px;
-  font-size: 11px;
-  box-shadow: 0 0 0 3px rgba(20, 10, 4, 0.55), 0 0 18px rgba(201, 162, 39, 0.18);
-  z-index: 6;
+  font-size: 12px;
+  box-shadow: 0 0 0 3px rgba(20, 10, 4, 0.55), 0 0 22px rgba(201, 162, 39, 0.35);
+  z-index: 19;
+  pointer-events: auto;
+}
+
+.fear-not-hint {
+  display: block;
+  margin-top: 5px;
+  max-width: 22em;
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  text-transform: none;
+  opacity: 0.82;
 }
 
 .fear-not.spawned {
@@ -962,6 +975,57 @@ body.pulse-on .pulse {
   transition: opacity 0.2s linear;
 }
 
+.death {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 24px;
+  background: rgba(8, 2, 4, 0.88);
+  color: var(--gold-hot);
+  text-align: center;
+}
+
+.death[hidden] {
+  display: none;
+}
+
+.death-line {
+  max-width: 28em;
+  font-family: var(--font-body);
+  font-size: 22px;
+  font-style: italic;
+  margin: 0;
+}
+
+.death button {
+  font-family: var(--font-hud);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--gold-hot);
+  border: 1px solid var(--gold);
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+html.overwhelmed .wheel-root {
+  filter: contrast(1.35) saturate(1.6);
+}
+
+html.overwhelmed .inside {
+  opacity: 0.55;
+  background: radial-gradient(circle at 50% 48%, rgba(255, 255, 255, 0.4), transparent 48%);
+}
+
+html.overwhelmed .caption {
+  opacity: 1;
+}
+
 /* ----- Floating liturgy windows ----- */
 .world-relic {
   position: absolute;
@@ -1019,6 +1083,11 @@ html.knife-found .self-hand,
 .self-hand:hover,
 .self-hand:focus-visible {
   opacity: 1;
+}
+
+.world-relic.crafted {
+  box-shadow: 0 0 16px rgba(240, 208, 120, 0.35);
+  border-color: var(--gold-hot);
 }
 
 .boy-face {
@@ -1175,7 +1244,11 @@ html.calm.blade-self .wheel-root {
 }
 
 .plane-ledger {
-  width: min(280px, 38vw);
+  width: min(320px, 42vw);
+}
+
+#petition {
+  width: min(300px, 42vw);
 }
 
 #attendants {

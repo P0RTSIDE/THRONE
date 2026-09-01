@@ -159,6 +159,12 @@ export function createChaosUI({ audio, wheel }) {
   const MAX_FEAR = 21;
   let lastBlurb = "";
   let nextBlurbAt = 0;
+  let stareMs = 0;
+  let stareWarned = false;
+  let stareCool = 0;
+  let lastStareAt = 0;
+  let bindCarry = () => {};
+  const forged = new Set();
 
   function speakBlurb(ms = 2800) {
     if (throne.calm || !throne.entered || throne.lore.lock) return;
@@ -196,6 +202,36 @@ export function createChaosUI({ audio, wheel }) {
   wireWindows(audio, wheel);
   wirePlaneDrag();
   wireCarry(audio, wheel);
+
+  function overwhelm() {
+    if (throne.lore.offered || document.documentElement.classList.contains("overwhelmed")) return;
+    document.documentElement.classList.add("overwhelmed");
+    const death = document.getElementById("death");
+    if (death) death.hidden = false;
+    audio.scream?.();
+    wheel.setAspect?.("unblinking");
+    wheel.setSpinBoost?.(3.4);
+    comprehension = 99;
+    showCaption("too long. it poured the count into you.", 4200);
+    maybeStrobe(true);
+  }
+
+  function wakeFromDeath() {
+    document.documentElement.classList.remove("overwhelmed");
+    const death = document.getElementById("death");
+    if (death) death.hidden = true;
+    stareMs = 0;
+    stareWarned = false;
+    stareCool = performance.now() + 8000;
+    wheel.setSpinBoost?.(1);
+    wheel.setAspect?.("witness");
+    showCaption("look away sooner. the wheels keep what they take.", 4200);
+  }
+
+  document.getElementById("death-wake")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    wakeFromDeath();
+  });
 
   // ----- Cursor + particles -----
   window.addEventListener("pointermove", (e) => {
@@ -243,10 +279,14 @@ export function createChaosUI({ audio, wheel }) {
         n.className = "fear-not relic";
         n.type = "button";
         n.textContent = "Fear Not";
+        const hint = document.createElement("span");
+        hint.className = "fear-not-hint";
+        hint.textContent = "click it, hold it, or carry it to the light. it is already yours.";
+        n.appendChild(hint);
         n.style.left = "50%";
         n.style.top = "auto";
-        n.style.bottom = "16px";
-        document.getElementById("firmament")?.appendChild(n);
+        n.style.bottom = "18px";
+        document.body.appendChild(n);
         bindFear(n);
       }, 8000);
     }
@@ -343,7 +383,8 @@ export function createChaosUI({ audio, wheel }) {
         n.style.left = `${randRange(18, 82)}%`;
         n.style.top = `${randRange(22, 78)}%`;
         n.style.transform = `rotate(${randRange(-12, 12)}deg) scale(${randRange(0.7, 0.9)})`;
-        document.getElementById("firmament")?.appendChild(n);
+        document.body.appendChild(n);
+        n.style.position = "fixed";
         fearCount++;
         bindFear(n);
       }
@@ -421,7 +462,7 @@ export function createChaosUI({ audio, wheel }) {
             document.documentElement.classList.remove("offering", "charging");
             audio.charge(false);
             window.dispatchEvent(new CustomEvent("throne:offer"));
-          }, 2600);
+          }, 1400);
         } else {
           window.dispatchEvent(new CustomEvent("throne:rapture", { detail: { on: false } }));
           audio.ping("mouth");
@@ -435,7 +476,7 @@ export function createChaosUI({ audio, wheel }) {
         document.documentElement.classList.remove("charging");
         audio.charge(false);
         window.dispatchEvent(new CustomEvent("throne:rapture", { detail: { on: true } }));
-      }, 1350);
+      }, 900);
     });
     const cancel = () => {
       clearTimeout(hold);
@@ -463,8 +504,44 @@ export function createChaosUI({ audio, wheel }) {
     return Math.hypot(x - cx, y - cy) < hit;
   }
 
+  const COMBOS = {
+    "fire|knife": { id: "ritual", label: "the ritual knife" },
+    "fire|wood": { id: "pyre", label: "the pyre" },
+    "cord|knife": { id: "bound-knife", label: "the bound knife" },
+    "cord|wood": { id: "altar", label: "the altar" },
+    "cord|fire": { id: "brand", label: "the brand" },
+    "face|knife": { id: "portion", label: "his portion" },
+    "face|ritual": { id: "portion", label: "his portion" },
+    "altar|knife": { id: "offering-blade", label: "the offering blade" },
+    "knife|pyre": { id: "offering-blade", label: "the offering blade" },
+    "ritual|wood": { id: "offering-blade", label: "the offering blade" },
+  };
+
+  function pairKey(a, b) {
+    return [a, b].filter(Boolean).sort().join("|");
+  }
+
+  function spawnCrafted(id, label, x, y) {
+    const field = document.getElementById("relic-field");
+    if (!field) return null;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "world-relic crafted";
+    btn.setAttribute("data-relic", id);
+    btn.setAttribute("data-carry", id);
+    btn.textContent = label;
+    const box = field.getBoundingClientRect();
+    const leftPct = ((x - box.left) / Math.max(box.width, 1)) * 100;
+    const topPct = ((y - box.top) / Math.max(box.height, 1)) * 100;
+    btn.style.left = `${Math.max(4, Math.min(96, leftPct)).toFixed(1)}%`;
+    btn.style.top = `${Math.max(4, Math.min(96, topPct)).toFixed(1)}%`;
+    field.appendChild(btn);
+    bindCarry(btn);
+    return btn;
+  }
+
   function wireCarry(audio) {
-    function bindCarry(btn) {
+    bindCarry = function bindCarry(btn) {
       let downAt = 0;
       let startX = 0;
       let startY = 0;
@@ -518,6 +595,24 @@ export function createChaosUI({ audio, wheel }) {
         const held = performance.now() - downAt;
         downAt = 0;
         if (dragging) {
+          const others = [...document.querySelectorAll("[data-carry], [data-relic]")].filter((el) => el !== btn && !el.hidden);
+          for (const other of others) {
+            if (!nearEl(other, e.clientX, e.clientY, 1.4)) continue;
+            const otherId = other.getAttribute("data-carry") || other.getAttribute("data-relic");
+            const combo = COMBOS[pairKey(id, otherId)];
+            if (!combo) continue;
+            restore();
+            dragging = false;
+            if (forged.has(combo.id)) {
+              showCaption("you already made that. carry it to the light or your hand.", 3200);
+              return;
+            }
+            forged.add(combo.id);
+            spawnCrafted(combo.id, combo.label, e.clientX, e.clientY);
+            showCaption(`${combo.label} is made. carry it to the light or to your hand.`, 4200);
+            window.dispatchEvent(new CustomEvent("throne:relic", { detail: { id: combo.id } }));
+            return;
+          }
           const mouth = document.getElementById("mouth");
           const hand = document.getElementById("self-hand");
           const fire = document.querySelector('[data-relic="fire"]');
@@ -531,7 +626,9 @@ export function createChaosUI({ audio, wheel }) {
             window.dispatchEvent(new CustomEvent("throne:use", { detail: { id, target } }));
             return;
           }
-          if (id === "knife") showCaption("the wheels, or the hand that raised it", 2800);
+          if (id === "knife" || id === "ritual" || id === "offering-blade") {
+            showCaption("the wheels, or the hand that raised it", 2800);
+          }
           return;
         }
         dragging = false;
@@ -596,7 +693,7 @@ export function createChaosUI({ audio, wheel }) {
     window.addEventListener("pointerdown", (e) => {
       if (!throne.entered || e.button !== 0) return;
       const el = e.target instanceof Element ? e.target : null;
-      if (el?.closest(".hud-safe, .veil, .mouth, .fear-not, .plane, .witness, .dock, .world-relic, .self-hand, .carrying, button, input, textarea, label, a")) return;
+      if (el?.closest(".hud-safe, .veil, .mouth, .fear-not, .plane, .witness, .dock, .world-relic, .self-hand, .carrying, .death, button, input, textarea, label, a")) return;
       down = true;
       lastX = e.clientX;
       lastY = e.clientY;
@@ -628,7 +725,7 @@ export function createChaosUI({ audio, wheel }) {
       if (!throne.entered || throne.calm) return;
       if (e.target.closest(".hud-safe")) return;
       e.preventDefault();
-      wheel.nudgeZ(e.deltaY * 0.004);
+      wheel.nudgeZ(e.deltaY * 0.007);
       audio.setDepth(Math.max(0, Math.min(1, throne.depth + (e.deltaY > 0 ? 0.03 : -0.03))));
       const now = performance.now();
       if (now - lastZoom > 180) {
@@ -838,23 +935,24 @@ export function createChaosUI({ audio, wheel }) {
     });
 
     let avertedArmed = false;
-    averted?.addEventListener("pointerenter", () => {
-      avertedArmed = true;
-      audio.ping("hover");
-    });
     averted?.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      showCaption("it will not be touched directly", 2200);
+      avertedArmed = true;
+      averted.setAttribute("aria-pressed", "true");
+      audio.ping("click");
+      showCaption("now click the empty dark. not this button. looking away is the approach.", 4800);
     });
     document.addEventListener("click", (e) => {
       if (!avertedArmed || !throne.entered) return;
-      if (e.target.closest(".hud-safe, .averted")) return;
+      if (e.target.closest(".hud-safe, .averted, .plane, .fear-not, .world-relic, .mouth")) return;
       avertedArmed = false;
+      averted?.setAttribute("aria-pressed", "false");
       audio.ping("click");
       triggerPulse();
       wheel.openDistantEye();
-      showCaption("looking away was the approach", 2800);
+      wheel.shudder();
+      showCaption("looking away was the approach. a far lid lifts.", 4200);
     });
 
     fleeEls.forEach((el) => {
@@ -1013,6 +1111,28 @@ export function createChaosUI({ audio, wheel }) {
   }
 
   function tickChaos(t) {
+    if (throne.entered && !throne.lore.offered && !document.documentElement.classList.contains("overwhelmed")) {
+      const cx = window.innerWidth * 0.5;
+      const cy = window.innerHeight * 0.48;
+      const reach = Math.min(window.innerWidth, window.innerHeight) * 0.2;
+      const near = Math.hypot(throne.mouse.x - cx, throne.mouse.y - cy) < reach;
+      const dt = lastStareAt ? Math.min(48, t - lastStareAt) : 16;
+      lastStareAt = t;
+      if (t < stareCool) {
+        stareMs = 0;
+      } else if (near) {
+        stareMs += dt;
+        if (!stareWarned && stareMs > 4500) {
+          stareWarned = true;
+          showCaption("look away. it is filling you.", 2800);
+        }
+        if (stareMs > 8500) overwhelm();
+      } else {
+        stareMs = Math.max(0, stareMs - dt * 1.4);
+        if (stareMs < 2000) stareWarned = false;
+      }
+    }
+
     if (geo && !throne.calm) {
       geo.style.opacity = String(0.12 + 0.22 * (0.5 + 0.5 * Math.sin(t * 0.0011)));
     }

@@ -42,7 +42,11 @@ export function createArg({ audio, wheel }) {
       lore.confessed = true;
       once("confessed", "you finished what no voice stopped", 4200);
     }
-    lore.canOffer = !!(lore.confessed && lore.fed >= 1 && lore.raptured >= 1 && !lore.offered);
+    lore.canOffer = !!(
+      !lore.offered &&
+      lore.raptured >= 1 &&
+      (lore.fed >= 1 || lore.feared >= 1 || lore.named || lore.knife || lore.confessed)
+    );
     if (lore.canOffer && !state.offerHinted) {
       state.offerHinted = true;
       window.setTimeout(() => {
@@ -253,12 +257,22 @@ export function createArg({ audio, wheel }) {
   window.addEventListener("throne:petition", (e) => {
     if (throne.lore.offered) return;
     const blob = `${e.detail?.forgotten || ""} ${e.detail?.petition || ""}`.toUpperCase();
+    if (/\bTALK\b|\bSPEAK\b|\bVOICE\b|\bSCREAM\b|\bCALL HIM\b|\bSAY SOMETHING\b/.test(blob)) {
+      audio.scream?.();
+      showCaption("he does not speak. he only screams.", 5200);
+      return;
+    }
     if (/\bISAAC\b|\bSON\b|\bBOY\b|\bCHILD\b/.test(blob)) {
       nameTheBoy();
     } else if (/\bKNIFE\b|\bBOUND\b|\bRAM\b|\bABRAHAM\b/.test(blob)) {
       confess();
+    } else if (/\bTAKE ME\b|\bINSTEAD\b|\bMY PLACE\b|\bMY LIFE\b/.test(blob)) {
+      throne.lore.confessed = true;
+      refreshOffer();
+      if (throne.raptured || throne.lore.raptured >= 1) offer();
+      else once("takewait", "hold the center first. then write take me again, or hold the center from inside.", 4800);
     } else {
-      once("petition", "it keeps the asking and drops the name", 3200);
+      once("petition", "write Isaac, boy, knife, take me, or talk. it will not guess.", 4200);
     }
   });
 
@@ -296,6 +310,20 @@ export function createArg({ audio, wheel }) {
     } else if (id === "face") {
       nameTheBoy();
       once("face", "carry his face to the light if you can still look at it.", 4200);
+    } else if (id === "ritual") {
+      once("ritual", "a knife that has already known fire. the light or your hand will finish it.", 4800);
+    } else if (id === "pyre") {
+      once("pyre", "the wood takes. carry the pyre to the light if you still mean the hill.", 4200);
+    } else if (id === "bound-knife") {
+      once("boundknife", "cord and blade together. that is how you held him.", 4200);
+    } else if (id === "altar") {
+      once("altarmade", "wood and cord make a place. it is still empty of a boy.", 4200);
+    } else if (id === "brand") {
+      once("brand", "the mark remembers a wrist. carry it to the hand or the light.", 4200);
+    } else if (id === "portion") {
+      once("portion", "you made a portion of him. the light will take it.", 4200);
+    } else if (id === "offering-blade") {
+      once("offblade", "this blade is finished. your hand is the last step.", 4200);
     }
   });
 
@@ -332,10 +360,10 @@ export function createArg({ audio, wheel }) {
       wheel.bleed?.();
       audio.strike();
       showCaption("you turn the old instruction on the hand that raised it.", 4200);
-      if (throne.lore.canOffer || (throne.lore.confessed && throne.lore.raptured >= 1)) {
-        window.setTimeout(() => offer(), 1600);
+      if (throne.lore.canOffer || throne.lore.raptured >= 1 || throne.lore.fed >= 1) {
+        window.setTimeout(() => offer(), 900);
       } else {
-        once("bladeneed", "the hill still wants Fear Not in the light, then the center held.", 4800);
+        once("bladeneed", "hold the center once, or carry Fear Not into the light. then the hand will finish it.", 4800);
       }
       return;
     }
@@ -364,6 +392,91 @@ export function createArg({ audio, wheel }) {
     }
     if (id === "fire" && target === "angel") {
       become("seraph", "the instruction is taken literally");
+      return;
+    }
+    if (id === "ritual" && target === "angel") {
+      throne.lore.knife = true;
+      confess("", true);
+      flashBlade("blade-angel");
+      wheel.wound?.();
+      audio.strike();
+      become("inverted", "the ritual knife finds a living wheel");
+      refreshOffer();
+      return;
+    }
+    if (id === "ritual" && target === "self") {
+      throne.lore.knife = true;
+      throne.lore.confessed = true;
+      flashBlade("blade-self");
+      wheel.bleed?.();
+      audio.strike();
+      showCaption("the ritual knife remembers which throat was meant.", 4200);
+      refreshOffer();
+      if (throne.lore.raptured >= 1 || throne.lore.fed >= 1) window.setTimeout(() => offer(), 900);
+      return;
+    }
+    if (id === "pyre" && target === "angel") {
+      confess("", true);
+      become("seraph", "the pyre is offered and the wings stand");
+      refreshOffer();
+      return;
+    }
+    if (id === "pyre" && target === "self") {
+      confess("you stand where the wood was stacked.", true);
+      showCaption("you stand where the wood was stacked.", 3600);
+      refreshOffer();
+      return;
+    }
+    if (id === "bound-knife" && (target === "self" || target === "angel")) {
+      throne.lore.knife = true;
+      confess("", true);
+      if (target === "angel") {
+        flashBlade("blade-angel");
+        wheel.wound?.();
+        become("inverted", "the cord still holds the blade to the work");
+      } else {
+        flashBlade("blade-self");
+        wheel.bleed?.();
+        showCaption("you know this knot from the other side.", 3600);
+        if (throne.lore.raptured >= 1) window.setTimeout(() => offer(), 900);
+      }
+      refreshOffer();
+      return;
+    }
+    if (id === "altar" && (target === "angel" || target === "self")) {
+      confess("", true);
+      wheel.pulse();
+      audio.strike();
+      showCaption("the place is ready. Fear Not and the center will finish the trade.", 4200);
+      refreshOffer();
+      return;
+    }
+    if (id === "brand" && target === "angel") {
+      become("seraph", "the mark is pressed into the living thing");
+      return;
+    }
+    if (id === "brand" && target === "self") {
+      confess("", true);
+      wheel.bleed?.();
+      showCaption("the mark finds the hand that tied it.", 3600);
+      refreshOffer();
+      return;
+    }
+    if (id === "portion" && target === "angel") {
+      nameTheBoy();
+      become("name", "you gave the light a portion of him");
+      wheel.showFace?.();
+      refreshOffer();
+      return;
+    }
+    if (id === "offering-blade" && (target === "self" || target === "angel")) {
+      throne.lore.knife = true;
+      throne.lore.confessed = true;
+      flashBlade(target === "self" ? "blade-self" : "blade-angel");
+      audio.strike();
+      refreshOffer();
+      if (throne.lore.raptured >= 1 || throne.raptured) window.setTimeout(() => offer(), 700);
+      else once("offneed", "hold the center, then bring the offering blade back to your hand.", 4200);
       return;
     }
     if (target === "angel") {
@@ -411,12 +524,12 @@ export function createArg({ audio, wheel }) {
     }
     if (t.includes("TAKEME") || t.includes("INSTEAD") || t.includes("MYPLACE") || t.includes("MYLIFE")) {
       state.typed = "";
-      if (throne.raptured && (throne.lore.confessed || (throne.lore.named && throne.lore.fed >= 1))) {
+      if (throne.raptured || throne.lore.raptured >= 1) {
         throne.lore.confessed = true;
         refreshOffer();
         offer();
       } else {
-        once("takewait", "look around. feed Fear Not to the center. then hold the center from inside.", 4200);
+        once("takewait", "hold the center first. then take me will finish it.", 4200);
       }
     }
     if (t.includes("BENOTAFRAID")) {
