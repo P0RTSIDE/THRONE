@@ -497,6 +497,7 @@ export function createAudioEngine() {
         name: { formant: 0.5, drone: 0.7, extra: 0.2, noise: 0.08, reverse: false, extraHz: 20 },
         hush: { formant: 0.25, drone: 0.5, extra: 0.06, noise: 0.06, reverse: false, extraHz: 18 },
         offered: { formant: 0.55, drone: 0.4, extra: 0.18, noise: 0.05, reverse: false, extraHz: 13 },
+        ascended: { formant: 1.9, drone: 0.92, extra: 0.3, noise: 0.07, reverse: false, extraHz: 17 },
         judged: { formant: 1.8, drone: 1.1, extra: 0.16, noise: 0.38, reverse: true, extraHz: 12 },
         praised: { formant: 2.0, drone: 1.2, extra: 0.17, noise: 0.14, reverse: false, extraHz: 26 },
         slain: { formant: 0.15, drone: 0.28, extra: 0.04, noise: 0.04, reverse: false, extraHz: 9 },

@@ -108,11 +108,18 @@ const BLURBS = {
     "he finished the count that finished him",
     "the living thing is quiet",
   ],
+  ascended: [
+    "you are the looking now",
+    "he is still on the hill",
+    "a father is a small thing from here",
+    "the boy is finished. the count kept you.",
+  ],
 };
 
 function blurbPool() {
   const lore = throne.lore;
   if (lore.angelSlain) return BLURBS.slain;
+  if (lore.ascended) return BLURBS.ascended;
   if (lore.offered) return BLURBS.offered;
   if (lore.isaac) return BLURBS.isaac;
   if (lore.judged) return BLURBS.judged;
@@ -231,7 +238,7 @@ export function createChaosUI({ audio, wheel }) {
   let fallReload = false;
 
   function overwhelm() {
-    if (throne.lore.offered || document.documentElement.classList.contains("falling")) return;
+    if (throne.lore.offered || throne.lore.ascended || document.documentElement.classList.contains("falling")) return;
     document.documentElement.classList.add("falling");
     throne.lore.lock = true;
     throne.fall = 0.001;
@@ -466,7 +473,7 @@ export function createChaosUI({ audio, wheel }) {
     mouth.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      if (throne.lore.offered) return;
+      if (throne.lore.offered || throne.lore.ascended) return;
       if (throne.raptured) {
         if (throne.lore.canOffer) {
           document.documentElement.classList.add("offering");
@@ -500,7 +507,7 @@ export function createChaosUI({ audio, wheel }) {
     mouth.addEventListener("pointerup", cancel);
     mouth.addEventListener("pointerleave", cancel);
     window.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && throne.raptured && !throne.lore.offered) {
+      if (e.key === "Escape" && throne.raptured && !throne.lore.offered && !throne.lore.ascended) {
         clearTimeout(hold);
         document.documentElement.classList.remove("offering", "charging");
         window.dispatchEvent(new CustomEvent("throne:rapture", { detail: { on: false } }));
@@ -554,6 +561,11 @@ export function createChaosUI({ audio, wheel }) {
     "fire|pentagram": { id: "other-hill", label: "the other hill", line: "the star remembers a hill that was not this one" },
     "pentagram|wood": { id: "other-hill", label: "the other hill", line: "wood and the mark invent another place" },
     "brand|pentagram": { id: "devil-mark", label: "the devil mark", line: "the wrist and the star agree on a name" },
+    "isaac|knife": { id: "second-death", consume: ["isaac"], unique: true, noSpawn: true, line: "you finish it this time. no voice arrives." },
+    "isaac|ritual": { id: "second-death", consume: ["isaac"], unique: true, noSpawn: true, line: "you finish it this time. no voice arrives." },
+    "isaac|bound-knife": { id: "second-death", consume: ["isaac"], unique: true, noSpawn: true, line: "that is how you held him. this time no voice arrives." },
+    "isaac|star-knife": { id: "second-death", consume: ["isaac"], unique: true, noSpawn: true, line: "the starred blade remembers the first throat." },
+    "isaac|offering-blade": { id: "second-death", consume: ["isaac"], unique: true, noSpawn: true, line: "the last step was always him." },
   };
 
   const itchOnce = new Set();
@@ -587,6 +599,16 @@ export function createChaosUI({ audio, wheel }) {
     "isaac|pentagram": "the mark wants the living thing",
     "pentagram|isaac": "the mark wants the living thing",
     "isaac|self": "you cannot hold him. he is already holding you.",
+    "isaac|knife": "the first job is still in the hand",
+    "knife|isaac": "the first job is still in the hand",
+    "isaac|ritual": "the first job is still in the hand",
+    "ritual|isaac": "the first job is still in the hand",
+    "isaac|bound-knife": "that is how you held him",
+    "bound-knife|isaac": "that is how you held him",
+    "isaac|star-knife": "the starred blade remembers the first throat",
+    "star-knife|isaac": "the starred blade remembers the first throat",
+    "isaac|offering-blade": "the last step was always him",
+    "offering-blade|isaac": "the last step was always him",
     "goat|self": "a substitute is not a son. it can still die.",
     "pentagram|self": "the mark would like a throat that answers",
   };
@@ -664,7 +686,7 @@ export function createChaosUI({ audio, wheel }) {
     if (combo.reveal) {
       const el = document.getElementById(combo.reveal);
       if (el) el.hidden = false;
-    } else {
+    } else if (!combo.noSpawn) {
       spawnCrafted(combo.id, combo.label, x, y, combo.class);
     }
     showCaption(combo.line || "they remember each other", 4200);
@@ -1488,7 +1510,7 @@ export function createChaosUI({ audio, wheel }) {
       }
     }
 
-    if (throne.entered && !throne.lore.offered && !document.documentElement.classList.contains("falling")) {
+    if (throne.entered && !throne.lore.offered && !throne.lore.ascended && !document.documentElement.classList.contains("falling")) {
       const cx = window.innerWidth * 0.5;
       const cy = window.innerHeight * 0.48;
       const reach = Math.min(window.innerWidth, window.innerHeight) * 0.2;

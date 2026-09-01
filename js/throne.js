@@ -39,6 +39,7 @@ export const throne = {
     isaac: false,
     angelSlain: false,
     forgotFace: false,
+    ascended: false,
     petitions: 0,
   },
 };
