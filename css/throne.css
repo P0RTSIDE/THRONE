@@ -975,55 +975,47 @@ body.pulse-on .pulse {
   transition: opacity 0.2s linear;
 }
 
-.death {
+.fall-white {
   position: fixed;
   inset: 0;
-  z-index: 40;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  padding: 24px;
-  background: rgba(8, 2, 4, 0.88);
-  color: var(--gold-hot);
-  text-align: center;
+  z-index: 50;
+  background: #ffffff;
+  opacity: 0;
+  pointer-events: none;
 }
 
-.death[hidden] {
-  display: none;
-}
-
-.death-line {
-  max-width: 28em;
-  font-family: var(--font-body);
-  font-size: 22px;
-  font-style: italic;
-  margin: 0;
-}
-
-.death button {
-  font-family: var(--font-hud);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  background: transparent;
-  color: var(--gold-hot);
-  border: 1px solid var(--gold);
-  padding: 10px 16px;
-  cursor: pointer;
-}
-
-html.overwhelmed .wheel-root {
-  filter: contrast(1.35) saturate(1.6);
-}
-
-html.overwhelmed .inside {
-  opacity: 0.55;
-  background: radial-gradient(circle at 50% 48%, rgba(255, 255, 255, 0.4), transparent 48%);
-}
-
-html.overwhelmed .caption {
+html.falling-white .fall-white {
   opacity: 1;
+  transition: opacity 1.6s linear;
+}
+
+html.falling .abyss {
+  z-index: 8;
+}
+
+html.falling .wheel-root {
+  z-index: 7;
+  animation: fall-through 2.6s ease-in forwards;
+}
+
+html.falling .plane,
+html.falling .fear-not,
+html.falling .dock,
+html.falling .self-hand,
+html.falling .world-relic,
+html.falling .hud-safe,
+html.falling .caption,
+html.falling .inside,
+html.falling .vignette,
+html.falling .mouth {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+@keyframes fall-through {
+  0% { transform: scale(1); opacity: 1; }
+  55% { transform: scale(7); opacity: 0.4; }
+  100% { transform: scale(16); opacity: 0; }
 }
 
 /* ----- Floating liturgy windows ----- */
