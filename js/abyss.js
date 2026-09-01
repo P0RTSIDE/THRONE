@@ -215,6 +215,7 @@ export function createAbyss(canvas) {
         name: 0.4,
         hush: 2.1,
         offered: 0.2,
+        ascended: 0.32,
         judged: 5,
         praised: 3,
         slain: 2.4,

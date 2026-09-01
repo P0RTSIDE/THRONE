@@ -19,6 +19,7 @@ const ASPECT_CAPTIONS = {
   praised: "the count accepts the substitute",
   slain: "the wheels have no one left to turn them",
   adversary: "the boy comes back wearing another hill",
+  ascended: "you are the looking now. he is still on the hill.",
 };
 
 export function createArg({ audio, wheel }) {
@@ -33,8 +34,12 @@ export function createArg({ audio, wheel }) {
     once: new Set(),
   };
 
+  function closed() {
+    return !!(throne.lore.offered || throne.lore.angelSlain || throne.lore.ascended);
+  }
+
   function once(id, text, ms = 3400) {
-    if (state.once.has(id) || throne.lore.offered) return;
+    if (state.once.has(id) || closed()) return;
     state.once.add(id);
     showCaption(text, ms);
     audio.utter();
@@ -61,7 +66,7 @@ export function createArg({ audio, wheel }) {
   }
 
   function rapture(on) {
-    if (throne.lore.offered || throne.lore.angelSlain) return;
+    if (closed()) return;
     if (!!on === throne.raptured) return;
     wheel.setRapture(on);
     audio.setRapture(on);
@@ -84,7 +89,7 @@ export function createArg({ audio, wheel }) {
   }
 
   function become(id, caption) {
-    if (throne.lore.offered) return;
+    if (throne.lore.offered || throne.lore.ascended) return;
     if (throne.lore.angelSlain && id !== "slain") return;
     if (!id || id === throne.aspect) {
       if (id === throne.aspect && caption) showCaption(caption, 2800);
@@ -126,7 +131,7 @@ export function createArg({ audio, wheel }) {
   }
 
   function giveTheLook() {
-    if (throne.lore.offered || throne.lore.angelSlain) return;
+    if (closed()) return;
     if (throne.lore.forgotFace) {
       once("lookagain", "you already gave it the look. it does not keep a copy for you.", 4200);
       return;
@@ -192,7 +197,7 @@ export function createArg({ audio, wheel }) {
   }
 
   function summonIsaac() {
-    if (throne.lore.angelSlain || throne.lore.offered) return;
+    if (closed()) return;
     if (!throne.lore.pentagram && !throne.lore.praised) {
       once("needstar", "nothing answers that name yet. a mark is still missing.", 4200);
       return;
@@ -205,13 +210,16 @@ export function createArg({ audio, wheel }) {
     }
     throne.lore.isaac = true;
     throne.lore.named = true;
-    document.documentElement.classList.add("devil-risen");
+    document.documentElement.classList.add("devil-risen", "isaac-weeps");
     become("adversary", "the boy comes back wearing another hill");
+    audio.scream?.();
+    wheel.weep?.();
     once("isaacdevil", "he is not the offering now. he is the other count.", 5200);
+    window.setTimeout(() => document.documentElement.classList.remove("isaac-weeps"), 16000);
   }
 
   function slayAngel() {
-    if (throne.lore.angelSlain || throne.lore.offered) return;
+    if (closed()) return;
     if (!throne.lore.isaac) {
       once("needisaac", "the mark wants a name first.", 3600);
       return;
@@ -238,7 +246,7 @@ export function createArg({ audio, wheel }) {
   }
 
   function offer() {
-    if (throne.lore.offered || throne.lore.angelSlain) return;
+    if (closed()) return;
     throne.lore.offered = true;
     throne.lore.canOffer = false;
     throne.lore.lock = true;
@@ -265,6 +273,52 @@ export function createArg({ audio, wheel }) {
     }, 5000);
   }
 
+  function hideIsaac() {
+    const el = document.getElementById("isaac-devil");
+    if (el) {
+      el.hidden = true;
+      el.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  function finishTheBoy() {
+    if (closed()) return;
+    if (!throne.lore.isaac) {
+      once("needboy", "the knife still waits for a throat that came back.", 3600);
+      return;
+    }
+    hideIsaac();
+    throne.lore.ascended = true;
+    throne.lore.lock = true;
+    document.documentElement.classList.add("ascended");
+    document.documentElement.classList.remove("raptured", "charging", "offering", "isaac-weeps", "devil-risen");
+    wheel.ascend?.();
+    audio.setAspect?.("ascended");
+    audio.strike();
+    audio.scream?.();
+    document.querySelectorAll(".fear-not").forEach((el) => {
+      el.style.pointerEvents = "none";
+      el.style.opacity = "0";
+    });
+    const mouth = document.getElementById("mouth");
+    if (mouth) {
+      mouth.style.pointerEvents = "none";
+      mouth.setAttribute("aria-hidden", "true");
+    }
+    document.querySelectorAll(".plane").forEach((plane) => plane.classList.add("folded"));
+    const line = document.getElementById("ascended-line");
+    if (line) {
+      line.hidden = false;
+      line.removeAttribute("aria-hidden");
+    }
+    showCaption("you finish it this time. no voice arrives.", 4200);
+    window.setTimeout(() => showCaption("the count takes the hand that finished him.", 4400), 3800);
+    window.setTimeout(() => {
+      showCaption("you are the looking now. he is still on the hill.", 5600);
+      throne.lore.lock = false;
+    }, 8600);
+  }
+
   function applyHash() {
     const raw = (location.hash || "").replace("#", "").toLowerCase();
     const known = ["witness", "unblinking", "merkavah", "waters", "seraph", "inverted", "name", "hush", "judged", "praised", "adversary"];
@@ -278,6 +332,11 @@ export function createArg({ audio, wheel }) {
       throne.lore.raptured = Math.max(throne.lore.raptured, 1);
       offer();
     }
+    if (raw === "ascended" && throne.entered) {
+      throne.lore.isaac = true;
+      throne.lore.knife = true;
+      finishTheBoy();
+    }
   }
 
   console.info("%cthe wheels keep a ledger.", "color:#c9a227");
@@ -287,6 +346,10 @@ export function createArg({ audio, wheel }) {
       if (throne.lore.offered) {
         console.info("%che is the one eye. you are the rest.", "color:#f0d078");
         return "taken";
+      }
+      if (throne.lore.ascended) {
+        console.info("%cyou are the looking. he is still on the hill.", "color:#f0d078");
+        return "the looking";
       }
       if (throne.lore.confessed) {
         console.info("%cno ram. you did not wait.", "color:#f0d078");
@@ -306,7 +369,7 @@ export function createArg({ audio, wheel }) {
   });
 
   document.getElementById("days-counter")?.addEventListener("click", () => {
-    if (!throne.entered || throne.lore.offered) return;
+    if (!throne.entered || closed()) return;
     const now = performance.now();
     if (now - state.lastDay > 2500) state.daysClicks = 0;
     state.lastDay = now;
@@ -335,7 +398,7 @@ export function createArg({ audio, wheel }) {
   });
 
   window.addEventListener("throne:fearnot", (e) => {
-    if (throne.lore.offered) return;
+    if (closed()) return;
     throne.lore.feared += 1;
     if (e.detail?.muted) become("inverted");
     if (throne.lore.feared === 1) once("fear1", "you told the boy not to fear. carry those words to the light.", 4200);
@@ -348,33 +411,33 @@ export function createArg({ audio, wheel }) {
   });
 
   window.addEventListener("throne:approach", (e) => {
-    if (throne.lore.offered || throne.lore.angelSlain) return;
+    if (closed()) return;
     if ((e.detail?.count || 1) === 3) {
       become("unblinking", "you have looked away enough. it has not.");
     }
   });
 
   window.addEventListener("throne:circuit", () => {
-    if (throne.lore.offered || throne.lore.angelSlain) return;
+    if (closed()) return;
     once("circuit", "the hill was walked the long way. the count allows it.", 3800);
   });
 
   window.addEventListener("throne:flee", (e) => {
-    if (throne.lore.offered) return;
+    if (closed()) return;
     if ((e.detail?.count || 0) >= 5) {
       once("flee5", "the line is tired of running. the door is tired of being missed.", 3800);
     }
   });
 
   window.addEventListener("throne:caught", () => {
-    if (throne.lore.offered || throne.lore.angelSlain) return;
+    if (closed()) return;
     once("caught", "you reached. it will remember the hand.", 3600);
     become("inverted", "the living thing felt the grab");
   });
 
   window.addEventListener("throne:rapture", (e) => rapture(!!e.detail?.on));
   window.addEventListener("throne:fed", (e) => {
-    if (throne.lore.offered) return;
+    if (closed()) return;
     throne.lore.fed = e.detail?.fed ?? throne.lore.fed + 1;
     if (throne.lore.fed === 1) once("fed1", "you are trying to buy him back. the light is still empty of a father.", 4000);
     else if (throne.lore.fed === 3) once("fed3", "the mouth wants the hand, not the word", 3400);
@@ -430,6 +493,11 @@ export function createArg({ audio, wheel }) {
       halt: true,
       act() {
         audio.scream?.();
+        if (throne.lore.isaac) {
+          wheel.weep?.();
+          document.documentElement.classList.add("isaac-weeps");
+          window.setTimeout(() => document.documentElement.classList.remove("isaac-weeps"), 16000);
+        }
         angelSays("speak", [
           "he does not speak. he only screams.",
           "that is all the throat he was left.",
@@ -795,6 +863,17 @@ export function createArg({ audio, wheel }) {
 
   window.addEventListener("throne:petition", (e) => {
     if (throne.lore.offered) return;
+    if (throne.lore.ascended) {
+      const forgotten = String(e.detail?.forgotten || "");
+      const petition = String(e.detail?.petition || "");
+      petitionBlob(forgotten, petition);
+      angelSays("fromthecount", [
+        "he is still on the hill.",
+        "you are the looking now.",
+        "a father is a small thing from here.",
+      ]);
+      return;
+    }
     const forgotten = String(e.detail?.forgotten || "");
     const petition = String(e.detail?.petition || "");
     const blob = petitionBlob(forgotten, petition);
@@ -887,7 +966,7 @@ export function createArg({ audio, wheel }) {
   });
 
   window.addEventListener("throne:relic", (e) => {
-    if (throne.lore.offered || throne.lore.angelSlain) return;
+    if (closed()) return;
     const id = e.detail?.id;
     if (id === "knife") {
       throne.lore.knife = true;
@@ -944,6 +1023,8 @@ export function createArg({ audio, wheel }) {
       judgeBadly("you burned it without the count");
     } else if (id === "marked-goat") {
       once("markedgoat", "the mark is on the substitute now.", 3600);
+    } else if (id === "second-death") {
+      finishTheBoy();
     } else if (id === "isaac") {
       summonIsaac();
     } else if (id === "star-knife") {
@@ -967,7 +1048,7 @@ export function createArg({ audio, wheel }) {
   }
 
   window.addEventListener("throne:use", (e) => {
-    if (throne.lore.offered || throne.lore.angelSlain) return;
+    if (closed()) return;
     const id = e.detail?.id;
     const target = e.detail?.target;
     if (id === "knife" && target === "angel") {
@@ -1133,7 +1214,12 @@ export function createArg({ audio, wheel }) {
       return;
     }
     if (id === "isaac" && target === "self") {
-      once("isaacself", "you cannot hold him. he is already holding you.", 4200);
+      if (throne.lore.knife) {
+        flashBlade("blade-self");
+        finishTheBoy();
+      } else {
+        once("isaacself", "you cannot hold him. he is already holding you.", 4200);
+      }
       return;
     }
     if (id === "star-knife" && target === "angel") {
@@ -1186,7 +1272,7 @@ export function createArg({ audio, wheel }) {
 
   window.addEventListener("keydown", (e) => {
     if (e.target && ["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
-    if (throne.lore.offered && e.code !== "Space") return;
+    if (closed() && e.code !== "Space") return;
     if (e.code === "Space" && throne.entered) {
       e.preventDefault();
       if (!state.holdingHum) {
