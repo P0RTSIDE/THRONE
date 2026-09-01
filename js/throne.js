@@ -69,21 +69,27 @@ export function randInt(min, max) {
  */
 export function probeQuality() {
   const cores = navigator.hardwareConcurrency || 4;
-  const mem = navigator.deviceMemory || 4;
+  const mem = navigator.deviceMemory;
   const coarse = window.matchMedia("(pointer: coarse)").matches;
   const saveData = navigator.connection && navigator.connection.saveData;
+  const dpr = window.devicePixelRatio || 1;
   let score = 0;
-  if (mem >= 8) score += 2;
-  else if (mem >= 4) score += 1;
+  if (mem != null) {
+    if (mem >= 8) score += 2;
+    else if (mem >= 4) score += 1;
+    else score -= 1;
+  }
   if (cores >= 8) score += 2;
   else if (cores >= 4) score += 1;
+  else if (cores < 4) score -= 1;
   try {
     const c = document.createElement("canvas");
     const gl = c.getContext("webgl2") || c.getContext("webgl");
     if (gl) {
       const ext = gl.getExtension("WEBGL_debug_renderer_info");
       const renderer = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : "";
-      if (/nvidia|radeon|geforce|apple m|metal|adreno 7|mali-g/i.test(renderer)) score += 2;
+      if (/apple m[1-9]|metal/i.test(renderer)) score += 3;
+      else if (/nvidia|radeon|geforce|adreno 7|mali-g7/i.test(renderer)) score += 2;
       if (/swiftshader|llvmpipe|software/i.test(renderer)) score -= 2;
     } else {
       score -= 3;
@@ -91,6 +97,7 @@ export function probeQuality() {
   } catch {
     score -= 1;
   }
+  if (dpr >= 2.5) score -= 1;
   if (coarse) score -= 2;
   if (saveData) score -= 2;
   if (score >= 5) return "high";
