@@ -550,7 +550,7 @@ export function createEyeWheel(root) {
     throne.time = t;
 
     const calm = throne.calm ? 1 : 0;
-    const spin = (throne.calm ? 0.08 : 1) * aspect.spin * (throne.raptured ? 1.65 : 1) * spinBoost;
+    const spin = (throne.calm ? 0.08 : 1) * aspect.spin * (throne.raptured ? 1.65 : 1) * spinBoost * (1 + throne.fall * 6);
 
     outerGroup.rotation.y += dt * 0.35 * spin;
     outerGroup.rotation.z += dt * 0.07 * spin;
@@ -678,9 +678,12 @@ export function createEyeWheel(root) {
     applyPalette(paletteIndex, dt);
     applyAspectUniforms();
 
-    const radius = (throne.raptured ? 0.78 : aspect.camZ) + zNudge;
-    const fovTarget = throne.raptured ? 88 : 48;
-    camera.fov += (fovTarget - camera.fov) * 0.05;
+    const falling = throne.fall > 0.001;
+    const radius = falling
+      ? Math.max(0.06, (aspect.camZ + zNudge) * (1 - throne.fall) * 0.42)
+      : (throne.raptured ? 0.78 : aspect.camZ) + zNudge;
+    const fovTarget = falling ? 32 + throne.fall * 86 : (throne.raptured ? 88 : 48);
+    camera.fov += (fovTarget - camera.fov) * (falling ? 0.12 : 0.05);
     camera.updateProjectionMatrix();
     const cp = Math.cos(pitch);
     const tx = Math.sin(yaw) * cp * radius;
@@ -752,6 +755,15 @@ export function createEyeWheel(root) {
       document.documentElement.classList.toggle("raptured", !!on);
       scene.fog.density = on ? 0.14 : 0.022;
       pulseScale = on ? 1.18 : 0.88;
+    },
+    fallIn() {
+      this.setAspect("unblinking");
+      spinBoost = 4.2;
+      pulseScale = 1.8;
+      zNudge = -1.2;
+      yaw = 0;
+      pitch = 0;
+      scene.fog.density = 0.002;
     },
     pulse() {
       pulseScale = 1.22;
@@ -853,5 +865,5 @@ export function createFallbackWheel(root) {
       <div style="width:min(70vw,520px);aspect-ratio:1;border:16px solid #8a5a22;border-radius:50%;
         box-shadow:0 0 28px #c9a22744, inset 0 0 40px #3d220855;"></div>
     </div>`;
-  return { shudder() {}, openDistantEye() {}, setPalette() {}, setAspect() {}, tilt() {}, orbit() {}, getOrbit() { return { yaw: 0, pitch: 0 }; }, setRapture() {}, pulse() {}, nudgeZ() {}, setSpinBoost() {}, offer() {}, wound() {}, bleed() {}, showFace() {}, dispose() {} };
+  return { shudder() {}, openDistantEye() {}, setPalette() {}, setAspect() {}, tilt() {}, orbit() {}, getOrbit() { return { yaw: 0, pitch: 0 }; }, setRapture() {}, pulse() {}, fallIn() {}, nudgeZ() {}, setSpinBoost() {}, offer() {}, wound() {}, bleed() {}, showFace() {}, dispose() {} };
 }

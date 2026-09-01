@@ -17,6 +17,7 @@ export const throne = {
   depth: 0.45,
   choir: false,
   raptured: false,
+  fall: 0,
   lore: {
     feared: 0,
     fed: 0,
