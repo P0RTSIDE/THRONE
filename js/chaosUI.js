@@ -883,8 +883,8 @@ export function createChaosUI({ audio, wheel }) {
     let panX = 0;
     let panY = 0;
     const field = document.getElementById("relic-field");
-    const maxX = () => Math.min(170, window.innerWidth * 0.16);
-    const maxY = () => Math.min(130, window.innerHeight * 0.15);
+    const maxX = () => Math.min(210, window.innerWidth * 0.18);
+    const maxY = () => Math.min(270, window.innerHeight * 0.26);
 
     function paintWorld() {
       if (!field) return;
@@ -928,8 +928,8 @@ export function createChaosUI({ audio, wheel }) {
       lastY = e.clientY;
       const speed = Math.hypot(dx, dy);
       traveled += speed;
-      panX = Math.max(-maxX(), Math.min(maxX(), panX + dx * 0.48));
-      panY = Math.max(-maxY(), Math.min(maxY(), panY + dy * 0.48));
+      panX = Math.max(-maxX(), Math.min(maxX(), panX + dx * 0.55));
+      panY = Math.max(-maxY(), Math.min(maxY(), panY + dy * 0.55));
       wheel.orbit(dx, dy);
       paintWorld();
       audio.scrape(speed);
