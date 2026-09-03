@@ -227,8 +227,8 @@ export function createEyeWheel(root) {
   scene.fog = new THREE.FogExp2(0x0c0912, 0.01);
   scene.background = null;
 
-  const camera = new THREE.PerspectiveCamera(44, 1, 0.1, 90);
-  camera.position.set(0, 0.35, 5.5);
+  const camera = new THREE.PerspectiveCamera(41, 1, 0.1, 90);
+  camera.position.set(0, 0.35, 4.8);
 
   const renderer = new THREE.WebGLRenderer({
     antialias: throne.quality === "high" && cfg.dpr <= 1.05,
@@ -792,7 +792,7 @@ export function createEyeWheel(root) {
     look: 1,
     pupil: 1,
     spin: 1,
-    camZ: 5.4,
+    camZ: 4.7,
     third: 1,
     fifth: 1,
     sixth: 1,
@@ -810,7 +810,7 @@ export function createEyeWheel(root) {
   };
   let spinBoost = 1;
   let zNudge = 0;
-  let viewRadius = 5.5;
+  let viewRadius = 4.8;
   let pulseScale = 1;
   let yaw = 0.22;
   let pitch = 0.1;
@@ -1022,7 +1022,7 @@ export function createEyeWheel(root) {
     host.rotation.y += dt * 0.01 * Math.abs(spin);
     const hostTarget = ascended
       ? 1.38
-      : (aspect.host || 1) * (slain ? 0.18 : (0.38 + rim * 1.95));
+      : (aspect.host || 1) * (slain ? 0.18 : (0.52 + rim * 1.95));
     const hostEase = ascended ? 0.28 : 2;
     host.scale.setScalar(host.scale.x + (hostTarget - host.scale.x) * Math.min(1, dt * hostEase));
     const hostOp = 0.05 + Math.min(0.28, hostTarget * 0.08);
@@ -1252,7 +1252,7 @@ export function createEyeWheel(root) {
       scene.fog.color.lerp(new THREE.Color("#1a0e08"), Math.min(1, dt * 0.38));
       key.intensity += (1.15 - key.intensity) * Math.min(1, dt * 0.2);
     } else {
-      const rimZ = 2.7 + rim * 8.0;
+      const rimZ = 2.35 + rim * 6.8;
       const rimBlend = (slain || offering || throne.lore.offered || falling || throne.raptured) ? 0 : 0.82;
       const baseZ = throne.raptured ? 0.78 : (aspect.camZ * (1 - rimBlend) + rimZ * rimBlend);
       const targetRadius = falling
@@ -1260,20 +1260,20 @@ export function createEyeWheel(root) {
         : baseZ + zNudge;
       const gazing = document.body.classList.contains("gazing");
       viewRadius += (targetRadius - viewRadius) * (falling ? 0.12 : 0.08);
-      const fovBase = falling ? 32 + throne.fall * 86 : (throne.raptured ? 88 : (44 - likeness * 7));
-      const fovTarget = (gazing && !falling && !throne.raptured) ? fovBase - 1.5 : fovBase;
-      camera.fov += (fovTarget - camera.fov) * (falling ? 0.12 : 0.06);
+      const fovBase = falling ? 32 + throne.fall * 86 : (throne.raptured ? 88 : (41 - likeness * 7));
+      const fovTarget = (gazing && !falling && !throne.raptured) ? fovBase - 2.2 : fovBase;
+      camera.fov += (fovTarget - camera.fov) * (falling ? 0.12 : 0.055);
       camera.updateProjectionMatrix();
       const shake = (gazing || throne.calm) ? 0 : (throne.raptured ? 0.01 : 0.014);
       const want = orbitTarget(viewRadius, shake);
-      const ease = falling ? 0.18 : (gazing ? 0.072 : 0.11);
+      const ease = falling ? 0.18 : (gazing ? 0.048 : 0.1);
       camera.position.x += (want.x - camera.position.x) * ease;
       camera.position.y += (want.y - camera.position.y) * ease;
       camera.position.z += (want.z - camera.position.z) * ease;
       if (!falling) {
         const d = Math.hypot(camera.position.x, camera.position.y, camera.position.z) || 1;
-        const minD = viewRadius * 0.94;
-        const maxD = viewRadius * 1.03;
+        const minD = viewRadius * 0.972;
+        const maxD = viewRadius * 1.018;
         if (d < minD) camera.position.multiplyScalar(minD / d);
         else if (d > maxD) camera.position.multiplyScalar(maxD / d);
       }
@@ -1361,8 +1361,8 @@ export function createEyeWheel(root) {
     },
     orbit(dx, dy) {
       if (ascended) return;
-      yaw -= dx * 0.0026;
-      pitch = Math.max(-0.58, Math.min(0.58, pitch + dy * 0.002));
+      yaw -= dx * 0.0017;
+      pitch = Math.max(-0.52, Math.min(0.52, pitch + dy * 0.00125));
     },
     getOrbit() {
       return { yaw, pitch };
@@ -1479,20 +1479,20 @@ export function createEyeWheel(root) {
      */
     setAspect(id) {
       const table = {
-        witness: { blink: 1, look: 1.15, pupil: 1.1, spin: 1, camZ: 5.4, third: 1, fifth: 1, sixth: 1, ninth: 1, tenth: 1, wings: 0, hub: 0, presence: 1, fog: 0.01, fire: 1, host: 1, palLock: -1, sclera: "#f3ebd6", fogCol: "#0c0912" },
-        unblinking: { blink: 0, look: 4.2, pupil: 2.2, spin: 0.18, camZ: 4.6, third: 1.25, fifth: 1.2, sixth: 0.7, ninth: 1.15, tenth: 0.8, wings: 0, hub: 0, presence: 1, fog: 0.002, fire: 0.2, host: 0.55, palLock: 1, sclera: "#ffffff", fogCol: "#1a1610" },
+        witness: { blink: 1, look: 1.15, pupil: 1.1, spin: 1, camZ: 4.7, third: 1, fifth: 1, sixth: 1, ninth: 1, tenth: 1, wings: 0, hub: 0, presence: 1, fog: 0.01, fire: 1, host: 1, palLock: -1, sclera: "#f3ebd6", fogCol: "#0c0912" },
+        unblinking: { blink: 0, look: 4.2, pupil: 2.2, spin: 0.18, camZ: 4.1, third: 1.25, fifth: 1.2, sixth: 0.7, ninth: 1.15, tenth: 0.8, wings: 0, hub: 0, presence: 1, fog: 0.002, fire: 0.2, host: 0.55, palLock: 1, sclera: "#ffffff", fogCol: "#1a1610" },
         merkavah: { blink: 1, look: 1.7, pupil: 1.25, spin: 2.35, camZ: 9.4, third: 1.35, fifth: 1.55, sixth: 2.05, ninth: 1.55, tenth: 1.7, wings: 0, hub: 0, presence: 1, fog: 0.004, fire: 1.7, host: 3.2, palLock: 0, sclera: "#f0d078", fogCol: "#1a0c04" },
         waters: { blink: 0.12, look: 0.35, pupil: 0.5, spin: 0.08, camZ: 10.4, third: 0.7, fifth: 1.85, sixth: 0.4, ninth: 0.45, tenth: 0.35, wings: 0, hub: 0, presence: 1, fog: 0.058, fire: 0.12, host: 0.25, palLock: 1, sclera: "#c8b8e0", fogCol: "#12081f" },
-        seraph: { blink: 1, look: 2.4, pupil: 1.35, spin: 2.5, camZ: 5.7, third: 1.2, fifth: 1.2, sixth: 1.15, ninth: 1.25, tenth: 1.2, wings: 1, hub: 0, presence: 1, fog: 0.005, fire: 3.4, host: 1.6, palLock: 1, sclera: "#fff6d8", fogCol: "#2a1008" },
-        inverted: { blink: 1, look: 2.4, pupil: 1.85, spin: -1.7, camZ: 5.8, third: 1, fifth: 1, sixth: 1.15, ninth: 1.1, tenth: 1.2, wings: 0, hub: 0, presence: 1, fog: 0.028, fire: 1.9, host: 0.7, palLock: 0, sclera: "#2a1014", fogCol: "#1a0608" },
-        name: { blink: 0, look: 3.4, pupil: 1.85, spin: 0.18, camZ: 5.6, third: 0.45, fifth: 0.4, sixth: 0.35, ninth: 0.28, tenth: 0.22, wings: 0, hub: 1, presence: 0.12, fog: 0.012, fire: 0.5, host: 0.3, palLock: 0, sclera: "#f4f1e8", fogCol: "#100c08" },
+        seraph: { blink: 1, look: 2.4, pupil: 1.35, spin: 2.5, camZ: 5.0, third: 1.2, fifth: 1.2, sixth: 1.15, ninth: 1.25, tenth: 1.2, wings: 1, hub: 0, presence: 1, fog: 0.005, fire: 3.4, host: 1.6, palLock: 1, sclera: "#fff6d8", fogCol: "#2a1008" },
+        inverted: { blink: 1, look: 2.4, pupil: 1.85, spin: -1.7, camZ: 5.1, third: 1, fifth: 1, sixth: 1.15, ninth: 1.1, tenth: 1.2, wings: 0, hub: 0, presence: 1, fog: 0.028, fire: 1.9, host: 0.7, palLock: 0, sclera: "#2a1014", fogCol: "#1a0608" },
+        name: { blink: 0, look: 3.4, pupil: 1.85, spin: 0.18, camZ: 4.9, third: 0.45, fifth: 0.4, sixth: 0.35, ninth: 0.28, tenth: 0.22, wings: 0, hub: 1, presence: 0.12, fog: 0.012, fire: 0.5, host: 0.3, palLock: 0, sclera: "#f4f1e8", fogCol: "#100c08" },
         hush: { blink: 1, look: 0.15, pupil: 0.45, spin: 0.07, camZ: 10.2, third: 0.55, fifth: 0.5, sixth: 0.45, ninth: 0.4, tenth: 0.35, wings: 0, hub: 0, presence: 0.08, fog: 0.036, fire: 0.18, host: 0.22, palLock: 0, sclera: "#6a6048", fogCol: "#0a0808" },
-        offered: { blink: 1, look: 0.4, pupil: 0.75, spin: 0.04, camZ: 5.2, third: 0.16, fifth: 0.16, sixth: 0.16, ninth: 0.14, tenth: 0.12, wings: 0, hub: 1, presence: 0.1, fog: 0.02, fire: 0.22, host: 0.15, palLock: 1, sclera: "#fff8ea", fogCol: "#f3e6c4" },
+        offered: { blink: 1, look: 0.4, pupil: 0.75, spin: 0.04, camZ: 4.6, third: 0.16, fifth: 0.16, sixth: 0.16, ninth: 0.14, tenth: 0.12, wings: 0, hub: 1, presence: 0.1, fog: 0.02, fire: 0.22, host: 0.15, palLock: 1, sclera: "#fff8ea", fogCol: "#f3e6c4" },
         ascended: { blink: 1, look: 0.28, pupil: 0.85, spin: 0.55, camZ: 0.22, third: 1.05, fifth: 1.1, sixth: 1.05, ninth: 1.08, tenth: 1.05, wings: 1, hub: 0, presence: 1, fog: 0.014, fire: 1.75, host: 1.35, palLock: 1, sclera: "#fff4dc", fogCol: "#1a0e08" },
-        judged: { blink: 0.2, look: 3.1, pupil: 1.7, spin: -1.15, camZ: 6.2, third: 0.85, fifth: 0.7, sixth: 0.8, ninth: 0.75, tenth: 0.7, wings: 0, hub: 0, presence: 0.85, fog: 0.038, fire: 2.4, host: 0.45, palLock: 0, sclera: "#3a1014", fogCol: "#1c0608" },
-        praised: { blink: 1, look: 1.6, pupil: 1.2, spin: 1.8, camZ: 6.4, third: 1.15, fifth: 1.2, sixth: 1.1, ninth: 1.2, tenth: 1.15, wings: 1, hub: 0, presence: 1, fog: 0.006, fire: 2.8, host: 1.8, palLock: 1, sclera: "#fff4d4", fogCol: "#241408" },
+        judged: { blink: 0.2, look: 3.1, pupil: 1.7, spin: -1.15, camZ: 5.5, third: 0.85, fifth: 0.7, sixth: 0.8, ninth: 0.75, tenth: 0.7, wings: 0, hub: 0, presence: 0.85, fog: 0.038, fire: 2.4, host: 0.45, palLock: 0, sclera: "#3a1014", fogCol: "#1c0608" },
+        praised: { blink: 1, look: 1.6, pupil: 1.2, spin: 1.8, camZ: 5.6, third: 1.15, fifth: 1.2, sixth: 1.1, ninth: 1.2, tenth: 1.15, wings: 1, hub: 0, presence: 1, fog: 0.006, fire: 2.8, host: 1.8, palLock: 1, sclera: "#fff4d4", fogCol: "#241408" },
         slain: { blink: 0, look: 0.05, pupil: 0.3, spin: 0.01, camZ: 11.4, third: 0.2, fifth: 0.14, sixth: 0.12, ninth: 0.1, tenth: 0.08, wings: 0, hub: 0, presence: 0.04, fog: 0.07, fire: 0.04, host: 0.08, palLock: 0, sclera: "#2a1810", fogCol: "#080404" },
-        adversary: { blink: 1, look: 2.8, pupil: 1.95, spin: -2.2, camZ: 5.4, third: 1.1, fifth: 1.25, sixth: 1.3, ninth: 1.35, tenth: 1.4, wings: 0, hub: 1, presence: 1, fog: 0.022, fire: 2.6, host: 1.4, palLock: 0, sclera: "#4a1020", fogCol: "#140408" },
+        adversary: { blink: 1, look: 2.8, pupil: 1.95, spin: -2.2, camZ: 4.7, third: 1.1, fifth: 1.25, sixth: 1.3, ninth: 1.35, tenth: 1.4, wings: 0, hub: 1, presence: 1, fog: 0.022, fire: 2.6, host: 1.4, palLock: 0, sclera: "#4a1020", fogCol: "#140408" },
       };
       const next = table[id] || table.witness;
       aspect = {
