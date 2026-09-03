@@ -897,8 +897,8 @@ export function createChaosUI({ audio, wheel }) {
       lastY = e.clientY;
       const speed = Math.hypot(dx, dy);
       traveled += speed;
-      panX = Math.max(-maxX(), Math.min(maxX(), panX + dx * 0.9));
-      panY = Math.max(-maxY(), Math.min(maxY(), panY + dy * 0.9));
+      panX = Math.max(-maxX(), Math.min(maxX(), panX + dx * 0.32));
+      panY = Math.max(-maxY(), Math.min(maxY(), panY + dy * 0.32));
       wheel.orbit(dx, dy);
       paintWorld();
       audio.scrape(speed);
