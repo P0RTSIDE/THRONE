@@ -489,6 +489,71 @@ export function createEyeWheel(root) {
   addTeeth(innerGroup, innerR, innerTube, cfg.extra >= 2 ? 22 : 14);
   if (cfg.extra >= 1) addTeeth(thirdGroup, thirdR, thirdTube, 16);
 
+  function addSpan(group, rA, rB, count, phase, zAmp) {
+    const geom = new THREE.CylinderGeometry(0.011, 0.015, 1, 7);
+    const mesh = new THREE.InstancedMesh(geom, spokeMat, count);
+    const dummy = new THREE.Object3D();
+    const yUp = new THREE.Vector3(0, 1, 0);
+    const dir = new THREE.Vector3();
+    for (let i = 0; i < count; i++) {
+      const a0 = (i / count) * Math.PI * 2;
+      const a1 = a0 + phase;
+      const x0 = Math.cos(a0) * rA;
+      const y0 = Math.sin(a0) * rA;
+      const x1 = Math.cos(a1) * rB;
+      const y1 = Math.sin(a1) * rB;
+      const z1 = Math.sin(a0 * 2 + phase) * zAmp;
+      dir.set(x1 - x0, y1 - y0, z1);
+      const len = dir.length() || 0.2;
+      dummy.position.set((x0 + x1) * 0.5, (y0 + y1) * 0.5, z1 * 0.5);
+      dummy.quaternion.setFromUnitVectors(yUp, dir.normalize());
+      dummy.scale.set(1, len, 1);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+    }
+    group.add(mesh);
+    spokes.push(mesh);
+  }
+
+  function addJoints(group, R, count, size) {
+    const geom = new THREE.SphereGeometry(size, 8, 6);
+    const mesh = new THREE.InstancedMesh(geom, spokeMat, count);
+    const dummy = new THREE.Object3D();
+    for (let i = 0; i < count; i++) {
+      const a = (i / count) * Math.PI * 2 + 0.08;
+      dummy.position.set(Math.cos(a) * R, Math.sin(a) * R, 0);
+      dummy.rotation.set(0, 0, 0);
+      dummy.scale.setScalar(1);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+    }
+    group.add(mesh);
+    spokes.push(mesh);
+  }
+
+  const linkN = cfg.extra >= 2 ? 16 : cfg.extra >= 1 ? 12 : 8;
+  addSpan(outerGroup, outerR * 0.92, innerR * 1.02, linkN, 0.22, 0.08);
+  addSpan(outerGroup, outerR * 0.84, innerR * 0.94, Math.max(6, linkN - 4), -0.41, 0.11);
+  addSpan(innerGroup, innerR * 0.92, thirdR * 1.04, Math.max(6, linkN - 2), 0.38, 0.1);
+  addSpan(innerGroup, innerR * 0.78, fifthR * 1.06, Math.max(6, linkN - 4), 0.72, 0.07);
+  addSpan(thirdGroup, thirdR * 0.9, fifthR * 1.05, Math.max(6, linkN - 4), 0.5, 0.07);
+  if (cfg.extra >= 1) {
+    addSpan(fifthGroup, fifthR * 0.88, seventhR * 1.08, 8, 0.6, 0.05);
+    addSpan(thirdGroup, thirdR * 0.72, seventhR * 1.1, 6, -0.55, 0.09);
+  }
+  addJoints(outerGroup, outerR, linkN + 4, 0.05);
+  addJoints(innerGroup, innerR, linkN, 0.042);
+  addJoints(thirdGroup, thirdR, Math.max(6, linkN - 2), 0.034);
+  addJoints(fifthGroup, fifthR, Math.max(6, linkN - 4), 0.03);
+  addJoints(seventhGroup, seventhR, 6, 0.028);
+
+  const hubRing = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.045, 8, 22), metalMat(pal0.metal, pal0.emit));
+  const hubNut = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 8), metalMat(pal0.metal, pal0.emit));
+  seventhGroup.add(hubRing, hubNut);
+  metalExtras.push(hubRing, hubNut);
+  addTrack(seventhGroup, seventhR, seventhTube);
+  if (cfg.extra >= 2) addGyro(seventhGroup, seventhR, seventhTube);
+
   for (let i = 0; i < 16; i++) {
     const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.016, outerR * 2.05, 14), spokeMat);
     spoke.rotation.z = (i / 16) * Math.PI;
@@ -508,6 +573,14 @@ export function createEyeWheel(root) {
     thirdGroup.add(spoke);
     spokes.push(spoke);
   }
+  const fifthSpokes = cfg.extra >= 1 ? 8 : 6;
+  for (let i = 0; i < fifthSpokes; i++) {
+    const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.008, fifthR * 2.0, 10), spokeMat);
+    spoke.rotation.x = Math.PI * 0.4;
+    spoke.rotation.z = (i / fifthSpokes) * Math.PI + 0.2;
+    fifthGroup.add(spoke);
+    spokes.push(spoke);
+  }
   for (let i = 0; i < 6; i++) {
     const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 6.2, 14), spokeMat);
     axle.rotation.z = (i / 6) * Math.PI;
@@ -524,13 +597,16 @@ export function createEyeWheel(root) {
   }
 
   const sinewGroup = new THREE.Group();
-  const sinewN = cfg.extra >= 2 ? 12 : 8;
+  const sinewN = cfg.extra >= 2 ? 18 : cfg.extra >= 1 ? 14 : 10;
   for (let i = 0; i < sinewN; i++) {
     const a = (i / sinewN) * Math.PI * 2;
-    const sinew = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.016, 0.72, 10), spokeMat);
-    sinew.position.set(Math.cos(a) * 2.0, Math.sin(a) * 0.08, Math.sin(a) * 2.0);
+    const long = i % 3 === 0;
+    const sinew = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.016, long ? 1.28 : 0.72, 10), spokeMat);
+    const rad = long ? 1.48 : 2.0;
+    sinew.position.set(Math.cos(a) * rad, Math.sin(a) * 0.08, Math.sin(a) * rad);
     sinew.lookAt(0, 0, 0);
     sinew.rotateX(Math.PI * 0.5);
+    sinew.rotateZ(long ? 0.35 : 0);
     sinewGroup.add(sinew);
     spokes.push(sinew);
   }
@@ -1252,7 +1328,7 @@ export function createEyeWheel(root) {
       scene.fog.color.lerp(new THREE.Color("#1a0e08"), Math.min(1, dt * 0.38));
       key.intensity += (1.15 - key.intensity) * Math.min(1, dt * 0.2);
     } else {
-      const rimZ = 2.35 + rim * 6.8;
+      const rimZ = 2.35 + rim * 8.6;
       const rimBlend = (slain || offering || throne.lore.offered || falling || throne.raptured) ? 0 : 0.82;
       const baseZ = throne.raptured ? 0.78 : (aspect.camZ * (1 - rimBlend) + rimZ * rimBlend);
       const targetRadius = falling
@@ -1392,7 +1468,7 @@ export function createEyeWheel(root) {
     },
     nudgeZ(delta) {
       if (ascended) return;
-      zNudge = Math.max(-3.2, Math.min(7.4, zNudge + delta));
+      zNudge = Math.max(-3.2, Math.min(10.4, zNudge + delta));
     },
     setSpinBoost(n) {
       if (ascended) return;
