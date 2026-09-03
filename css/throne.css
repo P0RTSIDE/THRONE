@@ -307,10 +307,10 @@ html.entered .veil {
 
 .relic-field {
   position: absolute;
-  width: 180vw;
-  height: 180vh;
-  left: -40vw;
-  top: -40vh;
+  width: 134vw;
+  height: 134vh;
+  left: -17vw;
+  top: -17vh;
   z-index: 4;
   pointer-events: none;
 }
