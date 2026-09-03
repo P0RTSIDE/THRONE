@@ -624,19 +624,41 @@ export function createChaosUI({ audio, wheel }) {
     return [a, b].filter(Boolean).sort().join("|");
   }
 
-  function parkInField(el, clientX, clientY) {
+  function relicMeetPoint(a, b) {
+    const ra = a.getBoundingClientRect();
+    const rb = b.getBoundingClientRect();
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    const ax = clamp(rb.left + rb.width * 0.5, ra.left, ra.right);
+    const ay = clamp(rb.top + rb.height * 0.5, ra.top, ra.bottom);
+    const bx = clamp(ra.left + ra.width * 0.5, rb.left, rb.right);
+    const by = clamp(ra.top + ra.height * 0.5, rb.top, rb.bottom);
+    return { x: (ax + bx) * 0.5, y: (ay + by) * 0.5 };
+  }
+
+  function parkInField(el, clientX, clientY, fromCenter) {
     const field = document.getElementById("relic-field");
     if (!field) return;
     el.classList.remove("carrying");
     if (el.parentElement !== field) field.appendChild(el);
-    const box = field.getBoundingClientRect();
-    const leftPct = ((clientX - box.left) / Math.max(box.width, 1)) * 100;
-    const topPct = ((clientY - box.top) / Math.max(box.height, 1)) * 100;
     el.style.position = "";
-    el.style.left = `${Math.max(1.5, Math.min(98.5, leftPct)).toFixed(2)}%`;
-    el.style.top = `${Math.max(1.5, Math.min(98.5, topPct)).toFixed(2)}%`;
     el.style.transform = "";
     el.style.margin = "";
+    const box = field.getBoundingClientRect();
+    let x = clientX;
+    let y = clientY;
+    if (fromCenter) {
+      el.style.left = "0%";
+      el.style.top = "0%";
+      const self = el.getBoundingClientRect();
+      x -= self.width * 0.5;
+      y -= self.height * 0.5;
+    }
+    const leftPct = ((x - box.left) / Math.max(box.width, 1)) * 100;
+    const topPct = ((y - box.top) / Math.max(box.height, 1)) * 100;
+    el.style.left = `${Math.max(1.5, Math.min(98.5, leftPct)).toFixed(2)}%`;
+    el.style.top = `${Math.max(1.5, Math.min(98.5, topPct)).toFixed(2)}%`;
+    el.dataset.parkedLeft = el.style.left;
+    el.dataset.parkedTop = el.style.top;
   }
 
   function spawnCrafted(id, label, x, y, extraClass) {
@@ -660,12 +682,17 @@ export function createChaosUI({ audio, wheel }) {
       btn.textContent = label;
     }
     if (extraClass) extraClass.split(/\s+/).forEach((c) => c && btn.classList.add(c));
+    field.appendChild(btn);
     const box = field.getBoundingClientRect();
-    const leftPct = ((x - box.left) / Math.max(box.width, 1)) * 100;
-    const topPct = ((y - box.top) / Math.max(box.height, 1)) * 100;
+    btn.style.left = "0%";
+    btn.style.top = "0%";
+    const self = btn.getBoundingClientRect();
+    const leftPct = ((x - self.width * 0.5 - box.left) / Math.max(box.width, 1)) * 100;
+    const topPct = ((y - self.height * 0.5 - box.top) / Math.max(box.height, 1)) * 100;
     btn.style.left = `${Math.max(4, Math.min(96, leftPct)).toFixed(1)}%`;
     btn.style.top = `${Math.max(4, Math.min(96, topPct)).toFixed(1)}%`;
-    field.appendChild(btn);
+    btn.dataset.parkedLeft = btn.style.left;
+    btn.dataset.parkedTop = btn.style.top;
     bindCarry(btn);
     return btn;
   }
@@ -692,7 +719,10 @@ export function createChaosUI({ audio, wheel }) {
     });
     if (combo.reveal) {
       const el = document.getElementById(combo.reveal);
-      if (el) el.hidden = false;
+      if (el) {
+        el.hidden = false;
+        if (x != null && y != null) parkInField(el, x, y, true);
+      }
     } else if (!combo.noSpawn) {
       spawnCrafted(combo.id, combo.label, x, y, combo.class);
     }
@@ -718,8 +748,8 @@ export function createChaosUI({ audio, wheel }) {
         btn.classList.remove("carrying");
         if (homeParent && btn.parentElement !== homeParent) homeParent.appendChild(btn);
         btn.style.position = "";
-        btn.style.left = homeLeft;
-        btn.style.top = homeTop;
+        btn.style.left = btn.dataset.parkedLeft || homeLeft;
+        btn.style.top = btn.dataset.parkedTop || homeTop;
         btn.style.transform = "";
         btn.style.margin = "";
       }
@@ -784,9 +814,10 @@ export function createChaosUI({ audio, wheel }) {
             const otherId = other.getAttribute("data-carry") || other.getAttribute("data-relic");
             const combo = COMBOS[pairKey(id, otherId)];
             if (!combo) continue;
+            const meet = relicMeetPoint(btn, other);
             restore();
             dragging = false;
-            applyCombo(combo, e.clientX, e.clientY);
+            applyCombo(combo, meet.x, meet.y);
             return;
           }
           const mouth = document.getElementById("mouth");
@@ -852,8 +883,8 @@ export function createChaosUI({ audio, wheel }) {
     let panX = 0;
     let panY = 0;
     const field = document.getElementById("relic-field");
-    const maxX = () => Math.min(360, window.innerWidth * 0.34);
-    const maxY = () => Math.min(240, window.innerHeight * 0.32);
+    const maxX = () => Math.min(170, window.innerWidth * 0.16);
+    const maxY = () => Math.min(130, window.innerHeight * 0.15);
 
     function paintWorld() {
       if (!field) return;
@@ -897,8 +928,8 @@ export function createChaosUI({ audio, wheel }) {
       lastY = e.clientY;
       const speed = Math.hypot(dx, dy);
       traveled += speed;
-      panX = Math.max(-maxX(), Math.min(maxX(), panX + dx * 0.32));
-      panY = Math.max(-maxY(), Math.min(maxY(), panY + dy * 0.32));
+      panX = Math.max(-maxX(), Math.min(maxX(), panX + dx * 0.48));
+      panY = Math.max(-maxY(), Math.min(maxY(), panY + dy * 0.48));
       wheel.orbit(dx, dy);
       paintWorld();
       audio.scrape(speed);
