@@ -19,8 +19,8 @@
 
 import { throne, randRange, randInt, showCaption } from "./throne.js";
 
-/** Invented sigils. Not Hebrew, not any real liturgical script. */
-const SIGILS = "◊◈◉◎◌◍◐◑◒◓◔◕◘◙☿♄♃♁☥⚜⚝✦✧✩✪✫✬✭✮✯✰❋❊❈❇✺✹✸✷✶✵✴✳";
+/** Marks that eat the letters: crosses, voids, eyes, old signs. */
+const SIGILS = "†‡✝✞✟☥☩☠⚔●◉◎◘◙▓░▒█■◆✕✖✚╳☉☍♄☿";
 
 const BLURBS = {
   angel: [
