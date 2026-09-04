@@ -16,6 +16,7 @@ import { createAudioEngine } from "./audioEngine.js";
 import { createChaosUI } from "./chaosUI.js";
 import { createArg } from "./arg.js";
 import { createAbyss } from "./abyss.js";
+import { createGodMode } from "./godMode.js";
 
 (function boot() {
   const params = new URLSearchParams(location.search);
@@ -38,6 +39,7 @@ import { createAbyss } from "./abyss.js";
   const abyss = createAbyss(document.getElementById("abyss"));
   const chaos = createChaosUI({ audio, wheel });
   const arg = createArg({ audio, wheel });
+  createGodMode({ audio, wheel, arg });
 
   const vol = document.getElementById("volume");
   vol?.addEventListener("input", () => {
