@@ -9,7 +9,7 @@ import { throne, showCaption } from "./throne.js";
 const ASPECT_CAPTIONS = {
   witness: "it returns to the shape you first survived",
   unblinking: "the eyes lock. nothing in it will close.",
-  merkavah: "another rim wakes. the whole count speeds.",
+  merkavah: "another rim wakes. the wait speeds.",
   waters: "the rims wade. a voice like many fills the throat.",
   seraph: "the fire stands up. the wings remember themselves.",
   inverted: "it heard the quiet as an answer",
@@ -382,7 +382,7 @@ export function createArg({ audio, wheel }) {
     state.daysClicks += 1;
     audio.ping("click");
     if (state.daysClicks === 3) {
-      once("days3", "three days to the hill", 3000);
+      once("days3", "three days was the walk. the rest is the wait.", 3000);
     }
     if (state.daysClicks >= 7) {
       state.daysClicks = 0;
@@ -505,9 +505,9 @@ export function createArg({ audio, wheel }) {
           window.setTimeout(() => document.documentElement.classList.remove("isaac-weeps"), 16000);
         }
         angelSays("speak", [
-          "he does not speak. he only screams.",
-          "that is all the throat he was left.",
-          "you asked for a voice. you have one.",
+          "he does not speak. that is the hill in your mouth.",
+          "you asked for a voice. you have the hill's.",
+          "that is not him answering.",
         ], { ms: 5200 });
       },
     },
@@ -771,7 +771,7 @@ export function createArg({ audio, wheel }) {
       },
       lines: [
         "you told him it was only a walk. you were already lying.",
-        "three days up. the morning was already a lie.",
+        "three days was the walk. the morning was already a lie.",
         "home is the place you left him looking at you.",
       ],
     },
@@ -940,18 +940,18 @@ export function createArg({ audio, wheel }) {
     if (falseName && !petition.trim()) {
       angelSays("falsename", [
         "that name was not his. it lets it fall.",
-        "it keeps the asking and drops the name.",
+        "the asking is kept. that name is not.",
         "the morning did not use that one.",
       ]);
       return;
     }
 
     angelSays("fallback", [
-      "it keeps the asking and drops the name.",
+      "the asking is kept. he does not come down.",
       "the words arrive. the boy does not.",
       "heard. not granted.",
       "it will not answer that in your language.",
-      "the count files the sentence and turns.",
+      "the wait is filed. the boy stays on the hill.",
     ]);
   });
 
@@ -988,7 +988,7 @@ export function createArg({ audio, wheel }) {
     } else if (id === "name") {
       nameTheBoy(false, true);
     } else if (id === "hill") {
-      once("hill", "three days up. you can still feel the grade in your legs.", 4200);
+      once("hill", "three days was the walk. the days after did not stop.", 4200);
     } else if (id === "morning") {
       once("morning", "you told him it was only a walk. you were already lying.", 4200);
     } else if (id === "wood") {
