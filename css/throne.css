@@ -2202,3 +2202,107 @@ html.calm .mouth::before {
     display: none;
   }
 }
+
+#backstage {
+  position: fixed;
+  z-index: 80;
+  right: 12px;
+  top: 64px;
+  width: min(420px, 92vw);
+  max-height: min(78vh, 640px);
+  overflow: auto;
+  background: rgba(12, 8, 6, 0.94);
+  border: 1px solid rgba(201, 162, 39, 0.5);
+  box-shadow: 4px 6px 0 rgba(40, 20, 8, 0.45), 0 12px 28px rgba(0, 0, 0, 0.5);
+  color: #e8dcb8;
+  pointer-events: auto;
+}
+
+.backstage-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(201, 162, 39, 0.28);
+}
+
+#backstage h2 {
+  font-family: var(--font-title);
+  font-size: 15px;
+  letter-spacing: 0.16em;
+  margin: 0;
+  color: var(--gold-hot);
+}
+
+#backstage h3 {
+  font-family: var(--font-hud);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0 0 8px;
+  color: var(--gold);
+}
+
+.backstage-close,
+#backstage-chip {
+  font-family: var(--font-hud);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--gold);
+  border: 1px solid rgba(201, 162, 39, 0.45);
+  padding: 3px 8px;
+  cursor: pointer;
+}
+
+#backstage-chip {
+  position: fixed;
+  z-index: 80;
+  right: 12px;
+  top: 64px;
+  background: rgba(12, 8, 6, 0.92);
+}
+
+.backstage-note {
+  margin: 0;
+  padding: 8px 12px 4px;
+  font-size: 13px;
+  color: rgba(232, 220, 184, 0.72);
+}
+
+.backstage-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 8px 12px 12px;
+}
+
+.backstage-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.backstage-grid button {
+  font-family: var(--font-hud);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  background: rgba(28, 16, 8, 0.85);
+  color: #e8dcb8;
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  padding: 5px 7px;
+  cursor: pointer;
+}
+
+.backstage-grid button:hover {
+  border-color: rgba(201, 162, 39, 0.7);
+  color: #fff6d8;
+}
+
+@media (max-width: 640px) {
+  .backstage-cols {
+    grid-template-columns: 1fr;
+  }
+}

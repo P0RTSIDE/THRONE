@@ -716,46 +716,6 @@ export function createEyeWheel(root) {
   hubEye.visible = false;
   scene.add(hubEye);
 
-  const likenessSkin = new THREE.MeshBasicMaterial({
-    color: 0xc4a056,
-    transparent: true,
-    opacity: 0,
-    depthWrite: false,
-  });
-  const likenessShade = new THREE.MeshBasicMaterial({
-    color: 0x1a1008,
-    transparent: true,
-    opacity: 0,
-    depthWrite: false,
-  });
-  const boyEyeMat = outerEyes.mat.clone();
-  boyEyeMat.uniforms = THREE.UniformsUtils.clone(outerEyes.mat.uniforms);
-  const likenessGroup = new THREE.Group();
-  likenessGroup.visible = false;
-  const skull = new THREE.Mesh(new THREE.SphereGeometry(0.78, 18, 14), likenessSkin);
-  skull.scale.set(0.82, 1.06, 0.64);
-  const brow = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.045, 8, 20, Math.PI), likenessSkin);
-  brow.rotation.x = Math.PI;
-  brow.position.set(0, 0.22, 0.42);
-  brow.scale.set(1.05, 0.55, 0.8);
-  const boyEyeL = new THREE.Mesh(new THREE.CircleGeometry(0.3, 18), boyEyeMat);
-  const boyEyeR = new THREE.Mesh(new THREE.CircleGeometry(0.3, 18), boyEyeMat);
-  boyEyeL.scale.set(1, 0.58, 1);
-  boyEyeR.scale.set(1, 0.58, 1);
-  boyEyeL.position.set(-0.26, 0.12, 0.62);
-  boyEyeR.position.set(0.26, 0.12, 0.62);
-  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.16, 7), likenessSkin);
-  nose.rotation.x = Math.PI * 0.55;
-  nose.position.set(0, -0.02, 0.62);
-  const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.018, 8, 18, Math.PI * 1.05), likenessShade);
-  mouth.rotation.x = Math.PI * 0.55;
-  mouth.position.set(0, -0.28, 0.5);
-  mouth.scale.set(1.15, 0.45, 1);
-  likenessGroup.add(skull, brow, boyEyeL, boyEyeR, nose, mouth);
-  likenessGroup.position.set(0, 0.06, 1.45);
-  likenessGroup.renderOrder = 8;
-  scene.add(likenessGroup);
-
   const tearMat = new THREE.MeshBasicMaterial({
     color: 0x7a1a1e,
     transparent: true,
@@ -838,7 +798,6 @@ export function createEyeWheel(root) {
   let likenessPhase = "idle";
   let likenessAge = 0;
   let likeness = 0;
-  let likenessNeedsRestore = false;
   let weeping = false;
   let weep = 0;
   let weepAge = 0;
@@ -878,7 +837,7 @@ export function createEyeWheel(root) {
 
   function applyPalette(index, dt) {
     const pal = PALETTES[index];
-    const mats = [...eyeFields.map((f) => f.mat), hubMat, boyEyeMat];
+    const mats = [...eyeFields.map((f) => f.mat), hubMat];
     for (const m of mats) {
       m.uniforms.uIrisA.value.lerp(pal.irisA, Math.min(1, dt * 1.8));
       m.uniforms.uIrisB.value.lerp(pal.irisB, Math.min(1, dt * 1.8));
@@ -891,12 +850,11 @@ export function createEyeWheel(root) {
     }
     faceSolid.color.lerp(new THREE.Color(pal.metal), Math.min(1, dt * 1.2));
     if (faceSolid.emissive) faceSolid.emissive.lerp(new THREE.Color(pal.emit), Math.min(1, dt * 1.2));
-    likenessSkin.color.lerp(new THREE.Color(pal.metal).offsetHSL(0.02, 0.08, 0.12), Math.min(1, dt * 1.2));
     key.color.lerp(new THREE.Color(pal.metal), Math.min(1, dt));
   }
 
   function applyAspectUniforms() {
-    const mats = [...eyeFields.map((f) => f.mat), hubMat, boyEyeMat];
+    const mats = [...eyeFields.map((f) => f.mat), hubMat];
     for (const m of mats) {
       m.uniforms.uBlinkAllow.value = aspect.blink * (1 - weep * 0.88);
       m.uniforms.uLookGain.value = aspect.look * (throne.raptured ? 2.4 : 1);
@@ -949,7 +907,7 @@ export function createEyeWheel(root) {
     if (likenessOn && !slain && !offering) {
       likenessAge += dt;
       if (likenessPhase === "form") {
-        const u = Math.min(1, likenessAge / 5.8);
+        const u = Math.min(1, likenessAge / 1.8);
         likeness = u * u * (3 - 2 * u);
         if (u >= 1) {
           likeness = 1;
@@ -958,12 +916,12 @@ export function createEyeWheel(root) {
         }
       } else if (likenessPhase === "hold") {
         likeness = 1;
-        if (likenessAge > 6.2) {
+        if (likenessAge > 7.4) {
           likenessPhase = "fade";
           likenessAge = 0;
         }
       } else if (likenessPhase === "fade") {
-        const u = Math.min(1, likenessAge / 22);
+        const u = Math.min(1, likenessAge / 12);
         likeness = 1 - u * u * (3 - 2 * u);
         if (u >= 1) {
           likeness = 0;
@@ -978,7 +936,8 @@ export function createEyeWheel(root) {
     }
 
     const grave = 0.42;
-    const spin = (throne.calm ? 0.08 : 1) * aspect.spin * (throne.raptured ? 1.2 : 1) * spinBoost * rimSpin * grave * (1 + throne.fall * 3.2) * (1 - likeness * 0.94);
+    const devour = 1 + likeness * 16;
+    const spin = (throne.calm ? 0.08 : 1) * aspect.spin * (throne.raptured ? 1.2 : 1) * spinBoost * rimSpin * grave * (1 + throne.fall * 3.2) * devour;
 
     outerGroup.rotation.y += dt * 0.16 * spin;
     outerGroup.rotation.z += dt * 0.03 * spin;
@@ -1006,6 +965,34 @@ export function createEyeWheel(root) {
       g.rotation.y += dt * 0.16 * spin * (i % 2 ? -1 : 1);
       g.rotation.z += dt * 0.03 * spin;
     });
+    if (likeness > 0.001) {
+      const gnash = 0.55 + 0.45 * Math.sin(t * 13.4);
+      const twist = likeness * gnash;
+      outerGroup.rotation.x += dt * 3.6 * twist * Math.cos(t * 3.1);
+      outerGroup.rotation.z += dt * 4.8 * twist * Math.sin(t * 4.6);
+      innerGroup.rotation.y += dt * -6.4 * twist;
+      innerGroup.rotation.z += dt * 3.8 * twist * Math.cos(t * 5.2);
+      thirdGroup.rotation.x += dt * 5.1 * twist * Math.sin(t * 4.1);
+      thirdGroup.rotation.z += dt * -4.4 * twist;
+      fourthGroup.rotation.y += dt * 3.2 * twist * Math.sin(t * 6.3);
+      fourthGroup.rotation.z += dt * -2.8 * twist;
+      fifthGroup.rotation.x += dt * -5.6 * twist;
+      fifthGroup.rotation.y += dt * 4.2 * twist * Math.cos(t * 7.1);
+      sixthGroup.rotation.z += dt * 3.4 * twist * Math.sin(t * 3.8);
+      sixthGroup.rotation.x += dt * -2.6 * twist;
+      seventhGroup.rotation.y += dt * 7.2 * twist;
+      seventhGroup.rotation.z += dt * -3.9 * twist * Math.sin(t * 8.2);
+      eighthGroup.rotation.x += dt * 2.4 * twist * Math.cos(t * 5.7);
+      eighthGroup.rotation.y += dt * -3.1 * twist;
+      ninthGroup.rotation.z += dt * 4.6 * twist * Math.sin(t * 4.9);
+      ninthGroup.rotation.x += dt * -3.3 * twist;
+      tenthGroup.rotation.y += dt * -5.8 * twist;
+      tenthGroup.rotation.z += dt * 4.1 * twist * Math.cos(t * 6.6);
+      gyros.forEach((g, i) => {
+        g.rotation.x += dt * 5.5 * twist * (i % 2 ? -1 : 1);
+        g.rotation.z += dt * 4.2 * twist * Math.sin(t * 6.8 + i);
+      });
+    }
     cage.rotation.y += dt * 0.032 * spin;
     cage.rotation.x += dt * 0.012 * Math.sin(t * 0.09);
     coalGroup.rotation.y += dt * 0.2 * Math.abs(spin);
@@ -1097,9 +1084,7 @@ export function createEyeWheel(root) {
       zNudge *= ascended ? 0.82 : 0.97;
     }
     if (likeness > 0.01 && !ascended) {
-      zNudge += (-1.05 * likeness - zNudge) * Math.min(1, dt * 0.4);
-      yaw += (0.015 - yaw) * Math.min(1, dt * 0.28 * likeness);
-      pitch += (0.045 - pitch) * Math.min(1, dt * 0.28 * likeness);
+      zNudge += (-0.32 * likeness - zNudge) * Math.min(1, dt * 0.55);
     }
     wingGroup.rotation.y += dt * 0.12 * Math.abs(spin);
     wingGroup.rotation.x = Math.sin(t * 0.12) * 0.05;
@@ -1149,61 +1134,30 @@ export function createEyeWheel(root) {
 
     const L = likeness;
     if (L > 0.001 && !slain && !offering) {
-      outerGroup.scale.x *= (0.78 + (1 - L) * 0.22) * (1 - L * 0.18);
-      outerGroup.scale.y *= 1 + L * 0.38;
-      outerGroup.scale.z *= 1 - L * 0.72;
-      innerGroup.position.set(-0.5 * L, 0.28 * L, 1.2 * L);
-      innerGroup.scale.x *= 1 - L * 0.68;
-      innerGroup.scale.y *= 1 - L * 0.68;
-      innerGroup.scale.z *= 1 - L * 0.78;
-      thirdGroup.position.set(0.5 * L, 0.28 * L, 1.2 * L);
-      thirdGroup.scale.multiplyScalar(1 - L * 0.64);
-      fifthGroup.position.set(0, 0.02 * L, 1.35 * L);
-      fifthGroup.scale.multiplyScalar(1 - L * 0.74);
-      seventhGroup.position.set(0, -0.52 * L, 1.15 * L);
-      seventhGroup.scale.x *= 1 - L * 0.38;
-      seventhGroup.scale.y *= 1 - L * 0.82;
-      seventhGroup.scale.z *= 1 - L * 0.58;
-      fourthGroup.position.z = -0.45 * L;
-      fourthGroup.scale.multiplyScalar(1 - L * 0.4);
-      sixthGroup.position.z = -0.55 * L;
-      sixthGroup.scale.multiplyScalar(1 - L * 0.48);
-      eighthGroup.scale.multiplyScalar(1 - L * 0.35);
-      ninthGroup.scale.multiplyScalar(1 - L * 0.4);
-      tenthGroup.scale.multiplyScalar(1 - L * 0.45);
-      cage.scale.multiplyScalar(1 - L * 0.28);
-      faces.scale.setScalar(1 - L * 0.72);
-      looseGroup.scale.setScalar(1 - L * 0.55);
-      fire.position.y = -0.48 * L;
-      fire.scale.x *= 1 - L * 0.25;
-      fire.scale.y *= 1 - L * 0.7;
-      fire.material.opacity = (0.2 * (aspect.fire || 1)) * (1 - L * 0.55);
-      fire2.material.opacity = 0.12 * (aspect.fire || 1) * (1 - L * 0.7);
-      likenessGroup.visible = true;
-      likenessGroup.lookAt(camera.position);
-      likenessGroup.scale.setScalar(0.95 + L * 1.15);
-      likenessSkin.opacity = 0.4 + L * 0.52;
-      likenessShade.opacity = 0.35 + L * 0.5;
-      boyEyeL.scale.setScalar(0.7 + L * 0.55);
-      boyEyeR.scale.setScalar(0.7 + L * 0.55);
-      setRimPresence((aspect.presence || 1) * (1 - L * 0.88));
+      const chewX = Math.sin(t * 8.4) * 0.24 * L;
+      const chewY = Math.cos(t * 6.7) * 0.18 * L;
+      const chewZ = Math.sin(t * 5.3 + 1.2) * 0.22 * L;
+      outerGroup.position.set(chewX * 0.18, chewY * 0.12, chewZ * 0.14);
+      innerGroup.position.set(-chewX * 0.92, chewY * 0.78, -chewZ * 0.62);
+      thirdGroup.position.set(chewX * 0.82, -chewY * 0.7, chewZ * 0.55);
+      fourthGroup.position.set(-chewY * 0.45, chewX * 0.38, -0.1 * L + chewZ * 0.32);
+      fifthGroup.position.set(chewY * 0.62, chewX * 0.44, chewZ * 0.76);
+      sixthGroup.position.set(-chewX * 0.4, -chewZ * 0.44, chewY * 0.38);
+      seventhGroup.position.set(chewZ * 0.28, -chewX * 0.22, chewY * 0.24);
+      eighthGroup.position.set(chewY * 0.32, chewZ * 0.26, -chewX * 0.22);
+      ninthGroup.position.set(-chewZ * 0.24, chewX * 0.18, chewY * 0.2);
+      tenthGroup.position.set(chewX * 0.2, -chewY * 0.16, chewZ * 0.24);
     } else {
+      outerGroup.position.set(0, 0, 0);
       innerGroup.position.set(0, 0, 0);
       thirdGroup.position.set(0, 0, 0);
+      fourthGroup.position.set(0, 0, 0);
       fifthGroup.position.set(0, 0, 0);
+      sixthGroup.position.set(0, 0, 0);
       seventhGroup.position.set(0, 0, 0);
-      fourthGroup.position.z = 0;
-      sixthGroup.position.z = 0;
-      fire.position.y = 0;
-      faces.scale.setScalar(1);
-      looseGroup.scale.setScalar(1);
-      likenessGroup.visible = false;
-      likenessSkin.opacity = 0;
-      likenessShade.opacity = 0;
-      if (likenessNeedsRestore) {
-        setRimPresence(aspect.presence || 1);
-        likenessNeedsRestore = false;
-      }
+      eighthGroup.position.set(0, 0, 0);
+      ninthGroup.position.set(0, 0, 0);
+      tenthGroup.position.set(0, 0, 0);
     }
 
     outerAngle += dt * 0.35 * Math.abs(spin);
@@ -1226,10 +1180,6 @@ export function createEyeWheel(root) {
     }
     applyPalette(paletteIndex, dt);
     applyAspectUniforms();
-    if (likeness > 0.2) {
-      boyEyeMat.uniforms.uBlinkAllow.value = 0;
-      boyEyeMat.uniforms.uLookGain.value = 2.4;
-    }
 
     const falling = throne.fall > 0.001;
     if (ascended) {
@@ -1268,11 +1218,11 @@ export function createEyeWheel(root) {
         : baseZ + zNudge;
       const gazing = document.body.classList.contains("gazing");
       viewRadius += (targetRadius - viewRadius) * (falling ? 0.12 : 0.08);
-      const fovBase = falling ? 32 + throne.fall * 86 : (throne.raptured ? 88 : (41 - likeness * 7));
+      const fovBase = falling ? 32 + throne.fall * 86 : (throne.raptured ? 88 : (41 + likeness * 4));
       const fovTarget = (gazing && !falling && !throne.raptured) ? fovBase - 2.2 : fovBase;
       camera.fov += (fovTarget - camera.fov) * (falling ? 0.12 : 0.055);
       camera.updateProjectionMatrix();
-      const shake = (gazing || throne.calm) ? 0 : (throne.raptured ? 0.01 : 0.014);
+      const shake = (gazing || throne.calm) ? 0 : (throne.raptured ? 0.01 : 0.014) + likeness * 0.07;
       const want = orbitTarget(viewRadius, shake);
       const ease = falling ? 0.18 : (gazing ? 0.048 : 0.1);
       camera.position.x += (want.x - camera.position.x) * ease;
@@ -1299,10 +1249,6 @@ export function createEyeWheel(root) {
     hubMat.uniforms.uMouse.value.copy(mouse);
     hubMat.uniforms.uCalm.value = calm;
     hubMat.uniforms.uWeep.value = weep;
-    boyEyeMat.uniforms.uTime.value = t;
-    boyEyeMat.uniforms.uMouse.value.copy(mouse);
-    boyEyeMat.uniforms.uCalm.value = calm;
-    boyEyeMat.uniforms.uWeep.value = weep;
 
     if (weep > 0.02) {
       tearMat.opacity = 0.38 + weep * 0.5;
@@ -1435,15 +1381,15 @@ export function createEyeWheel(root) {
       this.setAspect("name");
       pulseScale = 1.06;
     },
-    /** Wheels take a boy's look, hold it, then become wheels again. */
+    /** Wheels twist as if eating the look, then become wheels again. */
     wearFace() {
       if (slain || offering || ascended || throne.lore.offered) return;
       likenessOn = true;
       likenessPhase = "form";
       likenessAge = 0;
       likeness = 0;
-      likenessNeedsRestore = true;
-      pulseScale = 1.03;
+      pulseScale = 1.12;
+      spinBoost = 2.6;
     },
     /** Every lid wells. The boy has come back screaming. */
     weep() {

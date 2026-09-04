@@ -142,7 +142,7 @@ export function createArg({ audio, wheel }) {
     audio.utter();
     document.documentElement.classList.add("wearing-face");
     window.setTimeout(() => document.documentElement.classList.remove("wearing-face"), 13000);
-    once("worehim", "the wheels take his look and wear it.", 4800);
+    once("worehim", "the wheels take his look and eat it.", 4800);
     window.setTimeout(() => {
       const line = document.getElementById("forgot-face-line");
       if (line) {
@@ -153,15 +153,21 @@ export function createArg({ audio, wheel }) {
     }, 11800);
   }
 
-  function nameTheBoy(quiet = false) {
-    if (throne.lore.named) {
-      revealFace();
-      return;
+  function nameTheBoy(quiet = false, showHisFace = false) {
+    if (!throne.lore.named) {
+      throne.lore.named = true;
+      refreshOffer();
+      if (!quiet) {
+        once(
+          "named",
+          showHisFace
+            ? "the name lands. he flinches in you. his face is with you now."
+            : "the name lands. he flinches in you.",
+          4200
+        );
+      }
     }
-    throne.lore.named = true;
-    revealFace();
-    if (!quiet) once("named", "the name lands. he flinches in you. his face is above the wheels.", 4200);
-    refreshOffer();
+    if (showHisFace) revealFace();
   }
 
   function confess(text, silent = false) {
@@ -980,7 +986,7 @@ export function createArg({ audio, wheel }) {
       once("ram", "nothing caught in the thicket.", 4200);
       confess("", true);
     } else if (id === "name") {
-      nameTheBoy();
+      nameTheBoy(false, true);
     } else if (id === "hill") {
       once("hill", "three days up. you can still feel the grade in your legs.", 4200);
     } else if (id === "morning") {
@@ -1355,6 +1361,69 @@ export function createArg({ audio, wheel }) {
     become,
     onEntered() {
       applyHash();
+    },
+    backstage: {
+      nameHim() {
+        nameTheBoy(true);
+      },
+      showHisFace() {
+        nameTheBoy(true, true);
+      },
+      revealGoat,
+      summonIsaac() {
+        throne.lore.pentagram = true;
+        throne.lore.praised = true;
+        summonIsaac();
+      },
+      confess() {
+        confess("you said it from the wings.", false);
+      },
+      findKnife() {
+        throne.lore.knife = true;
+        document.documentElement.classList.add("knife-found");
+        confess("", true);
+      },
+      leaveMark() {
+        throne.lore.pentagram = true;
+      },
+      judgeBadly() {
+        judgeBadly();
+      },
+      praiseYou() {
+        praiseYou();
+      },
+      forgetLook() {
+        forgetTheLook();
+      },
+      feed() {
+        throne.lore.fed = Math.max(throne.lore.fed, 1);
+        refreshOffer();
+      },
+      fear() {
+        throne.lore.feared = Math.max(throne.lore.feared, 1);
+        refreshOffer();
+      },
+      rapture() {
+        rapture(true);
+      },
+      leaveCenter() {
+        rapture(false);
+      },
+      offer() {
+        throne.lore.raptured = Math.max(throne.lore.raptured, 1);
+        throne.lore.confessed = true;
+        refreshOffer();
+        offer();
+      },
+      slayAngel() {
+        throne.lore.isaac = true;
+        slayAngel();
+      },
+      finishTheBoy() {
+        throne.lore.isaac = true;
+        finishTheBoy();
+      },
+      refreshOffer,
     },
   };
 }
