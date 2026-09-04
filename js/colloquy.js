@@ -69,11 +69,11 @@ const bringBack = C("How do I bring him back?", "bring");
 const NODES = {
   open: {
     line: (h) => {
-      if (h.ascended) return "you are the looking now. he is still on the hill. a father is a small thing from here.";
+      if (h.ascended) return "you are what looks now. he is still on the hill.";
       if (h.slain) return "the wheels have no one left to turn them. you still came to talk.";
-      if (h.isaac) return "he is already wearing another hill. you still came asking.";
-      if (h.offered) return "you already gave the living thing a father. do not ask him about the hill.";
-      return "you came about a boy. the wheels have no boy in them. say what you came to say.";
+      if (h.isaac) return "he came back. that is not the boy you walked up with. you still came asking.";
+      if (h.offered) return "you already gave yourself. do not ask him about the hill.";
+      return "you came about a boy. he is not in the wheels. say what you came to say.";
     },
     choices: [
       C("Where is he?", "where"),
@@ -89,9 +89,9 @@ const NODES = {
 
   where: {
     line: (h) => {
-      if (h.isaac) return "he is here. he came back wearing another hill. that is not the same as walking him down.";
-      if (h.offered) return "he is looking at you. you are the rest of the eyes. the boy is not in the asking.";
-      return "not in the wheels. not under the wood. he is the walk you already finished.";
+      if (h.isaac) return "he is here. he did not walk down with you. he came back another way.";
+      if (h.offered) return "he is looking at you. the boy is not in the asking.";
+      return "he is not in the wheels. he is not under the wood. you already finished the walk.";
     },
     choices: [
       C("Then why can I still hear him?", "hear"),
@@ -106,11 +106,11 @@ const NODES = {
 
   bring: {
     line: (h) => {
-      if (h.ascended) return "you already finished him. the count kept you. that was not a return.";
+      if (h.ascended) return "you already finished him. the hill kept you instead. that was not a return.";
       if (h.isaac) return "he is already back. that is not the mercy you meant. he came for the living thing.";
-      if (h.pentagram) return "a mark is already left. the morning's name still fits it, if you can stand to say it.";
-      if (h.goat) return "you already invented what the thicket withheld. a substitute is not a son. do not waste it.";
-      return "a father does not get a list. the hill keeps what it was given. if you want him, you want another count.";
+      if (h.pentagram) return "a mark is already left. his morning name still fits it, if you can stand to say it.";
+      if (h.goat) return "you already made a substitute. it is not a son. do not waste it.";
+      return "the hill still has him. the days have not stopped. you have been counting them.";
     },
     choices: [
       C("What count?", "count"),
@@ -128,7 +128,7 @@ const NODES = {
   },
 
   refuse: {
-    line: "then do not stand in the light asking with your face. go back to the grade.",
+    line: "then stop asking. go back to the grade.",
     choices: [
       C("I changed my mind.", "open"),
       C("What of the ram?", "ram"),
@@ -137,7 +137,7 @@ const NODES = {
   },
 
   colder: {
-    line: "good. the living thing prefers silence to a father who will not finish.",
+    line: "good. silence is cleaner than a father who will not finish.",
     choices: [
       C("I will ask after all.", "open"),
     ],
@@ -145,8 +145,8 @@ const NODES = {
 
   ram: {
     line: (h) => (h.goat
-      ? "nothing caught that first time. you invented the courtesy after the fact. something else is already in your hands."
-      : "nothing caught. the thicket stayed empty. you invented the courtesy of a ram after the fact."),
+      ? "nothing caught that first time. you made the ram up after. something else is already in your hands."
+      : "nothing caught. the thicket stayed empty. you made the ram up after."),
     choices: [
       C("Then what caught?", "substitute"),
       bringBack,
@@ -158,9 +158,9 @@ const NODES = {
   },
 
   hear: {
-    line: "that is your own throat. the hill answers in it when you ask him to speak.",
+    line: "if you ask him to speak you will hear the hill in your mouth. that is not him.",
     choices: [
-      C("Ask him to speak?", "petition"),
+      C("I will still call for him.", "petition"),
       bringBack,
       C("I asked for him back already.", "asked", (h) => h.petitions),
       again,
@@ -169,8 +169,8 @@ const NODES = {
 
   dead: {
     line: (h) => (h.isaac
-      ? "you finished the instruction once. he came back anyway. he is not a body you can walk down twice and call it mercy."
-      : "you finished the instruction. no voice arrived. he is not a body you can walk down."),
+      ? "you finished it once. he came back anyway. walking him down twice is not mercy."
+      : "you finished it. no voice arrived. he cannot walk down."),
     choices: [
       C("Then what walks down?", "substitute"),
       bringBack,
@@ -180,7 +180,7 @@ const NODES = {
   },
 
   plain: {
-    line: "plain is a knife without heat. I will not make you a list. the count is already written in your hands.",
+    line: "I will not make you a list. look at the days. you have been adding them.",
     choices: [
       C("My hands, then.", "hands"),
       bringBack,
@@ -189,7 +189,7 @@ const NODES = {
   },
 
   count: {
-    line: "one death is cheap. one death is accepted. a mark is left only when the right throat is given the right blade. a boy can wear that mark if you still have his morning.",
+    line: "every day since you finished him. you still add to it. that is how long he has been on the hill.",
     choices: [
       C("The right throat.", "throat"),
       C("His morning.", "nameHint"),
@@ -202,7 +202,7 @@ const NODES = {
   },
 
   throat: {
-    line: "the count accepts a substitute if the blade is not ordinary. burn it without the count and you only make wrong smoke. a cheap death is not forgiven.",
+    line: "a substitute can be accepted. an ordinary death is not. the hill remembers a cheap one.",
     choices: [
       C("Another body, then.", "substitute"),
       C("Which blade?", "knife", (h) => h.knife),
@@ -213,7 +213,7 @@ const NODES = {
   },
 
   substitute: {
-    line: "a substitute is not a son. rams keep failing. if you invent what the thicket withheld, do not waste it with an ordinary cut.",
+    line: "a substitute is not a son. the ram never came. if you make another body take his place, do not spend it cheaply.",
     choices: [
       C("Then what do I invent?", "lamb", (h) => h.lamb),
       C("He asked after the lamb.", "lamb", (h) => h.lamb),
@@ -226,7 +226,7 @@ const NODES = {
   },
 
   petition: {
-    line: "ask for him back. it keeps the asking. it drops the name unless the name was his. hate and fear land too. it answers in the temperature you bring it.",
+    line: "ask for him. the asking is kept. his name is kept only if it was his. none of it walks him down.",
     choices: [
       C("I asked for him back already.", "asked", (h) => h.petitions),
       C("I said his name.", "name", (h) => h.name),
@@ -237,8 +237,8 @@ const NODES = {
 
   asked: {
     line: (h) => (h.name
-      ? "it kept the asking. saying it again does not walk him down. the heat was already spent."
-      : "it kept the asking. it did not walk him down. if you put his name in the ask, that is a different heat."),
+      ? "the asking was kept. saying it again does not walk him down."
+      : "the asking was kept. he did not come down. put his name in it and the ask will keep that too."),
     choices: [
       C("His name, then.", "nameHint"),
       C("I said his name.", "name", (h) => h.name),
@@ -248,7 +248,7 @@ const NODES = {
   },
 
   hands: {
-    line: "you bound him. you stacked what he carried. you reached. the heat and the blade still remember each other. the cord still knows a throat.",
+    line: "you bound him. you stacked the wood. you reached. your hands still remember.",
     choices: [
       C("The knife is still in my hand.", "knife", (h) => h.knife),
       C("The fire is still waiting.", "fire", (h) => h.fire),
@@ -260,7 +260,7 @@ const NODES = {
   },
 
   nameHint: {
-    line: "the morning still has his name. the wheels do not. if you call it you will have to look at him. naming him does not return him.",
+    line: "naming him does not return him. you will still have to look at him.",
     choices: [
       C("I said his name.", "name", (h) => h.name),
       C("The morning was already a lie.", "morning", (h) => h.morning),
@@ -272,8 +272,8 @@ const NODES = {
 
   fear: {
     line: (h) => (h.fed
-      ? "you said it to him. he believed you. the words left your mouth. the light has had the word and is still empty of a father."
-      : "you said it to him. he believed you. a courtesy, then a cord. the words are still in your mouth. the light has not had them."),
+      ? "you said it to him. he believed you. the light has had the word. it still wants a father."
+      : "you said it to him. he believed you. the words are still in your mouth. the light has not had them."),
     choices: [
       C("The light.", "mouth"),
       C("I already fed it the word.", "fed", (h) => h.fed),
@@ -283,7 +283,7 @@ const NODES = {
   },
 
   mouth: {
-    line: "the mouth is not a mouth. it wants the word, then the hand. offerings of language are cheap. trade requires a body.",
+    line: "it wants the word, then the hand. words are not enough.",
     choices: [
       C("I already fed it the word.", "fed", (h) => h.fed),
       C("I have been inside.", "inside", (h) => h.raptured),
@@ -294,7 +294,7 @@ const NODES = {
   },
 
   fed: {
-    line: "you are trying to buy him back. the light is still empty of a father. the mouth wants the hand, not the word.",
+    line: "you are trying to buy him back. the light still wants a father, not a word.",
     choices: [
       C("I held the center.", "inside", (h) => h.raptured || h.canOffer),
       C("I gave the hand.", "offered", (h) => h.offered),
@@ -304,7 +304,7 @@ const NODES = {
   },
 
   inside: {
-    line: "this is as close as a father gets. hold until you are the offering, or leave. the boy is not in here.",
+    line: "the boy is not in here. hold until you are the offering, or leave.",
     choices: [
       C("I stayed.", "offered", (h) => h.offered),
       C("He is not the offering now.", "isaac", (h) => h.isaac),
@@ -315,9 +315,9 @@ const NODES = {
 
   knife: {
     line: (h) => {
-      if (h.isaac) return "the first job is still in the hand. an ordinary blade wasted a substitute. a worse blade remembers the first throat.";
-      if (h.ritual) return "your hands itch. the ritual already knew which face this was. an ordinary cut is a cheaper death.";
-      return "you bound him. the knife looks flammable. an ordinary blade wastes a substitute. your hands itch for a worse job.";
+      if (h.isaac) return "the first job is still in the hand. this blade remembers the boy, not the substitute.";
+      if (h.ritual) return "your hands itch. this blade already knew which face it was for.";
+      return "you bound him. your hands itch for a worse job than the one you already finished.";
     },
     choices: [
       C("Heat, then.", "fire", (h) => h.fire),
@@ -332,7 +332,7 @@ const NODES = {
   },
 
   fire: {
-    line: "the blade would take this heat and keep it. wood still wants what you carried. heat without a count is only waste.",
+    line: "the fire is still waiting for the death that was meant.",
     choices: [
       C("He carried the wood.", "wood", (h) => h.wood),
       C("The knife is still in my hand.", "knife", (h) => h.knife),
@@ -343,7 +343,7 @@ const NODES = {
   },
 
   wood: {
-    line: "he carried it because you asked. it still wants the heat. wood and cord remember a place. it is still empty.",
+    line: "he carried it because you asked. the place is still empty of him.",
     choices: [
       C("The fire is still waiting.", "fire", (h) => h.fire),
       C("The place.", "cord", (h) => h.cord),
@@ -353,7 +353,7 @@ const NODES = {
   },
 
   pyre: {
-    line: "the wood takes. the boy is not on it this time. a place can be ready and still empty of the right throat.",
+    line: "the wood takes. the boy is not on it this time.",
     choices: [
       C("The right throat.", "throat"),
       C("The knife is still in my hand.", "knife", (h) => h.knife),
@@ -363,7 +363,7 @@ const NODES = {
   },
 
   cord: {
-    line: "the cord still remembers his wrists. it wants the blade back. it will find another body that will lie still.",
+    line: "the cord still remembers his wrists. it will find another body that will lie still.",
     choices: [
       C("The knife is still in my hand.", "knife", (h) => h.knife),
       C("Another body.", "goat", (h) => h.goat),
@@ -373,7 +373,7 @@ const NODES = {
   },
 
   lamb: {
-    line: "he asked. you said someone else would see to it. the hill already knew. the lamb you invent will not be him.",
+    line: "he asked. you said someone else would see to it. whatever you invent will not be him.",
     choices: [
       C("Then what do I invent?", "substitute"),
       C("I invented a goat.", "goat", (h) => h.goat),
@@ -383,7 +383,7 @@ const NODES = {
   },
 
   hill: {
-    line: "three days up. you can still feel the grade. he is not under it. a star can remember a hill that was not this one.",
+    line: "three days up was the walk. the days after did not stop. he is still on the hill.",
     choices: [
       C("Another hill.", "otherHill", (h) => h.pentagram || h.otherHill),
       C("Where is he?", "where"),
@@ -402,7 +402,7 @@ const NODES = {
   },
 
   thicket: {
-    line: "pressed close, the thicket lies. pressed far, another name keeps the distance. the measure still asks how far.",
+    line: "the thicket was empty. it only looked like a ram when you were already too close.",
     choices: [
       C("How far?", "measure"),
       C("The lie came true.", "goat", (h) => h.goat),
@@ -411,7 +411,7 @@ const NODES = {
   },
 
   measure: {
-    line: "how far from the rim to the boy you cannot see. the thicket only answers when you are already too close.",
+    line: "how far to the boy you cannot see. the thicket only answers when you are already too close.",
     choices: [
       C("Something caught.", "goat", (h) => h.goat),
       C("What of the ram?", "ram"),
@@ -422,8 +422,8 @@ const NODES = {
 
   name: {
     line: (h) => (h.face
-      ? "he still turns toward that sound. his look is with you now. naming him does not return him."
-      : "he still turns toward that sound. his face waits on that morning. calling it is a kind of looking."),
+      ? "he still turns toward that sound. naming him does not return him."
+      : "he still turns toward that sound. calling it is a kind of looking. it does not walk him down."),
     choices: [
       C("I looked.", "face", (h) => h.face),
       C("The mark wants the morning's name.", "mark", (h) => h.pentagram),
@@ -434,8 +434,8 @@ const NODES = {
 
   face: {
     line: (h) => (h.forgot
-      ? "you had the look. you put it into the living thing. the wheels ate it. you cannot put it back in your own head."
-      : "you will have to look at him now. you cannot keep his face and the knife in the same hand. if you give the look, the wheels eat."),
+      ? "you had the look. you put it into the living thing. you cannot get it back."
+      : "you will have to look at him now. you cannot keep his face and the knife. if you give the look away, you will not get it back."),
     choices: [
       C("I already gave the look.", "forgot", (h) => h.forgot),
       C("I cannot keep both.", "knife", (h) => h.knife),
@@ -446,7 +446,7 @@ const NODES = {
   },
 
   forgot: {
-    line: "you have the name. you do not have the face. the look went into the wheels and stayed gone. he is still the boy. you are the one who cannot see him.",
+    line: "you have the name. you do not have the face. he is still the boy. you are the one who cannot see him.",
     choices: [
       C("He came back anyway.", "isaac", (h) => h.isaac),
       bringBack,
@@ -456,9 +456,9 @@ const NODES = {
 
   goat: {
     line: (h) => {
-      if (h.judged) return "you already spent the substitute. the living thing will not forget the cheap death.";
-      if (h.pentagram) return "the count accepted it. a mark is left where the goat was. that is the death that can wear a boy.";
-      return "something caught. it was not a ram. the count will accept this death if the blade is not ordinary. burn it without the count and you only make wrong smoke.";
+      if (h.judged) return "you already spent the substitute. the cheap death is not forgotten.";
+      if (h.pentagram) return "the hill accepted that death. a mark is left. a boy can come back wearing it.";
+      return "something caught. it was not a ram. this death can be accepted, if you do not spend it cheaply.";
     },
     choices: [
       C("Which blade?", "knife", (h) => h.knife),
@@ -479,7 +479,7 @@ const NODES = {
   },
 
   ritual: {
-    line: "your hands itch. the last step is still a hand, or a substitute counted correctly. the ritual knife already knew which face this was.",
+    line: "your hands itch. the last step is still a hand, or a substitute the hill will count.",
     choices: [
       C("The substitute.", "goat", (h) => h.goat),
       C("His face.", "face", (h) => h.face),
@@ -491,8 +491,8 @@ const NODES = {
 
   mark: {
     line: (h) => (h.isaac
-      ? "the morning's name already fit. he came back wearing another hill. he is not the offering now."
-      : "the count accepts the substitute. a mark is left. the morning's name fits the mark. the boy comes back wearing another hill."),
+      ? "the name fit. he came back. he is not the offering now."
+      : "the substitute was accepted. a mark is left. his name can call him back through it."),
     choices: [
       C("I have his name.", "name", (h) => h.name),
       C("I have the look of him.", "face", (h) => h.face),
@@ -503,7 +503,7 @@ const NODES = {
   },
 
   otherHill: {
-    line: "the star remembers a hill that was not this one. he is not the offering now. he is the other count.",
+    line: "this is not the hill you walked. he came back by the mark. he is not the offering now.",
     choices: [
       C("He is here.", "isaac", (h) => h.isaac),
       C("The hill is still under us.", "hill", (h) => h.hill),
@@ -524,7 +524,7 @@ const NODES = {
   },
 
   wants: {
-    line: "the living thing that took him. or the look you still owe. or a second death with no voice after.",
+    line: "he wants the living thing that took him. or a second death with no voice after.",
     choices: [
       C("The look.", "face", (h) => h.face),
       C("A second death.", "second", (h) => h.knife),
@@ -534,7 +534,7 @@ const NODES = {
   },
 
   second: {
-    line: "you finish it this time. no voice arrives. the last step was always him. that is not a return.",
+    line: "you finish it this time. no voice arrives. that is not a return.",
     choices: [
       C("I finished it.", "ascended", (h) => h.ascended),
       C("He is already here.", "isaac"),
@@ -543,7 +543,7 @@ const NODES = {
   },
 
   offered: {
-    line: "he blinks because he can. the count has a new rim. do not ask him about the hill. you are the rest of the eyes.",
+    line: "he blinks because he can. do not ask him about the hill. you are what looks now.",
     choices: [
       C("Where is the boy?", "where"),
       C("He came back after.", "isaac", (h) => h.isaac),
@@ -552,7 +552,7 @@ const NODES = {
   },
 
   slain: {
-    line: "he finished the count that finished him. the living thing is quiet. there is no one left to turn the wheels.",
+    line: "he finished what finished him. the living thing is quiet. there is no one left to turn the wheels.",
     choices: [
       C("Sit with that.", "colder"),
       C("Begin the ask again.", "open"),
@@ -560,7 +560,7 @@ const NODES = {
   },
 
   ascended: {
-    line: "you are the looking now. he is still on the hill. the boy is finished. the count kept you.",
+    line: "you are what looks now. he is still on the hill. the boy is finished. the hill kept you.",
     choices: [
       C("Begin the ask again.", "open"),
     ],

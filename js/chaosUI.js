@@ -1266,7 +1266,7 @@ export function createChaosUI({ audio, wheel }) {
         wheel.shudder();
         wheel.pulse();
         triggerPulse();
-        showCaption("it answers the count", 2400);
+        showCaption("the days are still being added", 2400);
         return;
       }
       wakePlane(id);
@@ -1274,7 +1274,7 @@ export function createChaosUI({ audio, wheel }) {
         showCaption("the rim is farther than the hand", 2400);
       } else if (id === "petition") {
         document.querySelector("#petition-form input")?.focus();
-        showCaption("ask for him back. it will not keep the name unless the name was his.", 3200);
+        showCaption("ask for him back. only his name is kept.", 3200);
       } else if (id === "attendants") {
         showCaption("they will not introduce themselves", 2400);
       } else if (id === "approach") {
