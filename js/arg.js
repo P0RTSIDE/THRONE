@@ -598,7 +598,7 @@ export function createArg({ audio, wheel }) {
         ]
         : throne.lore.named && !state.namedThisAsk
           ? [
-            "you already said his name. saying it again does not walk him down.",
+            "you already said his name. saying it again does not bring him down.",
             "he is not in the wheels. you keep asking the wrong body.",
             "asking does not unwind the cord.",
           ]
@@ -615,7 +615,7 @@ export function createArg({ audio, wheel }) {
       aspect: "name",
       lines: [
         "love did not stay the knife.",
-        "it keeps the feeling and drops the boy.",
+        "he loved you. love did not make you look at his face.",
         "he believed you. that is not the same as being kept.",
         "the count does not return love. it returns a looking.",
       ],
@@ -860,9 +860,9 @@ export function createArg({ audio, wheel }) {
       key: "fearnot",
       aspect: "seraph",
       lines: [
-        "the instruction is taken literally.",
-        "you said it to him. now you have said it to the light.",
-        "Fear Not is still in your mouth. carry it to the center if you mean it.",
+        "you said it to him as comfort. you meant it as the command that let you raise the knife.",
+        "he believed Fear Not because it came from your mouth.",
+        "the words are still in your mouth. the light has not had them yet.",
       ],
     },
   ];
@@ -897,7 +897,7 @@ export function createArg({ audio, wheel }) {
     if (!blob) {
       angelSays("empty", [
         "a mouth with no words is still a mouth.",
-        "it keeps the empty asking.",
+        "you opened your mouth and gave him nothing. he used to answer you.",
         "silence is still received.",
       ]);
       return;
@@ -940,14 +940,14 @@ export function createArg({ audio, wheel }) {
     if (falseName && !petition.trim()) {
       angelSays("falsename", [
         "that name was not his. it lets it fall.",
-        "the asking is kept. that name is not.",
+        "that name was never his. he will not turn toward it.",
         "the morning did not use that one.",
       ]);
       return;
     }
 
     angelSays("fallback", [
-      "the asking is kept. he does not come down.",
+      "you asked. he does not come down the hill.",
       "the words arrive. the boy does not.",
       "heard. not granted.",
       "it will not answer that in your language.",

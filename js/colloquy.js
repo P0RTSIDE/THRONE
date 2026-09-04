@@ -73,7 +73,7 @@ const NODES = {
       if (h.slain) return "the wheels have no one left to turn them. you still came to talk.";
       if (h.isaac) return "he came back. that is not the boy you walked up with. you still came asking.";
       if (h.offered) return "you already gave yourself. do not ask him about the hill.";
-      return "you came about a boy. he is not in the wheels. say what you came to say.";
+      return "you came about the son who believed you. he is not in the wheels. say what you came to say.";
     },
     choices: [
       C("Where is he?", "where"),
@@ -91,7 +91,7 @@ const NODES = {
     line: (h) => {
       if (h.isaac) return "he is here. he did not walk down with you. he came back another way.";
       if (h.offered) return "he is looking at you. the boy is not in the asking.";
-      return "he is not in the wheels. he is not under the wood. you already finished the walk.";
+      return "he is not in the wheels. he is not under the wood he carried for you. you already finished the walk.";
     },
     choices: [
       C("Then why can I still hear him?", "hear"),
@@ -110,7 +110,7 @@ const NODES = {
       if (h.isaac) return "he is already back. that is not the mercy you meant. he came for the living thing.";
       if (h.pentagram) return "a mark is already left. his morning name still fits it, if you can stand to say it.";
       if (h.goat) return "you already made a substitute. it is not a son. do not waste it.";
-      return "the hill still has him. the days have not stopped. you have been counting them.";
+      return "the hill still has the son you did not withhold. the days have not stopped. you have been counting them.";
     },
     choices: [
       C("What count?", "count"),
@@ -158,7 +158,7 @@ const NODES = {
   },
 
   hear: {
-    line: "if you ask him to speak you will hear the hill in your mouth. that is not him.",
+    line: "if you ask him to speak you will hear the hill. he loved you quietly. that is not him answering.",
     choices: [
       C("I will still call for him.", "petition"),
       bringBack,
@@ -170,7 +170,7 @@ const NODES = {
   dead: {
     line: (h) => (h.isaac
       ? "you finished it once. he came back anyway. walking him down twice is not mercy."
-      : "you finished it. no voice arrived. he cannot walk down."),
+      : "you finished it. you were faithful and no voice arrived. he cannot come down."),
     choices: [
       C("Then what walks down?", "substitute"),
       bringBack,
@@ -189,7 +189,7 @@ const NODES = {
   },
 
   count: {
-    line: "every day since you finished him. you still add to it. that is how long he has been on the hill.",
+    line: "every day since you did not withhold him. you still add to it. that is how long the son who believed you has been on the hill.",
     choices: [
       C("The right throat.", "throat"),
       C("His morning.", "nameHint"),
@@ -226,7 +226,7 @@ const NODES = {
   },
 
   petition: {
-    line: "ask for him. the asking is kept. his name is kept only if it was his. none of it walks him down.",
+    line: "ask for him. he loved you. he asked where the lamb was and still followed. you did not withhold him, and that faithfulness is honored. asking will not bring him down the hill.",
     choices: [
       C("I asked for him back already.", "asked", (h) => h.petitions),
       C("I said his name.", "name", (h) => h.name),
@@ -237,8 +237,8 @@ const NODES = {
 
   asked: {
     line: (h) => (h.name
-      ? "the asking was kept. saying it again does not walk him down."
-      : "the asking was kept. he did not come down. put his name in it and the ask will keep that too."),
+      ? "you already asked. he still loved you when the knife came. asking again does not bring him down."
+      : "you already asked. he did not come down. if you use the name the morning used, the hill will know who you mean."),
     choices: [
       C("His name, then.", "nameHint"),
       C("I said his name.", "name", (h) => h.name),
@@ -248,7 +248,7 @@ const NODES = {
   },
 
   hands: {
-    line: "you bound him. you stacked the wood. you reached. your hands still remember.",
+    line: "you bound him and did not look at his face. he let you, because he loved you. your hands still remember.",
     choices: [
       C("The knife is still in my hand.", "knife", (h) => h.knife),
       C("The fire is still waiting.", "fire", (h) => h.fire),
@@ -272,8 +272,8 @@ const NODES = {
 
   fear: {
     line: (h) => (h.fed
-      ? "you said it to him. he believed you. the light has had the word. it still wants a father."
-      : "you said it to him. he believed you. the words are still in your mouth. the light has not had them."),
+      ? "you said Fear Not. he heard comfort. you heard a command. the light has had the word. it still wants a father."
+      : "you said Fear Not. he heard comfort. you heard a command. he believed you anyway."),
     choices: [
       C("The light.", "mouth"),
       C("I already fed it the word.", "fed", (h) => h.fed),
@@ -294,7 +294,7 @@ const NODES = {
   },
 
   fed: {
-    line: "you are trying to buy him back. the light still wants a father, not a word.",
+    line: "you are trying to buy him back. you did not withhold him once. the light still wants a father, not a word.",
     choices: [
       C("I held the center.", "inside", (h) => h.raptured || h.canOffer),
       C("I gave the hand.", "offered", (h) => h.offered),
@@ -317,7 +317,7 @@ const NODES = {
     line: (h) => {
       if (h.isaac) return "the first job is still in the hand. this blade remembers the boy, not the substitute.";
       if (h.ritual) return "your hands itch. this blade already knew which face it was for.";
-      return "you bound him. your hands itch for a worse job than the one you already finished.";
+      return "you bound him and looked past his face. your hands itch for a worse job than the one you already finished.";
     },
     choices: [
       C("Heat, then.", "fire", (h) => h.fire),
@@ -343,7 +343,7 @@ const NODES = {
   },
 
   wood: {
-    line: "he carried it because you asked. the place is still empty of him.",
+    line: "he carried it because you asked. he loved you enough not to put it down. the place is still empty of him.",
     choices: [
       C("The fire is still waiting.", "fire", (h) => h.fire),
       C("The place.", "cord", (h) => h.cord),
@@ -373,7 +373,7 @@ const NODES = {
   },
 
   lamb: {
-    line: "he asked. you said someone else would see to it. whatever you invent will not be him.",
+    line: "he asked where the lamb was. he still trusted your answer. whatever you invent will not be him.",
     choices: [
       C("Then what do I invent?", "substitute"),
       C("I invented a goat.", "goat", (h) => h.goat),
@@ -383,7 +383,7 @@ const NODES = {
   },
 
   hill: {
-    line: "three days up was the walk. the days after did not stop. he is still on the hill.",
+    line: "three days up he walked beside you and asked nothing but the lamb. you did not withhold him. he is still on the hill.",
     choices: [
       C("Another hill.", "otherHill", (h) => h.pentagram || h.otherHill),
       C("Where is he?", "where"),
@@ -393,7 +393,7 @@ const NODES = {
   },
 
   morning: {
-    line: "you told him it was only a walk. you were already lying. the morning still has his name.",
+    line: "you told him it was only a walk. you were already looking past him. the morning still has his name.",
     choices: [
       C("His name.", "nameHint"),
       C("I said his name.", "name", (h) => h.name),
@@ -422,8 +422,8 @@ const NODES = {
 
   name: {
     line: (h) => (h.face
-      ? "he still turns toward that sound. naming him does not return him."
-      : "he still turns toward that sound. calling it is a kind of looking. it does not walk him down."),
+      ? "he still turns toward that sound. he loved that name in your mouth. naming him does not return him."
+      : "he still turns toward that sound. he loved the mouth that named him. calling it does not bring him down."),
     choices: [
       C("I looked.", "face", (h) => h.face),
       C("The mark wants the morning's name.", "mark", (h) => h.pentagram),
