@@ -1534,6 +1534,74 @@ html.calm.blade-self .wheel-root {
   width: min(340px, 46vw);
 }
 
+#colloquy {
+  width: min(280px, 40vw);
+}
+
+#colloquy .plane-body {
+  max-height: min(52vh, 420px);
+}
+
+.colloquy-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.colloquy-thread .colloquy-angel {
+  margin: 0;
+}
+
+.colloquy-thread .colloquy-you {
+  margin: 0;
+  color: rgba(201, 162, 39, 0.74);
+  font-style: italic;
+  padding-left: 8px;
+  border-left: 1px solid rgba(201, 162, 39, 0.32);
+}
+
+.colloquy-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.colloquy-choice {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.25;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  background: rgba(12, 8, 6, 0.55);
+  color: var(--ink);
+  border: 1px solid rgba(201, 162, 39, 0.42);
+  box-shadow: 2px 3px 0 rgba(40, 20, 8, 0.35);
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.colloquy-choice:hover,
+.colloquy-choice:focus-visible {
+  color: var(--gold-hot);
+  border-color: var(--gold-hot);
+  background: rgba(40, 24, 8, 0.72);
+}
+
+.colloquy-choice:disabled {
+  opacity: 0.4;
+}
+
+.colloquy-await {
+  font-family: var(--font-hud);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(201, 162, 39, 0.55);
+  margin: 0;
+}
+
 .inscription.small {
   font-size: 13px;
   color: rgba(232, 220, 184, 0.7);

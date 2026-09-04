@@ -10,6 +10,7 @@
  *   comprehension  — fills, resets, never reaches 100
  *   flee           — inscriptions run from the cursor, split, leave ghosts
  *   averted click  — Approach dodges, charges if circled, completes when you look away
+ *   colloquy       — side tree with the angel; choices gate on relics and lore
  *   days counter   — absurd ticking number
  *   cursor trail   — decaying eye/sparks (skipped on coarse pointers)
  *   sacred geometry— Metatron-ish linework + vesica, counter-rotating
@@ -18,6 +19,7 @@
  */
 
 import { throne, randRange, randInt, showCaption } from "./throne.js";
+import { wireColloquy } from "./colloquy.js";
 
 /** Marks that eat the letters: crosses, voids, eyes, old signs. */
 const SIGILS = "†‡✝✞✟☥☩☠⚔●◉◎◘◙▓░▒█■◆✕✖✚╳☉☍♄☿";
@@ -1279,6 +1281,8 @@ export function createChaosUI({ audio, wheel }) {
         showCaption("the line runs. the door is not in the button.", 2600);
       } else if (id === "boy") {
         showCaption("he asked where the lamb was", 2600);
+      } else if (id === "colloquy") {
+        showCaption("you came about a boy. say what you came to say.", 2800);
       } else if (id === "litany") {
         showCaption("a voice like many waters, and none of them yours", 2600);
       }
@@ -1392,6 +1396,7 @@ export function createChaosUI({ audio, wheel }) {
     });
 
     wireApproach(audio, wheel);
+    wireColloquy(audio);
 
     document.getElementById("self-hand")?.addEventListener("click", (e) => {
       e.stopPropagation();
