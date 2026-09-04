@@ -142,7 +142,7 @@ export function createArg({ audio, wheel }) {
     audio.utter();
     document.documentElement.classList.add("wearing-face");
     window.setTimeout(() => document.documentElement.classList.remove("wearing-face"), 13000);
-    once("worehim", "the wheels take his look and wear it.", 4800);
+    once("worehim", "the wheels take his look and eat it.", 4800);
     window.setTimeout(() => {
       const line = document.getElementById("forgot-face-line");
       if (line) {
