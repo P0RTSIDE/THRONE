@@ -1274,7 +1274,7 @@ export function createChaosUI({ audio, wheel }) {
         showCaption("the rim is farther than the hand", 2400);
       } else if (id === "petition") {
         document.querySelector("#petition-form input")?.focus();
-        showCaption("ask for him back. only his name is kept.", 3200);
+        showCaption("ask for him. he still believed you when you bound him.", 3200);
       } else if (id === "attendants") {
         showCaption("they will not introduce themselves", 2400);
       } else if (id === "approach") {
