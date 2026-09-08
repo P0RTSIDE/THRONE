@@ -236,6 +236,7 @@ export function createChaosUI({ audio, wheel }) {
   wireWindows(audio, wheel);
   wirePlaneDrag();
   wireCarry(audio, wheel);
+  wirePit();
 
   let fallStart = 0;
   let fallReload = false;
@@ -637,6 +638,30 @@ export function createChaosUI({ audio, wheel }) {
     return { x: (ax + bx) * 0.5, y: (ay + by) * 0.5 };
   }
 
+  function overPit(x, y) {
+    const pit = document.getElementById("the-pit");
+    const mouth = document.getElementById("pit-mouth");
+    return nearEl(mouth, x, y, 1.5) || nearEl(pit, x, y, 1.12);
+  }
+
+  function swallowIntoPit(el, quiet) {
+    const hold = document.getElementById("pit-contents");
+    const pit = document.getElementById("the-pit");
+    if (!hold || !el) return;
+    el.classList.remove("carrying");
+    el.classList.add("in-pit");
+    el.dataset.inPit = "1";
+    el.style.position = "";
+    el.style.left = "";
+    el.style.top = "";
+    el.style.transform = "";
+    el.style.margin = "";
+    hold.appendChild(el);
+    if (quiet) return;
+    pit?.classList.add("pit-fed");
+    window.setTimeout(() => pit?.classList.remove("pit-fed"), 900);
+  }
+
   function parkInField(el, clientX, clientY, fromCenter) {
     const field = document.getElementById("relic-field");
     if (!field) return;
@@ -744,22 +769,30 @@ export function createChaosUI({ audio, wheel }) {
       let lastY = 0;
       let homeLeft = btn.style.left;
       let homeTop = btn.style.top;
-      const homeParent = btn.parentElement;
 
       function restore() {
         btn.classList.remove("carrying");
-        if (homeParent && btn.parentElement !== homeParent) homeParent.appendChild(btn);
         btn.style.position = "";
-        btn.style.left = btn.dataset.parkedLeft || homeLeft;
-        btn.style.top = btn.dataset.parkedTop || homeTop;
         btn.style.transform = "";
         btn.style.margin = "";
+        if (btn.dataset.inPit === "1") {
+          swallowIntoPit(btn, true);
+          return;
+        }
+        const field = document.getElementById("relic-field");
+        if (field && btn.parentElement !== field) field.appendChild(btn);
+        btn.style.left = btn.dataset.parkedLeft || homeLeft;
+        btn.style.top = btn.dataset.parkedTop || homeTop;
       }
 
       function park(x, y) {
+        const fromPit = btn.dataset.inPit === "1";
+        btn.classList.remove("in-pit");
+        delete btn.dataset.inPit;
         parkInField(btn, x, y);
         homeLeft = btn.style.left;
         homeTop = btn.style.top;
+        if (fromPit) showCaption("you take it back from the dark.", 2800);
       }
 
       function beginCarry(e) {
@@ -784,6 +817,7 @@ export function createChaosUI({ audio, wheel }) {
         lastY = e.clientY;
         if (Math.hypot(e.clientX - startX, e.clientY - startY) > 10) {
           dragging = true;
+          btn.classList.remove("in-pit");
           if (btn.parentElement !== document.body) document.body.appendChild(btn);
           btn.classList.add("carrying");
           btn.style.position = "fixed";
@@ -797,7 +831,8 @@ export function createChaosUI({ audio, wheel }) {
             itch(`${id}|self`, NEAR_ITCH[`${id}|self`]);
           }
           for (const other of document.querySelectorAll("[data-carry], [data-relic]")) {
-            if (other === btn || other.hidden) continue;
+            if (other === btn || other.hidden || other.dataset.inPit === "1" || other.classList.contains("in-pit")) continue;
+            if (other.closest(".the-pit")) continue;
             if (!nearEl(other, e.clientX, e.clientY, 1.8)) continue;
             const otherId = other.getAttribute("data-carry") || other.getAttribute("data-relic");
             itch(pairKey(id, otherId), NEAR_ITCH[pairKey(id, otherId)] || NEAR_ITCH[`${id}|${otherId}`]);
@@ -810,13 +845,31 @@ export function createChaosUI({ audio, wheel }) {
         const held = performance.now() - downAt;
         downAt = 0;
         if (dragging) {
-          const others = [...document.querySelectorAll("[data-carry], [data-relic]")].filter((el) => el !== btn && !el.hidden);
+          const fromPit = btn.dataset.inPit === "1";
+          const pitMouth = document.getElementById("pit-mouth");
+          const intoPit = fromPit
+            ? nearEl(pitMouth, e.clientX, e.clientY, 1.2)
+            : overPit(e.clientX, e.clientY);
+          if (intoPit) {
+            swallowIntoPit(btn);
+            dragging = false;
+            showCaption("the unused thing goes into the dark. it will wait.", 3200);
+            return;
+          }
+          const others = [...document.querySelectorAll("[data-carry], [data-relic]")].filter((el) => {
+            if (el === btn || el.hidden) return false;
+            if (el.dataset.inPit === "1" || el.classList.contains("in-pit")) return false;
+            if (el.closest(".the-pit")) return false;
+            return true;
+          });
           for (const other of others) {
             if (!nearEl(other, e.clientX, e.clientY, 1.4)) continue;
             const otherId = other.getAttribute("data-carry") || other.getAttribute("data-relic");
             const combo = COMBOS[pairKey(id, otherId)];
             if (!combo) continue;
             const meet = relicMeetPoint(btn, other);
+            btn.classList.remove("in-pit");
+            delete btn.dataset.inPit;
             restore();
             dragging = false;
             applyCombo(combo, meet.x, meet.y);
@@ -824,11 +877,11 @@ export function createChaosUI({ audio, wheel }) {
           }
           const mouth = document.getElementById("mouth");
           const hand = document.getElementById("self-hand");
-          const fire = document.querySelector('[data-relic="fire"]');
+          const fire = document.querySelector('[data-relic="fire"]:not(.in-pit)');
           let target = "";
           if (nearEl(mouth, e.clientX, e.clientY, 1.6)) target = "angel";
           else if (nearEl(hand, e.clientX, e.clientY, 1.6)) target = "self";
-          else if (id === "wood" && nearEl(fire, e.clientX, e.clientY, 1.4)) target = "fire";
+          else if (id === "wood" && fire && fire.dataset.inPit !== "1" && nearEl(fire, e.clientX, e.clientY, 1.4)) target = "fire";
           park(e.clientX, e.clientY);
           dragging = false;
           if (target) {
@@ -855,8 +908,10 @@ export function createChaosUI({ audio, wheel }) {
       btn.addEventListener("pointerup", endCarry);
       btn.addEventListener("pointercancel", () => {
         downAt = 0;
-        if (dragging && lastX) park(lastX, lastY);
-        else restore();
+        if (dragging && lastX) {
+          if (overPit(lastX, lastY)) swallowIntoPit(btn);
+          else park(lastX, lastY);
+        } else restore();
         dragging = false;
       });
       btn.addEventListener("mousedown", beginCarry);
@@ -873,6 +928,25 @@ export function createChaosUI({ audio, wheel }) {
       if (!id || forged.has(id)) return;
       forged.add(id);
       spawnCrafted(id, label || id, x ?? window.innerWidth * 0.55, y ?? window.innerHeight * 0.55, className);
+    });
+  }
+
+  function wirePit() {
+    const pit = document.getElementById("the-pit");
+    const mouth = document.getElementById("pit-mouth");
+    const hold = document.getElementById("pit-hold");
+    const contents = document.getElementById("pit-contents");
+    if (!pit || !mouth || !hold) return;
+    mouth.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const opening = hold.hidden;
+      hold.hidden = !opening;
+      mouth.setAttribute("aria-expanded", opening ? "true" : "false");
+      pit.classList.toggle("open", opening);
+      if (!opening) return;
+      const n = contents?.querySelectorAll(".world-relic").length || 0;
+      if (n) showCaption("what you did not keep is still here. take it back.", 3200);
+      else showCaption("the pit is empty. unused things can wait here.", 2800);
     });
   }
 
@@ -913,7 +987,7 @@ export function createChaosUI({ audio, wheel }) {
     window.addEventListener("pointerdown", (e) => {
       if (!throne.entered || e.button !== 0 || document.documentElement.classList.contains("falling")) return;
       const el = e.target instanceof Element ? e.target : null;
-      if (el?.closest(".hud-safe, .veil, .mouth, .fear-not, .plane, .witness, .dock, .world-relic, .self-hand, .carrying, .fall-white, button, input, textarea, label, a")) return;
+      if (el?.closest(".hud-safe, .veil, .mouth, .fear-not, .plane, .witness, .dock, .world-relic, .self-hand, .carrying, .the-pit, .fall-white, button, input, textarea, label, a")) return;
       down = true;
       lastX = e.clientX;
       lastY = e.clientY;
@@ -1030,6 +1104,55 @@ export function createChaosUI({ audio, wheel }) {
       };
       grip.addEventListener("pointerup", end);
       grip.addEventListener("pointercancel", end);
+
+      const handle = document.createElement("div");
+      handle.className = "plane-resize";
+      handle.setAttribute("aria-hidden", "true");
+      plane.appendChild(handle);
+      let resizing = false;
+      let rw = 0;
+      let rh = 0;
+      handle.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        resizing = true;
+        plane.dataset.pinned = "1";
+        const r = plane.getBoundingClientRect();
+        ox = e.clientX;
+        oy = e.clientY;
+        sl = r.left;
+        st = r.top;
+        rw = r.width;
+        rh = r.height;
+        plane.style.left = `${r.left}px`;
+        plane.style.top = `${r.top}px`;
+        plane.style.right = "auto";
+        plane.style.bottom = "auto";
+        plane.style.width = `${rw}px`;
+        plane.style.height = `${rh}px`;
+        plane.style.transition = "none";
+        plane.classList.add("resized", "dragging");
+        handle.setPointerCapture(e.pointerId);
+      });
+      handle.addEventListener("pointermove", (e) => {
+        if (!resizing) return;
+        const minW = 188;
+        const minH = 112;
+        const maxW = Math.min(920, window.innerWidth - 16);
+        const maxH = Math.min(window.innerHeight - 16, window.innerHeight * 0.88);
+        const w = Math.max(minW, Math.min(maxW, rw + (e.clientX - ox)));
+        const h = Math.max(minH, Math.min(maxH, rh + (e.clientY - oy)));
+        plane.style.left = `${Math.max(8, Math.min(window.innerWidth - 80, sl))}px`;
+        plane.style.top = `${Math.max(8, Math.min(window.innerHeight - 40, st))}px`;
+        plane.style.width = `${w}px`;
+        plane.style.height = `${h}px`;
+      });
+      const endResize = () => {
+        resizing = false;
+        plane.classList.remove("dragging");
+      };
+      handle.addEventListener("pointerup", endResize);
+      handle.addEventListener("pointercancel", endResize);
     });
   }
 
@@ -1165,7 +1288,7 @@ export function createChaosUI({ audio, wheel }) {
 
     document.addEventListener("click", (e) => {
       if (!armed || !throne.entered) return;
-      if (e.target.closest(".hud-safe, .averted, .plane, .fear-not, .world-relic, .mouth")) return;
+      if (e.target.closest(".hud-safe, .averted, .plane, .fear-not, .world-relic, .mouth, .the-pit")) return;
       completeApproach("avert");
     });
 
