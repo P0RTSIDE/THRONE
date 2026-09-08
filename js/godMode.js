@@ -139,6 +139,14 @@ export function createGodMode({ audio, wheel, arg }) {
     document.querySelectorAll(".world-relic").forEach((el) => {
       el.hidden = false;
       el.removeAttribute("aria-hidden");
+      if (el.dataset.inPit === "1" || el.classList.contains("in-pit") || el.closest("#pit-contents")) {
+        el.classList.remove("in-pit");
+        delete el.dataset.inPit;
+        const field = document.getElementById("relic-field");
+        if (field) field.appendChild(el);
+        if (el.dataset.parkedLeft) el.style.left = el.dataset.parkedLeft;
+        if (el.dataset.parkedTop) el.style.top = el.dataset.parkedTop;
+      }
     });
     throne.lore.goat = true;
     throne.lore.face = true;

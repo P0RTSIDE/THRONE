@@ -59,7 +59,7 @@
           <span class="relic-mark relic-mark-knife" aria-hidden="true"></span>
           the knife
         </button>
-        <button type="button" class="world-relic" data-relic="hill" style="left:40%;top:13%">
+        <button type="button" class="world-relic" data-relic="hill" data-carry="hill" style="left:40%;top:13%">
           <span class="relic-mark relic-mark-hill" aria-hidden="true"></span>
           the hill
         </button>
@@ -75,7 +75,7 @@
           <span class="relic-mark relic-mark-name" aria-hidden="true"></span>
           his name
         </button>
-        <button type="button" class="world-relic" data-relic="morning" style="left:30%;top:8%">
+        <button type="button" class="world-relic" data-relic="morning" data-carry="morning" style="left:30%;top:8%">
           <span class="relic-mark relic-mark-morning" aria-hidden="true"></span>
           the morning
         </button>
@@ -100,6 +100,16 @@
           <span class="boy-face-mark" aria-hidden="true"></span>
           his face
         </button>
+        <div id="the-pit" class="the-pit" style="left:14%;top:68%">
+          <button type="button" id="pit-mouth" class="pit-mouth" aria-expanded="false" aria-controls="pit-hold">
+            <span class="pit-wound" aria-hidden="true"></span>
+            the pit
+          </button>
+          <div id="pit-hold" class="pit-hold" hidden>
+            <p class="pit-line">what you do not keep waits in the dark. take it back if you still need it.</p>
+            <div id="pit-contents" class="pit-contents"></div>
+          </div>
+        </div>
       </div>
       <div class="stage">
         <div id="wheel-root" class="wheel-root" aria-hidden="true"></div>

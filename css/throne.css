@@ -315,7 +315,8 @@ html.entered .veil {
   pointer-events: none;
 }
 
-.relic-field .world-relic {
+.relic-field .world-relic,
+.relic-field .the-pit {
   pointer-events: auto;
 }
 
@@ -493,7 +494,8 @@ html.ascended .plane {
 html.ascended .dock,
 html.ascended .world-relic,
 html.ascended .self-hand,
-html.ascended .mouth {
+html.ascended .mouth,
+html.ascended .the-pit {
   opacity: 0;
   pointer-events: none;
 }
@@ -1062,6 +1064,7 @@ html.falling .fear-not,
 html.falling .dock,
 html.falling .self-hand,
 html.falling .world-relic,
+html.falling .the-pit,
 html.falling .hud-safe,
 html.falling .caption,
 html.falling .inside,
@@ -1218,6 +1221,91 @@ html.falling .mouth {
   cursor: grabbing;
   transform: translate(-50%, -50%);
   box-shadow: 0 0 22px rgba(201, 162, 39, 0.45);
+}
+
+.the-pit {
+  position: absolute;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.pit-mouth {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-hud);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  background: rgba(8, 4, 2, 0.88);
+  border: 1px solid rgba(138, 106, 40, 0.75);
+  padding: 8px 12px 8px 8px;
+  cursor: pointer;
+  box-shadow: 3px 5px 0 rgba(20, 10, 4, 0.45), 0 0 16px rgba(40, 16, 4, 0.5);
+}
+
+.pit-mouth:hover,
+.pit-mouth:focus-visible,
+.the-pit.open .pit-mouth {
+  color: var(--gold-hot);
+  border-color: var(--gold);
+}
+
+.pit-wound {
+  width: 22px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 38%, #1c0c06 0%, #050308 55%, #000 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(201, 162, 39, 0.38),
+    inset 0 4px 8px rgba(0, 0, 0, 0.88),
+    0 0 10px rgba(80, 30, 8, 0.4);
+}
+
+.the-pit.pit-fed .pit-wound {
+  box-shadow:
+    inset 0 0 0 1px var(--gold-hot),
+    inset 0 4px 10px rgba(0, 0, 0, 0.9),
+    0 0 18px rgba(201, 162, 39, 0.5);
+}
+
+.pit-hold {
+  background: rgba(12, 7, 4, 0.94);
+  border: 1px solid rgba(201, 162, 39, 0.38);
+  box-shadow: 4px 6px 0 rgba(40, 20, 8, 0.4), 0 10px 22px rgba(0, 0, 0, 0.45);
+  padding: 10px 12px 12px;
+  min-width: 188px;
+  max-width: min(260px, 72vw);
+}
+
+.pit-line {
+  margin: 0 0 8px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.3;
+  color: rgba(232, 220, 184, 0.78);
+}
+
+.pit-contents {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  max-height: 36vh;
+  overflow: auto;
+}
+
+.pit-contents .world-relic:not(.carrying) {
+  position: relative;
+  left: auto;
+  top: auto;
+  transform: none;
+  margin: 0;
 }
 
 .self-hand {
@@ -1482,7 +1570,11 @@ html.calm.blade-self .wheel-root {
 .plane {
   position: fixed;
   z-index: 12;
+  display: flex;
+  flex-direction: column;
   width: min(248px, 36vw);
+  min-width: 176px;
+  min-height: 92px;
   padding: 0;
   background: rgba(18, 10, 6, 0.88);
   border: 1px solid rgba(201, 162, 39, 0.4);
@@ -1505,7 +1597,9 @@ html.calm.blade-self .wheel-root {
 }
 
 .plane-body {
-  padding: 10px 12px 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 10px 12px 14px;
   max-height: min(42vh, 320px);
   overflow: auto;
 }
@@ -1540,6 +1634,11 @@ html.calm.blade-self .wheel-root {
 
 #colloquy .plane-body {
   max-height: min(52vh, 420px);
+}
+
+.plane.resized .plane-body,
+#colloquy.resized .plane-body {
+  max-height: none;
 }
 
 .colloquy-thread {
@@ -1637,6 +1736,23 @@ html.calm.blade-self .wheel-root {
 
 .plane.dragging {
   z-index: 18;
+}
+
+.plane-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  touch-action: none;
+  background:
+    linear-gradient(135deg, transparent 42%, rgba(138, 106, 40, 0.95) 42%, rgba(138, 106, 40, 0.95) 50%, transparent 50%),
+    linear-gradient(135deg, transparent 68%, rgba(201, 162, 39, 0.95) 68%, rgba(201, 162, 39, 0.95) 76%, transparent 76%);
+}
+
+.plane .plane-resize {
+  cursor: nwse-resize;
 }
 
 .plane-kicker {
