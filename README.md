@@ -1,9 +1,19 @@
 # THRONE
 
-A full-viewport encounter with a wheel within a wheel. Not a site to read. Something to stand in.
+A full-viewport browser piece: a wheel within a wheel, with synthesized sound, a calm mode, and text that changes as the viewer moves through it. It is built to be stood in front of, not scanned like a document.
 
-Open `index.html` through any local static server. Modules will not load from a raw file path.
+## Run locally
 
-Calm Mode and mute stay in the corner. If your system asks for less motion, Calm Mode is already on.
+ES modules do not load from a `file://` URL. Serve the folder over HTTP, then open the printed address.
 
-Drag the dark. Hold the center. The rest is not labeled.
+```bash
+python -m http.server 8080
+```
+
+Open http://localhost:8080.
+
+Calm Mode and mute stay in the corner. If the operating system requests reduced motion, Calm Mode starts on.
+
+## Stack
+
+HTML, CSS, and JavaScript. Three.js is vendored at `vendor/three.module.js`. Scene code is split across `js/` (`throne.js`, `eyeWheel.js`, `audioEngine.js`, `calmMode.js`, and related modules). `index.html` is the page shell.
